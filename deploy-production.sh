@@ -1,0 +1,375 @@
+#!/bin/bash
+
+# Script di Deployment Produzione - Kanban ISO Compliance
+# Per Ubuntu 22.04 LTS
+
+set -e
+
+echo "🚀 Inizio deployment Kanban ISO Compliance..."
+
+# Colori per output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Variabili - MODIFICARE QUESTI VALORI
+DOMAIN="kanban.europoligrafico.it"  # Il tuo dominio
+EMAIL_ADMIN="admin@europoligrafico.it"  # Per certificato SSL
+APP_DIR="/var/www/kanban"
+DB_NAME="kanban_prod"
+DB_USER="kanban_user"
+DB_PASSWORD="$(openssl rand -base64 32)"  # Password generata automaticamente
+
+echo -e "${YELLOW}📋 Configurazione:${NC}"
+echo "   Dominio: $DOMAIN"
+echo "   Directory: $APP_DIR"
+echo "   Database: $DB_NAME"
+echo ""
+
+# 1. Aggiorna sistema
+echo -e "${GREEN}1. Aggiornamento sistema...${NC}"
+sudo apt update
+sudo apt upgrade -y
+
+# 2. Installa dipendenze
+echo -e "${GREEN}2. Installazione dipendenze...${NC}"
+sudo apt install -y \
+    nginx \
+    postgresql \
+    postgresql-contrib \
+    curl \
+    git \
+    ufw \
+    certbot \
+    python3-certbot-nginx
+
+# 3. Installa Node.js 20
+echo -e "${GREEN}3. Installazione Node.js 20...${NC}"
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Verifica installazione
+node --version
+npm --version
+
+# 4. Configura PostgreSQL
+echo -e "${GREEN}4. Configurazione PostgreSQL...${NC}"
+sudo -u postgres psql <<EOF
+CREATE DATABASE $DB_NAME;
+CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';
+GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
+ALTER DATABASE $DB_NAME OWNER TO $DB_USER;
+\q
+EOF
+
+echo -e "${GREEN}✅ Database creato${NC}"
+echo "   Nome: $DB_NAME"
+echo "   User: $DB_USER"
+echo "   Password salvata in: $APP_DIR/.db_credentials"
+
+# 5. Crea directory applicazione
+echo -e "${GREEN}5. Creazione directory applicazione...${NC}"
+sudo mkdir -p $APP_DIR
+sudo chown -R $USER:$USER $APP_DIR
+cd $APP_DIR
+
+# 6. Clone repository (se non già presente)
+echo -e "${GREEN}6. Clone repository...${NC}"
+if [ ! -d "$APP_DIR/.git" ]; then
+    # MODIFICARE CON IL TUO REPOSITORY
+    git clone <YOUR_REPO_URL> .
+else
+    git pull origin main
+fi
+
+# 7. Configura Backend
+echo -e "${GREEN}7. Configurazione Backend...${NC}"
+cd $APP_DIR/backend
+
+# Crea file .env
+cat > .env <<EOF
+# Database
+DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=public"
+
+# JWT Secret
+JWT_SECRET="$(openssl rand -base64 64)"
+
+# Email Configuration - MODIFICARE CON LE TUE CREDENZIALI
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT="587"
+EMAIL_SECURE="false"
+EMAIL_USER="assistenza@europoligrafico.it"
+EMAIL_PASSWORD="YOUR_EMAIL_PASSWORD"
+EMAIL_FROM="assistenza@europoligrafico.it"
+
+# App Configuration
+NODE_ENV="production"
+PORT="4000"
+APP_URL="https://$DOMAIN"
+
+# File Upload
+MAX_FILE_SIZE="10485760"  # 10MB
+EOF
+
+echo -e "${YELLOW}⚠️  IMPORTANTE: Modifica $APP_DIR/backend/.env con le credenziali email reali${NC}"
+
+# Installa dipendenze backend
+npm install
+
+# Genera Prisma Client
+npx prisma generate
+
+# Esegui migrazioni database
+npx prisma migrate deploy
+
+# Seed database
+npx prisma db seed
+
+# Build backend
+npm run build
+
+echo -e "${GREEN}✅ Backend configurato${NC}"
+
+# 8. Configura Frontend
+echo -e "${GREEN}8. Configurazione Frontend...${NC}"
+cd $APP_DIR/frontend
+
+# Crea file .env
+cat > .env.production <<EOF
+REACT_APP_API_URL=https://$DOMAIN/api
+EOF
+
+# Installa dipendenze frontend
+npm install
+
+# Build frontend
+npm run build
+
+echo -e "${GREEN}✅ Frontend buildato${NC}"
+
+# 9. Configura PM2 per gestire il processo
+echo -e "${GREEN}9. Installazione e configurazione PM2...${NC}"
+sudo npm install -g pm2
+
+# Crea file ecosystem PM2
+cat > $APP_DIR/ecosystem.config.js <<EOF
+module.exports = {
+  apps: [{
+    name: 'kanban-backend',
+    cwd: '$APP_DIR/backend',
+    script: 'dist/index.js',
+    instances: 2,
+    exec_mode: 'cluster',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 4000
+    },
+    error_file: '$APP_DIR/logs/backend-error.log',
+    out_file: '$APP_DIR/logs/backend-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+  }]
+};
+EOF
+
+# Crea directory logs
+mkdir -p $APP_DIR/logs
+
+# Avvia applicazione con PM2
+cd $APP_DIR
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup systemd -u $USER --hp /home/$USER
+
+echo -e "${GREEN}✅ PM2 configurato e avviato${NC}"
+
+# 10. Configura Nginx
+echo -e "${GREEN}10. Configurazione Nginx...${NC}"
+
+sudo tee /etc/nginx/sites-available/kanban <<EOF
+# Kanban ISO Compliance - Nginx Configuration
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $DOMAIN;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+# HTTPS Server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name $DOMAIN;
+
+    # SSL Certificates (will be generated by Certbot)
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+
+    # SSL Configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Security Headers (ISO 27001)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Max upload size
+    client_max_body_size 10M;
+
+    # Frontend (React)
+    location / {
+        root $APP_DIR/frontend/build;
+        try_files \$uri \$uri/ /index.html;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Logs
+    access_log /var/log/nginx/kanban-access.log;
+    error_log /var/log/nginx/kanban-error.log;
+}
+EOF
+
+# Abilita sito
+sudo ln -sf /etc/nginx/sites-available/kanban /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Test configurazione
+sudo nginx -t
+
+# Restart Nginx
+sudo systemctl restart nginx
+
+echo -e "${GREEN}✅ Nginx configurato${NC}"
+
+# 11. Configura Firewall
+echo -e "${GREEN}11. Configurazione Firewall...${NC}"
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
+
+echo -e "${GREEN}✅ Firewall configurato${NC}"
+
+# 12. Ottieni certificato SSL
+echo -e "${GREEN}12. Ottenimento certificato SSL...${NC}"
+echo -e "${YELLOW}⚠️  Assicurati che il dominio $DOMAIN punti a questo server!${NC}"
+read -p "Premi INVIO quando il DNS è configurato correttamente..."
+
+sudo certbot --nginx -d $DOMAIN --email $EMAIL_ADMIN --agree-tos --no-eff-email
+
+echo -e "${GREEN}✅ Certificato SSL installato${NC}"
+
+# 13. Configura backup automatico
+echo -e "${GREEN}13. Configurazione backup automatico...${NC}"
+
+sudo mkdir -p /var/backups/kanban
+
+# Script di backup
+sudo tee /usr/local/bin/kanban-backup.sh <<EOF
+#!/bin/bash
+BACKUP_DIR="/var/backups/kanban"
+DATE=\$(date +%Y%m%d_%H%M%S)
+
+# Backup database
+sudo -u postgres pg_dump $DB_NAME | gzip > \$BACKUP_DIR/db_\$DATE.sql.gz
+
+# Backup uploads
+tar -czf \$BACKUP_DIR/uploads_\$DATE.tar.gz $APP_DIR/uploads
+
+# Rimuovi backup più vecchi di 30 giorni
+find \$BACKUP_DIR -type f -mtime +30 -delete
+
+echo "Backup completato: \$DATE"
+EOF
+
+sudo chmod +x /usr/local/bin/kanban-backup.sh
+
+# Cron job per backup giornaliero alle 2:00 AM
+(sudo crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/kanban-backup.sh >> /var/log/kanban-backup.log 2>&1") | sudo crontab -
+
+echo -e "${GREEN}✅ Backup automatico configurato (giornaliero alle 2:00)${NC}"
+
+# 14. Salva credenziali
+echo -e "${GREEN}14. Salvataggio credenziali...${NC}"
+
+cat > $APP_DIR/.db_credentials <<EOF
+Database Configuration
+======================
+Host: localhost
+Port: 5432
+Database: $DB_NAME
+User: $DB_USER
+Password: $DB_PASSWORD
+
+IMPORTANTE: Conserva questo file in modo sicuro!
+EOF
+
+chmod 600 $APP_DIR/.db_credentials
+
+# 15. Riepilogo finale
+echo ""
+echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}🎉 DEPLOYMENT COMPLETATO CON SUCCESSO!${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
+echo ""
+echo -e "${YELLOW}📋 Informazioni Sistema:${NC}"
+echo "   🌐 URL: https://$DOMAIN"
+echo "   📁 Directory: $APP_DIR"
+echo "   🗄️  Database: $DB_NAME"
+echo ""
+echo -e "${YELLOW}👤 Credenziali Login:${NC}"
+echo "   Admin:   admin@europoligrafico.it / admin123"
+echo "   Manager: manager@europoligrafico.it / manager123"
+echo "   User:    user@europoligrafico.it / user123"
+echo "   Auditor: auditor@europoligrafico.it / auditor123"
+echo ""
+echo -e "${YELLOW}⚙️  Comandi Utili:${NC}"
+echo "   Restart app:  pm2 restart kanban-backend"
+echo "   View logs:    pm2 logs kanban-backend"
+echo "   Stop app:     pm2 stop kanban-backend"
+echo "   Backup DB:    /usr/local/bin/kanban-backup.sh"
+echo ""
+echo -e "${RED}⚠️  AZIONI RICHIESTE:${NC}"
+echo "   1. Modifica $APP_DIR/backend/.env con credenziali email"
+echo "   2. Restart: pm2 restart kanban-backend"
+echo "   3. Cambia le password di default degli utenti"
+echo "   4. Configura webhook email (SendGrid/Mailgun)"
+echo ""
+echo -e "${YELLOW}📚 File Importanti:${NC}"
+echo "   Credenziali DB: $APP_DIR/.db_credentials"
+echo "   Logs Backend:   $APP_DIR/logs/"
+echo "   Logs Nginx:     /var/log/nginx/kanban-*.log"
+echo "   Backup:         /var/backups/kanban/"
+echo ""
+echo -e "${GREEN}✅ Sistema pronto all'uso!${NC}"
+echo ""
