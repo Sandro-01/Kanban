@@ -1,0 +1,89 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.login-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: white;
+  padding: 40px 30px;
+  text-align: center;
+}
+
+.login-header h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.login-header p {
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.login-form {
+  padding: 30px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.login-footer {
+  padding: 20px 30px;
+  background: var(--light);
+  border-top: 1px solid var(--border);
+}
+
+.demo-credentials {
+  font-size: 12px;
+}
+
+.demo-credentials h3 {
+  font-size: 13px;
+  margin-bottom: 10px;
+  color: var(--dark);
+}
+
+.demo-credentials ul {
+  list-style: none;
+  padding: 0;
+}
+
+.demo-credentials li {
+  padding: 4px 0;
+  color: var(--secondary);
+}
+
+.iso-badges {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 20px;
+  background: white;
+}
+
+.iso-badge {
+  padding: 8px 16px;
+  background: var(--light);
+  color: var(--dark);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px solid var(--primary);
+}

@@ -1,0 +1,338 @@
+// Prisma Schema per Kanban ISO 9001/27001 Compliant
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ USER MANAGEMENT ============
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          UserRole @default(USER)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignedTickets Ticket[] @relation("AssignedTickets")
+  createdTickets  Ticket[] @relation("CreatedTickets")
+  comments        Comment[]
+  auditLogs       AuditLog[]
+  onboardings     Onboarding[] @relation("OnboardingUser")
+  managedOnboardings Onboarding[] @relation("OnboardingManager")
+  offboardings    Offboarding[] @relation("OffboardingUser")
+  managedOffboardings Offboarding[] @relation("OffboardingManager")
+
+  @@index([email])
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  AUDITOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  ONBOARDING
+  OFFBOARDING
+  SUSPENDED
+}
+
+// ============ ONBOARDING / OFFBOARDING ============
+
+model Onboarding {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation("OnboardingUser", fields: [userId], references: [id])
+  managerId       String
+  manager         User     @relation("OnboardingManager", fields: [managerId], references: [id])
+  status          OnboardingStatus @default(IN_PROGRESS)
+  startDate       DateTime @default(now())
+  expectedEndDate DateTime
+  actualEndDate   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tasks           OnboardingTask[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OnboardingTask {
+  id            String   @id @default(uuid())
+  onboardingId  String
+  onboarding    Onboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  order         Int
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+  mandatory     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([onboardingId])
+}
+
+enum OnboardingStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Offboarding {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation("OffboardingUser", fields: [userId], references: [id])
+  managerId       String
+  manager         User     @relation("OffboardingManager", fields: [managerId], references: [id])
+  status          OffboardingStatus @default(IN_PROGRESS)
+  startDate       DateTime @default(now())
+  expectedEndDate DateTime
+  actualEndDate   DateTime?
+  reason          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tasks           OffboardingTask[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OffboardingTask {
+  id             String   @id @default(uuid())
+  offboardingId  String
+  offboarding    Offboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  order          Int
+  completed      Boolean  @default(false)
+  completedAt    DateTime?
+  mandatory      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([offboardingId])
+}
+
+enum OffboardingStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============ KANBAN TICKETS ============
+
+model Board {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  columns     Column[]
+  tickets     Ticket[]
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+
+  tickets   Ticket[]
+
+  @@index([boardId])
+}
+
+model Ticket {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  boardId       String
+  board         Board    @relation(fields: [boardId], references: [id])
+  columnId      String
+  column        Column   @relation(fields: [columnId], references: [id])
+  priority      Priority @default(MEDIUM)
+  status        TicketStatus @default(OPEN)
+  category      String?
+
+  // User relations
+  createdById   String
+  createdBy     User     @relation("CreatedTickets", fields: [createdById], references: [id])
+  assignedToId  String?
+  assignedTo    User?    @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  // SLA tracking
+  slaHours      Int      @default(24)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  dueDate       DateTime
+  resolvedAt    DateTime?
+  slaViolated   Boolean  @default(false)
+
+  // Email integration
+  emailThreadId String?
+
+  // Relations
+  comments      Comment[]
+  attachments   Attachment[]
+  history       TicketHistory[]
+
+  @@index([boardId])
+  @@index([columnId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([dueDate])
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+// ============ COMMENTS (IMMUTABLE) ============
+
+model Comment {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  // IMMUTABILE: Non può essere eliminato o modificato
+  isDeleted Boolean  @default(false) // Soft delete solo per UI, ma dati rimangono
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+// ============ FILE ATTACHMENTS (IMMUTABLE) ============
+
+model Attachment {
+  id          String   @id @default(uuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  uploadedAt  DateTime @default(now())
+
+  // IMMUTABILE: Non può essere eliminato
+  isDeleted   Boolean  @default(false) // Soft delete solo per UI, ma file rimane
+
+  @@index([ticketId])
+}
+
+// ============ TICKET HISTORY (ISO COMPLIANCE) ============
+
+model TicketHistory {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  field     String
+  oldValue  String?
+  newValue  String?
+  changedAt DateTime @default(now())
+  changedBy String
+
+  @@index([ticketId])
+  @@index([changedAt])
+}
+
+// ============ AUDIT LOG (ISO 9001/27001) ============
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  entity      String
+  entityId    String
+  changes     Json?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  // ISO Compliance: categorization
+  isoStandard String[] // ["ISO9001", "ISO27001"]
+  severity    AuditSeverity @default(INFO)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([entity, entityId])
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// ============ SLA CONFIGURATION ============
+
+model SLAConfig {
+  id          String   @id @default(uuid())
+  category    String   @unique
+  priority    Priority
+  hours       Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([priority])
+}
+
+// ============ EMAIL LOGS ============
+
+model EmailLog {
+  id          String   @id @default(uuid())
+  ticketId    String?
+  to          String
+  from        String
+  subject     String
+  body        String
+  status      EmailStatus @default(PENDING)
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  error       String?
+
+  @@index([ticketId])
+  @@index([status])
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
