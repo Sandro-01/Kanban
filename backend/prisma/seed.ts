@@ -17,51 +17,115 @@ async function main() {
       firstName: 'Admin',
       lastName: 'User',
       role: 'ADMIN',
+      department: null,
       status: 'ACTIVE'
     }
   });
 
-  // Crea manager user
-  const managerPassword = await bcrypt.hash('manager123', 10);
-  const manager = await prisma.user.upsert({
-    where: { email: 'manager@europoligrafico.it' },
+  // Utenti HR
+  const riccardoPassword = await bcrypt.hash('user123', 10);
+  const riccardo = await prisma.user.upsert({
+    where: { email: 'riccardo@europoligrafico.it' },
     update: {},
     create: {
-      email: 'manager@europoligrafico.it',
-      password: managerPassword,
-      firstName: 'Manager',
-      lastName: 'User',
-      role: 'MANAGER',
-      status: 'ACTIVE'
-    }
-  });
-
-  // Crea normal user
-  const userPassword = await bcrypt.hash('user123', 10);
-  const user = await prisma.user.upsert({
-    where: { email: 'user@europoligrafico.it' },
-    update: {},
-    create: {
-      email: 'user@europoligrafico.it',
-      password: userPassword,
-      firstName: 'Normal',
-      lastName: 'User',
+      email: 'riccardo@europoligrafico.it',
+      password: riccardoPassword,
+      firstName: 'Riccardo',
+      lastName: 'Rossi',
       role: 'USER',
+      department: 'HR',
       status: 'ACTIVE'
     }
   });
 
-  // Crea auditor user
-  const auditorPassword = await bcrypt.hash('auditor123', 10);
-  const auditor = await prisma.user.upsert({
-    where: { email: 'auditor@europoligrafico.it' },
+  const elisabettaPassword = await bcrypt.hash('user123', 10);
+  const elisabetta = await prisma.user.upsert({
+    where: { email: 'elisabetta@europoligrafico.it' },
     update: {},
     create: {
-      email: 'auditor@europoligrafico.it',
-      password: auditorPassword,
-      firstName: 'Auditor',
-      lastName: 'ISO',
-      role: 'AUDITOR',
+      email: 'elisabetta@europoligrafico.it',
+      password: elisabettaPassword,
+      firstName: 'Elisabetta',
+      lastName: 'Bianchi',
+      role: 'USER',
+      department: 'HR',
+      status: 'ACTIVE'
+    }
+  });
+
+  // Utenti Amministrazione
+  const silviaPassword = await bcrypt.hash('user123', 10);
+  const silvia = await prisma.user.upsert({
+    where: { email: 'silvia@europoligrafico.it' },
+    update: {},
+    create: {
+      email: 'silvia@europoligrafico.it',
+      password: silviaPassword,
+      firstName: 'Silvia',
+      lastName: 'Verdi',
+      role: 'USER',
+      department: 'Amministrazione',
+      status: 'ACTIVE'
+    }
+  });
+
+  const serenaPassword = await bcrypt.hash('user123', 10);
+  const serena = await prisma.user.upsert({
+    where: { email: 'serena@europoligrafico.it' },
+    update: {},
+    create: {
+      email: 'serena@europoligrafico.it',
+      password: serenaPassword,
+      firstName: 'Serena',
+      lastName: 'Neri',
+      role: 'USER',
+      department: 'Amministrazione',
+      status: 'ACTIVE'
+    }
+  });
+
+  const sandraPassword = await bcrypt.hash('user123', 10);
+  const sandra = await prisma.user.upsert({
+    where: { email: 'sandra@europoligrafico.it' },
+    update: {},
+    create: {
+      email: 'sandra@europoligrafico.it',
+      password: sandraPassword,
+      firstName: 'Sandra',
+      lastName: 'Gialli',
+      role: 'USER',
+      department: 'Amministrazione',
+      status: 'ACTIVE'
+    }
+  });
+
+  const patriziaPassword = await bcrypt.hash('user123', 10);
+  const patrizia = await prisma.user.upsert({
+    where: { email: 'patrizia@europoligrafico.it' },
+    update: {},
+    create: {
+      email: 'patrizia@europoligrafico.it',
+      password: patriziaPassword,
+      firstName: 'Patrizia',
+      lastName: 'Blu',
+      role: 'USER',
+      department: 'Amministrazione',
+      status: 'ACTIVE'
+    }
+  });
+
+  // Utente IT
+  const marcoPassword = await bcrypt.hash('user123', 10);
+  const marco = await prisma.user.upsert({
+    where: { email: 'marco@europoligrafico.it' },
+    update: {},
+    create: {
+      email: 'marco@europoligrafico.it',
+      password: marcoPassword,
+      firstName: 'Marco',
+      lastName: 'Viola',
+      role: 'USER',
+      department: 'IT',
       status: 'ACTIVE'
     }
   });
@@ -178,8 +242,8 @@ async function main() {
       description: 'Completare tutti i requisiti per la certificazione ISO 27001',
       boardId: board.id,
       columnId: columns[1].id,
-      createdById: manager.id,
-      assignedToId: user.id,
+      createdById: admin.id,
+      assignedToId: riccardo.id,
       priority: 'HIGH',
       category: 'Richiesta Funzionalità',
       slaHours: 24,
@@ -213,10 +277,14 @@ async function main() {
 
   console.log('\n🎉 Seed completed!\n');
   console.log('📧 Login credentials:');
-  console.log('  Admin:   admin@europoligrafico.it / admin123');
-  console.log('  Manager: manager@europoligrafico.it / manager123');
-  console.log('  User:    user@europoligrafico.it / user123');
-  console.log('  Auditor: auditor@europoligrafico.it / auditor123\n');
+  console.log('  Admin:      admin@europoligrafico.it / admin123');
+  console.log('  Riccardo (HR):     riccardo@europoligrafico.it / user123');
+  console.log('  Elisabetta (HR):   elisabetta@europoligrafico.it / user123');
+  console.log('  Silvia (Admin):    silvia@europoligrafico.it / user123');
+  console.log('  Serena (Admin):    serena@europoligrafico.it / user123');
+  console.log('  Sandra (Admin):    sandra@europoligrafico.it / user123');
+  console.log('  Patrizia (Admin):  patrizia@europoligrafico.it / user123');
+  console.log('  Marco (IT):        marco@europoligrafico.it / user123\n');
 }
 
 main()
