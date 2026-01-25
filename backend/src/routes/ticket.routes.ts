@@ -42,11 +42,10 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     if (priority) where.priority = priority;
     if (boardId) where.boardId = boardId;
 
-    // Visibility rules:
+    // Visibility rules (user assignment has priority over department):
     // 1. OPEN tickets with NO assignments → visible to everyone
-    // 2. Assigned to specific user → only that user can see
-    // 3. Assigned to department → all users in that department can see
-    // 4. Multi-assigned → users in assignments list can see
+    // 2. Assigned to specific users → ONLY those users can see (even if department is also assigned)
+    // 3. Assigned to department WITHOUT user assignment → all users in that department can see
     where.OR = [
       // Rule 1: OPEN tickets with NO assignments (visible to all)
       {
@@ -56,12 +55,17 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           { assignments: { none: {} } }
         ]
       },
-      // Rule 2: Assigned directly to me (old single assignment)
-      { assignedToId: currentUser.id },
-      // Rule 3: Assigned to my department
-      currentUser.department ? { assignedDepartments: { has: currentUser.department } } : {},
-      // Rule 4: Multi-assigned to me
-      { assignments: { some: { userId: currentUser.id } } }
+      // Rule 2: Multi-assigned to me (has priority - if users are assigned, only they see it)
+      { assignments: { some: { userId: currentUser.id } } },
+      // Rule 3: Assigned to my department BUT no user assignments (department only)
+      currentUser.department ? {
+        AND: [
+          { assignedDepartments: { has: currentUser.department } },
+          { assignments: { none: {} } } // Only if no user assignments
+        ]
+      } : {},
+      // Rule 4: Assigned directly to me (old single assignment - kept for compatibility)
+      { assignedToId: currentUser.id }
     ];
 
     const tickets = await prisma.ticket.findMany({

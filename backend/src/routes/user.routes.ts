@@ -7,11 +7,10 @@ import { auditLog } from '../middleware/audit.middleware';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get all users (Admin only)
+// Get all users (All authenticated users can see this for ticket assignment)
 router.get(
   '/',
   authenticate,
-  authorize('ADMIN'),
   async (req: AuthRequest, res: Response) => {
     try {
       const users = await prisma.user.findMany({
@@ -25,6 +24,9 @@ router.get(
           status: true,
           createdAt: true,
           updatedAt: true,
+        },
+        where: {
+          status: 'ACTIVE', // Only show active users
         },
         orderBy: {
           createdAt: 'desc',
