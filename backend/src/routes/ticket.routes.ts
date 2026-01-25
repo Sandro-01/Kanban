@@ -175,6 +175,10 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
     const { id } = req.params;
     const { content } = req.body;
 
+    console.log('📝 Adding comment to ticket:', id);
+    console.log('📝 Content:', content);
+    console.log('📝 User ID:', req.user!.id);
+
     const comment = await prisma.comment.create({
       data: {
         ticketId: id,
@@ -188,10 +192,21 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
       }
     });
 
-    await notifyTicketUpdate(id, 'Nuovo commento', content);
+    console.log('✅ Comment created successfully:', comment.id);
+
+    try {
+      await notifyTicketUpdate(id, 'Nuovo commento', content);
+      console.log('✅ Email notification sent');
+    } catch (emailError: any) {
+      console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+      // Don't fail the request if email fails
+    }
 
     res.json(comment);
   } catch (error: any) {
+    console.error('❌ ERROR adding comment:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -201,9 +216,18 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
   try {
     const { id } = req.params;
 
+    console.log('📎 Uploading file to ticket:', id);
+
     if (!req.file) {
+      console.error('❌ No file in request');
       return res.status(400).json({ error: 'Nessun file caricato' });
     }
+
+    console.log('📎 File info:', {
+      name: req.file.originalname,
+      size: req.file.size,
+      type: req.file.mimetype
+    });
 
     const attachment = await prisma.attachment.create({
       data: {
@@ -227,8 +251,12 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
       }
     });
 
+    console.log('✅ File uploaded successfully:', attachment.id);
     res.json(attachment);
   } catch (error: any) {
+    console.error('❌ ERROR uploading file:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
