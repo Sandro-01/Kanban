@@ -734,20 +734,68 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
     priority: 'MEDIUM',
     category: '',
   });
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [assignToUser, setAssignToUser] = useState('');
+  const [assignToDepartment, setAssignToDepartment] = useState('');
+
+  // Load all users for assignment
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await usersApi.getAll();
+        setAllUsers(response.data);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  // Get unique departments from users
+  const allDepartments = Array.from(new Set(allUsers.map((u: any) => u.department).filter(Boolean)));
+
+  // Categories for packaging company
+  const categories = [
+    'Produzione',
+    'Qualità',
+    'Manutenzione',
+    'Logistica',
+    'Acquisti',
+    'Sicurezza',
+    'Ambiente',
+    'IT/Sistemi',
+    'Amministrazione',
+    'Risorse Umane',
+    'Commerciale',
+    'R&D/Sviluppo Prodotto',
+    'Altro'
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await ticketsApi.create({
+      // Create ticket first
+      const ticketResponse = await ticketsApi.create({
         ...formData,
         boardId: 'default-board',
         columnId: 'col-todo',
       });
+
+      const ticketId = ticketResponse.data.id;
+
+      // Then assign to user or department if selected
+      if (assignToUser) {
+        await ticketsApi.assignUsers(ticketId, [assignToUser]);
+      } else if (assignToDepartment) {
+        await ticketsApi.assignDepartments(ticketId, [assignToDepartment]);
+      }
+
       onCreate();
       onClose();
     } catch (error) {
       console.error('Errore creazione ticket:', error);
+      alert('Errore durante la creazione del ticket');
     }
   };
 
@@ -802,13 +850,73 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
 
           <div className="form-group">
             <label className="label">Categoria</label>
-            <input
-              type="text"
+            <select
               className="input"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              placeholder="es. Bug, Feature, Miglioramento"
-            />
+              required
+            >
+              <option value="">Seleziona una categoria...</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Assegna a Utente (opzionale)</label>
+            <select
+              className="input"
+              value={assignToUser}
+              onChange={(e) => {
+                setAssignToUser(e.target.value);
+                if (e.target.value) setAssignToDepartment(''); // Clear department
+              }}
+              disabled={!!assignToDepartment}
+            >
+              <option value="">Nessun utente</option>
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} {u.department && `(${u.department})`}
+                </option>
+              ))}
+            </select>
+            {assignToDepartment && (
+              <small style={{ color: '#f59e0b', display: 'block', marginTop: '5px' }}>
+                ⚠️ Deseleziona il reparto per assegnare a un utente
+              </small>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="label">Assegna a Reparto (opzionale)</label>
+            <select
+              className="input"
+              value={assignToDepartment}
+              onChange={(e) => {
+                setAssignToDepartment(e.target.value);
+                if (e.target.value) setAssignToUser(''); // Clear user
+              }}
+              disabled={!!assignToUser}
+            >
+              <option value="">Nessun reparto</option>
+              {allDepartments.map((dept: string) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+            {assignToUser && (
+              <small style={{ color: '#f59e0b', display: 'block', marginTop: '5px' }}>
+                ⚠️ Deseleziona l'utente per assegnare a un reparto
+              </small>
+            )}
+          </div>
+
+          <div style={{ padding: '10px', backgroundColor: '#f0f9ff', borderRadius: '5px', marginBottom: '15px', fontSize: '13px' }}>
+            ℹ️ <strong>Nota:</strong> Se non assegni il ticket, sarà visibile a tutti in "To Do"
           </div>
 
           <div className="modal-actions">
