@@ -35,11 +35,28 @@ const upload = multer({
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status, priority, boardId } = req.query;
+    const currentUser = req.user!;
 
     const where: any = {};
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (boardId) where.boardId = boardId;
+
+    // Visibility rules:
+    // 1. OPEN tickets → visible to everyone
+    // 2. Assigned to specific user → only that user can see
+    // 3. Assigned to department → all users in that department can see
+    // 4. Multi-assigned → users in assignments list can see
+    where.OR = [
+      // Rule 1: All OPEN tickets
+      { status: 'OPEN' },
+      // Rule 2: Assigned directly to me (old single assignment)
+      { assignedToId: currentUser.id },
+      // Rule 3: Assigned to my department
+      currentUser.department ? { assignedDepartments: { has: currentUser.department } } : {},
+      // Rule 4: Multi-assigned to me
+      { assignments: { some: { userId: currentUser.id } } }
+    ];
 
     const tickets = await prisma.ticket.findMany({
       where,
@@ -51,6 +68,13 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
         attachments: {
           where: { isDeleted: false },
           include: {
@@ -101,6 +125,13 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
           select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
         attachments: {
           where: { isDeleted: false },
           include: {
@@ -371,6 +402,104 @@ router.get('/:id/history', authenticate, async (req: AuthRequest, res: Response)
 
     res.json(history);
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Assign users to ticket (multi-assignment)
+router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userIds } = req.body; // Array of user IDs
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds must be a non-empty array' });
+    }
+
+    console.log(`👥 Assigning ${userIds.length} users to ticket ${id}`);
+
+    // Create assignments for each user
+    const assignments = await Promise.all(
+      userIds.map((userId: string) =>
+        prisma.ticketAssignment.upsert({
+          where: {
+            ticketId_userId: {
+              ticketId: id,
+              userId: userId
+            }
+          },
+          create: {
+            ticketId: id,
+            userId: userId,
+            assignedBy: req.user!.id
+          },
+          update: {
+            assignedBy: req.user!.id
+          },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        })
+      )
+    );
+
+    console.log(`✅ Successfully assigned ${assignments.length} users`);
+    res.json({ message: 'Users assigned successfully', assignments });
+  } catch (error: any) {
+    console.error('❌ Error assigning users:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remove user assignment from ticket
+router.delete('/:id/assign-users/:userId', authenticate, auditLog('UNASSIGN_USER', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, userId } = req.params;
+
+    console.log(`👥 Removing user ${userId} from ticket ${id}`);
+
+    await prisma.ticketAssignment.delete({
+      where: {
+        ticketId_userId: {
+          ticketId: id,
+          userId: userId
+        }
+      }
+    });
+
+    console.log(`✅ Successfully removed user assignment`);
+    res.json({ message: 'User unassigned successfully' });
+  } catch (error: any) {
+    console.error('❌ Error removing user assignment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Assign departments to ticket
+router.post('/:id/assign-departments', authenticate, auditLog('ASSIGN_DEPARTMENTS', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { departments } = req.body; // Array of department names
+
+    if (!Array.isArray(departments)) {
+      return res.status(400).json({ error: 'departments must be an array' });
+    }
+
+    console.log(`🏢 Assigning departments to ticket ${id}:`, departments);
+
+    const ticket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        assignedDepartments: departments
+      }
+    });
+
+    console.log(`✅ Successfully assigned departments`);
+    res.json({ message: 'Departments assigned successfully', assignedDepartments: ticket.assignedDepartments });
+  } catch (error: any) {
+    console.error('❌ Error assigning departments:', error);
     res.status(500).json({ error: error.message });
   }
 });

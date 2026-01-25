@@ -40,6 +40,12 @@ export const tickets = {
     return api.post(`/tickets/${id}/attachments`, formData);
   },
   getHistory: (id: string) => api.get(`/tickets/${id}/history`),
+  assignUsers: (id: string, userIds: string[]) =>
+    api.post(`/tickets/${id}/assign-users`, { userIds }),
+  unassignUser: (id: string, userId: string) =>
+    api.delete(`/tickets/${id}/assign-users/${userId}`),
+  assignDepartments: (id: string, departments: string[]) =>
+    api.post(`/tickets/${id}/assign-departments`, { departments }),
 };
 
 // Onboarding
@@ -66,6 +72,11 @@ export const sla = {
   getConfig: () => api.get('/sla/config'),
   updateConfig: (data: any) => api.post('/sla/config', data),
   getViolations: () => api.get('/sla/violations'),
+};
+
+// Users
+export const users = {
+  getAll: () => api.get('/users'),
 };
 
 // Audit

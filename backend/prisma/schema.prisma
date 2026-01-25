@@ -26,6 +26,7 @@ model User {
   // Relations
   assignedTickets Ticket[] @relation("AssignedTickets")
   createdTickets  Ticket[] @relation("CreatedTickets")
+  ticketAssignments TicketAssignment[] // Multi-assignment support
   comments        Comment[]
   attachments     Attachment[]
   auditLogs       AuditLog[]
@@ -178,6 +179,10 @@ model Ticket {
   assignedToId  String?
   assignedTo    User?    @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
+  // Multi-assignment support
+  assignedDepartments String[] @default([]) // Array of department names
+  assignments    TicketAssignment[] // Multiple user assignments
+
   // SLA tracking
   slaHours      Int      @default(24)
   createdAt     DateTime @default(now())
@@ -201,6 +206,21 @@ model Ticket {
   @@index([createdById])
   @@index([assignedToId])
   @@index([dueDate])
+}
+
+// Many-to-many relation for multiple user assignments per ticket
+model TicketAssignment {
+  id          String   @id @default(uuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt  DateTime @default(now())
+  assignedBy  String   // ID of user who made the assignment
+
+  @@unique([ticketId, userId]) // Prevent duplicate assignments
+  @@index([ticketId])
+  @@index([userId])
 }
 
 enum Priority {
