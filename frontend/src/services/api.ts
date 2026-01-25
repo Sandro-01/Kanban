@@ -29,8 +29,11 @@ export const tickets = {
   getById: (id: string) => api.get(`/tickets/${id}`),
   create: (data: any) => api.post('/tickets', data),
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
+  delete: (id: string) => api.delete(`/tickets/${id}`),
   addComment: (id: string, content: string) =>
     api.post(`/tickets/${id}/comments`, { content }),
+  deleteComment: (ticketId: string, commentId: string) =>
+    api.delete(`/tickets/${ticketId}/comments/${commentId}`),
   uploadFile: (id: string, file: File, commentId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -39,6 +42,8 @@ export const tickets = {
     }
     return api.post(`/tickets/${id}/attachments`, formData);
   },
+  deleteAttachment: (ticketId: string, attachmentId: string) =>
+    api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`),
   getHistory: (id: string) => api.get(`/tickets/${id}/history`),
   assignUsers: (id: string, userIds: string[]) =>
     api.post(`/tickets/${id}/assign-users`, { userIds }),

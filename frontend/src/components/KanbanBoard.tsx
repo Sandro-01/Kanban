@@ -216,6 +216,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [deptSearchTerm, setDeptSearchTerm] = useState('');
 
   // Load all users for assignment
   useEffect(() => {
@@ -254,95 +256,76 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
-  // Handle assignment changes
-  const handleAssignUsers = async () => {
-    try {
-      await ticketsApi.assignUsers(ticket.id, selectedUsers);
-      await refreshTicket();
-      onUpdate();
-      alert('Utenti assegnati con successo!');
-    } catch (error) {
-      console.error('Error assigning users:', error);
-      alert('Errore durante l\'assegnazione utenti');
-    }
-  };
 
-  const handleAssignDepartments = async () => {
-    try {
-      await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
-      await refreshTicket();
-      onUpdate();
-      alert('Reparti assegnati con successo!');
-    } catch (error) {
-      console.error('Error assigning departments:', error);
-      alert('Errore durante l\'assegnazione reparti');
-    }
-  };
-
-  // Unified assignment handler
-  const handleAssign = async () => {
-    try {
-      // Users have priority - if users are selected, assign users only
-      if (selectedUsers.length > 0) {
-        await ticketsApi.assignUsers(ticket.id, selectedUsers);
-      }
-      // If no users, check for departments
-      else if (selectedDepartments.length > 0) {
-        await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
-      }
-
-      await refreshTicket();
-      onUpdate();
-
-      // Close the assignment panel after successful assignment
-      setShowAssignments(false);
-    } catch (error) {
-      console.error('Error during assignment:', error);
-      alert('Errore durante l\'assegnazione');
-    }
-  };
-
-  // Handle user selection - clear departments when user is selected
+  // Handle user selection - support multiple users, clear departments
   const handleUserSelection = (userId: string) => {
-    if (userId) {
-      setSelectedUsers([userId]);
-      setSelectedDepartments([]); // Clear departments
-    } else {
-      setSelectedUsers([]);
-    }
+    setSelectedUsers(prev => {
+      if (prev.includes(userId)) {
+        // Remove if already selected
+        return prev.filter(id => id !== userId);
+      } else {
+        // Add to selection and clear departments
+        setSelectedDepartments([]);
+        return [...prev, userId];
+      }
+    });
   };
 
-  // Handle department selection - clear users when department is selected
+  // Handle department selection - support multiple departments, clear users
   const handleDepartmentSelection = (department: string) => {
-    if (department) {
-      setSelectedDepartments([department]);
-      setSelectedUsers([]); // Clear users
-    } else {
-      setSelectedDepartments([]);
-    }
+    setSelectedDepartments(prev => {
+      if (prev.includes(department)) {
+        // Remove if already selected
+        return prev.filter(d => d !== department);
+      } else {
+        // Add to selection and clear users
+        setSelectedUsers([]);
+        return [...prev, department];
+      }
+    });
   };
 
   // Get unique departments from users
   const allDepartments = Array.from(new Set(allUsers.map((u: any) => u.department).filter(Boolean)));
 
-  // Unified handler for both comment and file
+  // Unified handler for comment, file, and assignments
   const handleSubmit = async () => {
-    if (!comment.trim() && !file) return;
+    // Check if there's anything to submit
+    const hasComment = comment.trim();
+    const hasFile = file !== null;
+    const hasAssignments = selectedUsers.length > 0 || selectedDepartments.length > 0;
+
+    if (!hasComment && !hasFile && !hasAssignments) {
+      return; // Nothing to submit
+    }
 
     try {
       let createdCommentId = null;
 
       // If both comment and file are present, create comment first
-      if (comment.trim()) {
+      if (hasComment) {
         const commentResponse = await ticketsApi.addComment(ticket.id, comment);
         createdCommentId = commentResponse.data.id;
         console.log('✅ Comment created:', createdCommentId);
       }
 
       // Upload file, linking it to the comment if both were provided
-      if (file) {
+      if (hasFile) {
         await ticketsApi.uploadFile(ticket.id, file, createdCommentId || undefined);
         console.log('✅ File uploaded' + (createdCommentId ? ' and linked to comment' : ''));
+      }
+
+      // Handle assignments (users have priority)
+      if (hasAssignments) {
+        if (selectedUsers.length > 0) {
+          await ticketsApi.assignUsers(ticket.id, selectedUsers);
+          console.log('✅ Users assigned:', selectedUsers);
+        } else if (selectedDepartments.length > 0) {
+          await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
+          console.log('✅ Departments assigned:', selectedDepartments);
+        }
+        // Close the assignment panel after successful assignment
+        setShowAssignments(false);
       }
 
       // Reset form
@@ -360,6 +343,52 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     } catch (error) {
       console.error('Errore invio:', error);
       alert('Errore durante l\'invio. Riprova.');
+    }
+  };
+
+  // Delete comment (admin only)
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo commento? Questa azione è irreversibile.')) {
+      return;
+    }
+    try {
+      await ticketsApi.deleteComment(ticket.id, commentId);
+      await refreshTicket();
+      onUpdate();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Errore durante l\'eliminazione del commento');
+    }
+  };
+
+  // Delete attachment (admin only)
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo file? Questa azione è irreversibile.')) {
+      return;
+    }
+    try {
+      await ticketsApi.deleteAttachment(ticket.id, attachmentId);
+      await refreshTicket();
+      onUpdate();
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      alert('Errore durante l\'eliminazione del file');
+    }
+  };
+
+  // Delete ticket (admin only)
+  const handleDeleteTicket = async () => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo ticket? Questa azione è irreversibile e eliminerà anche tutti i commenti e file associati.')) {
+      return;
+    }
+    try {
+      await ticketsApi.delete(ticket.id);
+      alert('Ticket eliminato con successo');
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      alert('Errore durante l\'eliminazione del ticket');
     }
   };
 
@@ -415,9 +444,26 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               {ticket.priority}
             </span>
           </div>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {user.role === 'ADMIN' && (
+              <button
+                className="btn btn-secondary"
+                onClick={handleDeleteTicket}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  fontSize: '12px',
+                  padding: '5px 10px'
+                }}
+                title="Elimina ticket (solo ADMIN)"
+              >
+                🗑️ Elimina
+              </button>
+            )}
+            <button className="close-btn" onClick={onClose}>
+              ×
+            </button>
+          </div>
         </div>
 
         <div className="ticket-modal-content">
@@ -515,84 +561,140 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             {showAssignments && (
               <div style={{ marginTop: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
                 <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#fffbcc', borderRadius: '5px', fontSize: '13px' }}>
-                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket O a un utente O a un reparto, non entrambi.
-                  Selezionando un utente verrà deselezionato il reparto e viceversa.
+                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket a più utenti O a più reparti, non entrambi.
+                  Le assegnazioni verranno salvate quando clicchi "Invia" in fondo alla pagina.
                 </div>
 
-                {/* User assignment */}
+                {/* User assignment with search */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Utente:
+                    Assegna a Utenti:
                   </label>
-                  <select
-                    value={selectedUsers[0] || ''}
-                    onChange={(e) => handleUserSelection(e.target.value)}
+                  <input
+                    type="text"
+                    placeholder="🔍 Cerca utente..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
                     disabled={selectedDepartments.length > 0}
                     style={{
                       width: '100%',
                       padding: '8px',
-                      opacity: selectedDepartments.length > 0 ? 0.5 : 1,
-                      cursor: selectedDepartments.length > 0 ? 'not-allowed' : 'pointer'
+                      marginBottom: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      opacity: selectedDepartments.length > 0 ? 0.5 : 1
                     }}
-                  >
-                    <option value="">Nessun utente</option>
-                    {allUsers.map((u: any) => (
-                      <option key={u.id} value={u.id}>
-                        {u.firstName} {u.lastName} {u.department && `(${u.department})`}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <div style={{
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white'
+                  }}>
+                    {allUsers
+                      .filter((u: any) => {
+                        const searchLower = userSearchTerm.toLowerCase();
+                        const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+                        const dept = (u.department || '').toLowerCase();
+                        return fullName.includes(searchLower) || dept.includes(searchLower);
+                      })
+                      .map((u: any) => (
+                        <div
+                          key={u.id}
+                          onClick={() => !selectedDepartments.length && handleUserSelection(u.id)}
+                          style={{
+                            padding: '10px',
+                            cursor: selectedDepartments.length > 0 ? 'not-allowed' : 'pointer',
+                            backgroundColor: selectedUsers.includes(u.id) ? '#e0f2fe' : 'white',
+                            borderBottom: '1px solid #f0f0f0',
+                            opacity: selectedDepartments.length > 0 ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(u.id)}
+                            onChange={() => {}}
+                            disabled={selectedDepartments.length > 0}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <span>
+                            {u.firstName} {u.lastName} {u.department && `(${u.department})`}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
                     {selectedDepartments.length > 0
-                      ? '⚠️ Deseleziona i reparti per assegnare a un utente'
-                      : 'Seleziona un utente a cui assegnare il ticket'}
+                      ? '⚠️ Deseleziona i reparti per assegnare a utenti'
+                      : `${selectedUsers.length} utente/i selezionato/i`}
                   </small>
                 </div>
 
-                {/* Department assignment */}
+                {/* Department assignment with search */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Reparto:
+                    Assegna a Reparti:
                   </label>
-                  <select
-                    value={selectedDepartments[0] || ''}
-                    onChange={(e) => handleDepartmentSelection(e.target.value)}
+                  <input
+                    type="text"
+                    placeholder="🔍 Cerca reparto..."
+                    value={deptSearchTerm}
+                    onChange={(e) => setDeptSearchTerm(e.target.value)}
                     disabled={selectedUsers.length > 0}
                     style={{
                       width: '100%',
                       padding: '8px',
-                      opacity: selectedUsers.length > 0 ? 0.5 : 1,
-                      cursor: selectedUsers.length > 0 ? 'not-allowed' : 'pointer'
+                      marginBottom: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      opacity: selectedUsers.length > 0 ? 0.5 : 1
                     }}
-                  >
-                    <option value="">Nessun reparto</option>
-                    {allDepartments.map((dept: string) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <div style={{
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white'
+                  }}>
+                    {allDepartments
+                      .filter((dept: string) => dept.toLowerCase().includes(deptSearchTerm.toLowerCase()))
+                      .map((dept: string) => (
+                        <div
+                          key={dept}
+                          onClick={() => !selectedUsers.length && handleDepartmentSelection(dept)}
+                          style={{
+                            padding: '10px',
+                            cursor: selectedUsers.length > 0 ? 'not-allowed' : 'pointer',
+                            backgroundColor: selectedDepartments.includes(dept) ? '#fef3c7' : 'white',
+                            borderBottom: '1px solid #f0f0f0',
+                            opacity: selectedUsers.length > 0 ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedDepartments.includes(dept)}
+                            onChange={() => {}}
+                            disabled={selectedUsers.length > 0}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <span>{dept}</span>
+                        </div>
+                      ))}
+                  </div>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
                     {selectedUsers.length > 0
-                      ? '⚠️ Deseleziona l\'utente per assegnare a un reparto'
-                      : 'Tutti gli utenti del reparto selezionato potranno vedere il ticket'}
+                      ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
+                      : `${selectedDepartments.length} reparto/i selezionato/i`}
                   </small>
                 </div>
-
-                {/* Single unified button */}
-                <button
-                  className="btn btn-primary"
-                  onClick={handleAssign}
-                  disabled={selectedUsers.length === 0 && selectedDepartments.length === 0}
-                  style={{
-                    width: '100%',
-                    fontSize: '14px',
-                    padding: '10px',
-                    opacity: (selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
-                  }}
-                >
-                  Invia Assegnazione
-                </button>
               </div>
             )}
           </div>
@@ -607,7 +709,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     {item.type === 'comment' ? (
                       <>
                         <div className="timeline-icon">💬</div>
-                        <div className="timeline-content">
+                        <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
                             <strong>
                               {item.user.firstName} {item.user.lastName}
@@ -618,24 +720,61 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                             <span className="timeline-date">
                               {item.date.toLocaleString('it-IT')}
                             </span>
+                            {user.role === 'ADMIN' && (
+                              <button
+                                onClick={() => handleDeleteComment(item.id)}
+                                style={{
+                                  marginLeft: '10px',
+                                  padding: '2px 8px',
+                                  backgroundColor: '#ef4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  fontSize: '11px'
+                                }}
+                                title="Elimina commento (solo ADMIN)"
+                              >
+                                🗑️
+                              </button>
+                            )}
                           </div>
                           <p className="timeline-text">{item.content}</p>
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">
                               {item.attachments.map((att: any) => (
-                                <div key={att.id} className="timeline-file">
-                                  <a
-                                    href={`http://localhost:3001/uploads/${att.filePath}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    download
-                                  >
-                                    📎 {att.fileName}
-                                  </a>
-                                  <span className="file-size">
-                                    ({(att.fileSize / 1024).toFixed(1)} KB)
-                                  </span>
+                                <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div>
+                                    <a
+                                      href={`http://localhost:3001/uploads/${att.filePath}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download
+                                    >
+                                      📎 {att.fileName}
+                                    </a>
+                                    <span className="file-size">
+                                      ({(att.fileSize / 1024).toFixed(1)} KB)
+                                    </span>
+                                  </div>
+                                  {user.role === 'ADMIN' && (
+                                    <button
+                                      onClick={() => handleDeleteAttachment(att.id)}
+                                      style={{
+                                        padding: '2px 8px',
+                                        backgroundColor: '#ef4444',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '3px',
+                                        cursor: 'pointer',
+                                        fontSize: '11px'
+                                      }}
+                                      title="Elimina file (solo ADMIN)"
+                                    >
+                                      🗑️
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -645,7 +784,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     ) : (
                       <>
                         <div className="timeline-icon">📎</div>
-                        <div className="timeline-content">
+                        <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
                             <strong>
                               {item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Utente'}
@@ -656,6 +795,24 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                             <span className="timeline-date">
                               {item.date.toLocaleString('it-IT')}
                             </span>
+                            {user.role === 'ADMIN' && (
+                              <button
+                                onClick={() => handleDeleteAttachment(item.id)}
+                                style={{
+                                  marginLeft: '10px',
+                                  padding: '2px 8px',
+                                  backgroundColor: '#ef4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  fontSize: '11px'
+                                }}
+                                title="Elimina file (solo ADMIN)"
+                              >
+                                🗑️
+                              </button>
+                            )}
                           </div>
                           <div className="timeline-file">
                             <a
@@ -716,9 +873,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               <button
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={!comment.trim() && !file}
+                disabled={!comment.trim() && !file && selectedUsers.length === 0 && selectedDepartments.length === 0}
+                style={{
+                  opacity: (!comment.trim() && !file && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
+                }}
               >
-                Invia
+                Invia {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(con assegnazione)'}
               </button>
             </div>
           </div>

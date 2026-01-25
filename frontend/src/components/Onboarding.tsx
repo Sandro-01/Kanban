@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { onboarding as onboardingApi } from '../services/api';
+import { onboarding as onboardingApi, users as usersApi } from '../services/api';
 import './ProcessList.css';
 
 interface OnboardingProps {
@@ -10,9 +10,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
   const [onboardings, setOnboardings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOnboarding, setSelectedOnboarding] = useState<any>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   useEffect(() => {
     loadOnboardings();
+    loadUsers();
   }, []);
 
   const loadOnboardings = async () => {
@@ -23,6 +26,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       console.error('Errore caricamento onboarding:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await usersApi.getAll();
+      setAllUsers(response.data);
+    } catch (error) {
+      console.error('Errore caricamento utenti:', error);
     }
   };
 
@@ -54,6 +66,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       <div className="page-header">
         <h1>Onboarding</h1>
         <p>Gestisci i processi di onboarding per nuovi dipendenti</p>
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowNewForm(true)}
+          style={{ marginLeft: 'auto' }}
+        >
+          + Nuovo Onboarding
+        </button>
       </div>
 
       <div className="alert alert-info">
@@ -204,6 +223,119 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
           </div>
         </div>
       )}
+
+      {showNewForm && (
+        <NewOnboardingModal
+          allUsers={allUsers}
+          currentUser={user}
+          onClose={() => setShowNewForm(false)}
+          onCreated={loadOnboardings}
+        />
+      )}
+    </div>
+  );
+};
+
+// Modal per creare nuovo onboarding
+const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
+  const [formData, setFormData] = useState({
+    userId: '',
+    managerId: currentUser.id,
+    startDate: new Date().toISOString().split('T')[0],
+    expectedEndDate: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await onboardingApi.create(formData);
+      alert('Onboarding creato con successo!');
+      onCreated();
+      onClose();
+    } catch (error: any) {
+      console.error('Errore creazione onboarding:', error);
+      alert(error.response?.data?.error || 'Errore durante la creazione dell\'onboarding');
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Nuovo Onboarding</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">Nuovo Dipendente *</label>
+            <select
+              className="input"
+              value={formData.userId}
+              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+              required
+            >
+              <option value="">Seleziona un dipendente...</option>
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} ({u.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Manager Responsabile *</label>
+            <select
+              className="input"
+              value={formData.managerId}
+              onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+              required
+            >
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} {u.department && `(${u.department})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Data Inizio *</label>
+            <input
+              type="date"
+              className="input"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Data Prevista Completamento *</label>
+            <input
+              type="date"
+              className="input"
+              value={formData.expectedEndDate}
+              onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="alert alert-info" style={{ marginBottom: '15px' }}>
+            ℹ️ La checklist di onboarding standard verrà creata automaticamente
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Annulla
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Crea Onboarding
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
