@@ -37,6 +37,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       setSlaMetrics(slaRes.data);
     } catch (error) {
       console.error('Errore caricamento dati:', error);
+      // Set default values in case of error
+      setStats({
+        total: 0,
+        open: 0,
+        inProgress: 0,
+        resolved: 0,
+        closed: 0,
+        myTickets: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -44,6 +53,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   if (loading) {
     return <div className="loading">Caricamento...</div>;
+  }
+
+  if (!stats) {
+    return <div className="error">Errore nel caricamento dei dati. Ricarica la pagina.</div>;
   }
 
   return (
