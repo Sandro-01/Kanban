@@ -125,8 +125,8 @@ router.put('/:id/tasks/:taskId', authenticate, authorize('ADMIN', 'MANAGER'), au
     });
 
     if (offboarding) {
-      const mandatoryTasks = offboarding.tasks.filter(t => t.mandatory);
-      const completedMandatory = mandatoryTasks.filter(t => t.completed);
+      const mandatoryTasks = offboarding.tasks.filter((t: any) => t.mandatory);
+      const completedMandatory = mandatoryTasks.filter((t: any) => t.completed);
 
       if (mandatoryTasks.length === completedMandatory.length) {
         await prisma.offboarding.update({

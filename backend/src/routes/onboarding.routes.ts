@@ -124,8 +124,8 @@ router.put('/:id/tasks/:taskId', authenticate, auditLog('COMPLETE_ONBOARDING_TAS
     });
 
     if (onboarding) {
-      const mandatoryTasks = onboarding.tasks.filter(t => t.mandatory);
-      const completedMandatory = mandatoryTasks.filter(t => t.completed);
+      const mandatoryTasks = onboarding.tasks.filter((t: any) => t.mandatory);
+      const completedMandatory = mandatoryTasks.filter((t: any) => t.completed);
 
       if (mandatoryTasks.length === completedMandatory.length) {
         await prisma.onboarding.update({
