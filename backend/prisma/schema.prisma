@@ -242,8 +242,8 @@ model Attachment {
   id          String   @id @default(uuid())
   ticketId    String
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  uploadedById String
-  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+  uploadedById String?
+  uploadedBy  User?    @relation(fields: [uploadedById], references: [id])
   fileName    String
   filePath    String
   fileSize    Int
