@@ -64,6 +64,14 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           include: {
             user: {
               select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            },
+            attachments: {
+              where: { isDeleted: false },
+              include: {
+                uploadedBy: {
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                }
+              }
             }
           },
           orderBy: { createdAt: 'asc' }
@@ -215,8 +223,12 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('UPLOAD_FILE', 'Attachment'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { commentId } = req.body; // Optional commentId to link file to comment
 
     console.log('📎 Uploading file to ticket:', id);
+    if (commentId) {
+      console.log('📎 Linking to comment:', commentId);
+    }
 
     if (!req.file) {
       console.error('❌ No file in request');
@@ -232,6 +244,7 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
     const attachment = await prisma.attachment.create({
       data: {
         ticketId: id,
+        commentId: commentId || null, // Link to comment if provided
         fileName: req.file.originalname,
         filePath: req.file.filename,
         fileSize: req.file.size,

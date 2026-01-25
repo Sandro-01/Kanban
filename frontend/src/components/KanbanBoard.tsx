@@ -216,14 +216,19 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
     if (!comment.trim() && !file) return;
 
     try {
-      // Upload file if present
-      if (file) {
-        await ticketsApi.uploadFile(ticket.id, file);
+      let createdCommentId = null;
+
+      // If both comment and file are present, create comment first
+      if (comment.trim()) {
+        const commentResponse = await ticketsApi.addComment(ticket.id, comment);
+        createdCommentId = commentResponse.data.id;
+        console.log('✅ Comment created:', createdCommentId);
       }
 
-      // Add comment if present
-      if (comment.trim()) {
-        await ticketsApi.addComment(ticket.id, comment);
+      // Upload file, linking it to the comment if both were provided
+      if (file) {
+        await ticketsApi.uploadFile(ticket.id, file, createdCommentId || undefined);
+        console.log('✅ File uploaded' + (createdCommentId ? ' and linked to comment' : ''));
       }
 
       // Reset form
@@ -244,7 +249,7 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
   const getTimeline = () => {
     const items: any[] = [];
 
-    // Add comments
+    // Add comments with their attachments
     if (ticket.comments) {
       ticket.comments.forEach((c: any) => {
         items.push({
@@ -253,22 +258,26 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
           date: new Date(c.createdAt),
           user: c.user,
           content: c.content,
+          attachments: c.attachments || [], // Include attachments linked to this comment
         });
       });
     }
 
-    // Add files
+    // Add only standalone files (files not linked to any comment)
     if (ticket.attachments) {
       ticket.attachments.forEach((att: any) => {
-        items.push({
-          type: 'file',
-          id: att.id,
-          date: new Date(att.createdAt || Date.now()),
-          user: att.uploadedBy,
-          fileName: att.fileName,
-          filePath: att.filePath,
-          fileSize: att.fileSize,
-        });
+        // Only add if not linked to a comment
+        if (!att.commentId) {
+          items.push({
+            type: 'file',
+            id: att.id,
+            date: new Date(att.createdAt || Date.now()),
+            user: att.uploadedBy,
+            fileName: att.fileName,
+            filePath: att.filePath,
+            fileSize: att.fileSize,
+          });
+        }
       });
     }
 
@@ -361,6 +370,26 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
                             </span>
                           </div>
                           <p className="timeline-text">{item.content}</p>
+                          {/* Show attachments linked to this comment */}
+                          {item.attachments && item.attachments.length > 0 && (
+                            <div className="comment-attachments">
+                              {item.attachments.map((att: any) => (
+                                <div key={att.id} className="timeline-file">
+                                  <a
+                                    href={`http://localhost:3001/uploads/${att.filePath}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download
+                                  >
+                                    📎 {att.fileName}
+                                  </a>
+                                  <span className="file-size">
+                                    ({(att.fileSize / 1024).toFixed(1)} KB)
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </>
                     ) : (

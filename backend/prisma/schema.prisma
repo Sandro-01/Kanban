@@ -232,6 +232,9 @@ model Comment {
   // IMMUTABILE: Non può essere eliminato o modificato
   isDeleted Boolean  @default(false) // Soft delete solo per UI, ma dati rimangono
 
+  // Relation to attachments (files can be attached to a comment)
+  attachments Attachment[]
+
   @@index([ticketId])
   @@index([userId])
 }
@@ -242,6 +245,8 @@ model Attachment {
   id          String   @id @default(uuid())
   ticketId    String
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  commentId   String?
+  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   uploadedById String?
   uploadedBy  User?    @relation(fields: [uploadedById], references: [id])
   fileName    String
@@ -255,6 +260,7 @@ model Attachment {
   isDeleted   Boolean  @default(false) // Soft delete solo per UI, ma file rimane
 
   @@index([ticketId])
+  @@index([commentId])
   @@index([uploadedById])
 }
 

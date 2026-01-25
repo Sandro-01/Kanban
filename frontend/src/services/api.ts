@@ -30,9 +30,12 @@ export const tickets = {
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
   addComment: (id: string, content: string) =>
     api.post(`/tickets/${id}/comments`, { content }),
-  uploadFile: (id: string, file: File) => {
+  uploadFile: (id: string, file: File, commentId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (commentId) {
+      formData.append('commentId', commentId);
+    }
     return api.post(`/tickets/${id}/attachments`, formData);
   },
   getHistory: (id: string) => api.get(`/tickets/${id}/history`),
