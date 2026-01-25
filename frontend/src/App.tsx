@@ -13,6 +13,34 @@ import AuditLogs from './components/AuditLogs';
 import UserManagement from './components/UserManagement';
 import Header from './components/Header';
 
+// Protected route component
+const ProtectedRoute: React.FC<{ user: any; allowedRoles?: string[]; allowedDepartments?: string[]; children: React.ReactElement }> = ({
+  user,
+  allowedRoles = [],
+  allowedDepartments = [],
+  children
+}) => {
+  // Check if user has required role
+  const hasRole = allowedRoles.length === 0 || allowedRoles.includes(user.role);
+  // Check if user has required department
+  const hasDepartment = allowedDepartments.length === 0 || (user.department && allowedDepartments.includes(user.department));
+
+  if (hasRole || hasDepartment) {
+    return children;
+  }
+
+  // If not authorized, redirect to dashboard with error message
+  return (
+    <div className="page">
+      <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '10px' }}>🚫 Accesso Negato</h2>
+        <p style={{ marginBottom: '20px' }}>Non hai i permessi necessari per accedere a questa pagina.</p>
+        <a href="/" className="btn btn-primary">Torna alla Dashboard</a>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -52,11 +80,56 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/board" element={<KanbanBoard user={user} />} />
-          <Route path="/onboarding" element={<Onboarding user={user} />} />
-          <Route path="/offboarding" element={<Offboarding user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
-          <Route path="/audit" element={<AuditLogs user={user} />} />
-          <Route path="/users" element={<UserManagement user={user} />} />
+
+          {/* Onboarding - only ADMIN and HR */}
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute
+                user={user}
+                allowedRoles={['ADMIN']}
+                allowedDepartments={['Risorse Umane']}
+              >
+                <Onboarding user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Offboarding - only ADMIN, HR, and IT */}
+          <Route
+            path="/offboarding"
+            element={
+              <ProtectedRoute
+                user={user}
+                allowedRoles={['ADMIN']}
+                allowedDepartments={['Risorse Umane', 'IT/Sistemi']}
+              >
+                <Offboarding user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Audit - only ADMIN */}
+          <Route
+            path="/audit"
+            element={
+              <ProtectedRoute user={user} allowedRoles={['ADMIN']}>
+                <AuditLogs user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* User Management - only ADMIN */}
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute user={user} allowedRoles={['ADMIN']}>
+                <UserManagement user={user} />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
