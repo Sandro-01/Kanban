@@ -5,6 +5,7 @@ import path from 'path';
 
 // Routes
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import ticketRoutes from './routes/ticket.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import offboardingRoutes from './routes/offboarding.routes';
@@ -30,6 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/offboarding', offboardingRoutes);

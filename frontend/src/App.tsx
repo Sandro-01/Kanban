@@ -10,6 +10,7 @@ import Onboarding from './components/Onboarding';
 import Offboarding from './components/Offboarding';
 import SLAMetrics from './components/SLAMetrics';
 import AuditLogs from './components/AuditLogs';
+import UserManagement from './components/UserManagement';
 import Header from './components/Header';
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/offboarding" element={<Offboarding user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
           <Route path="/audit" element={<AuditLogs user={user} />} />
+          <Route path="/users" element={<UserManagement user={user} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>

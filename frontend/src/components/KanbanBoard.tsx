@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi } from '../services/api';
 import './KanbanBoard.css';
 
@@ -42,6 +43,27 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
     }
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+
+    // Dropped outside a valid droppable
+    if (!destination) {
+      return;
+    }
+
+    // Dropped in the same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    // Move ticket to new column
+    const newStatus = destination.droppableId;
+    await handleMoveTicket(draggableId, newStatus);
+  };
+
   const getPriorityColor = (priority: string) => {
     const colors: any = {
       CRITICAL: '#ef4444',
@@ -76,71 +98,90 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
         </button>
       </div>
 
-      <div className="kanban-board">
-        {columns.map((column) => (
-          <div key={column.id} className="kanban-column">
-            <div className="column-header">
-              <h3>{column.name}</h3>
-              <span className="ticket-count">
-                {getTicketsForColumn(column.status).length}
-              </span>
-            </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="kanban-board">
+          {columns.map((column) => (
+            <div key={column.id} className="kanban-column">
+              <div className="column-header">
+                <h3>{column.name}</h3>
+                <span className="ticket-count">
+                  {getTicketsForColumn(column.status).length}
+                </span>
+              </div>
 
-            <div className="column-content">
-              {getTicketsForColumn(column.status).map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className={`ticket-card ${isOverdue(ticket) ? 'overdue' : ''}`}
-                  onClick={() => setSelectedTicket(ticket)}
-                >
-                  <div className="ticket-header">
-                    <span
-                      className="priority-indicator"
-                      style={{ background: getPriorityColor(ticket.priority) }}
-                    />
-                    <span className={`badge badge-${ticket.priority.toLowerCase()}`}>
-                      {ticket.priority}
-                    </span>
-                  </div>
+              <Droppable droppableId={column.status}>
+                {(provided, snapshot) => (
+                  <div
+                    className={`column-content ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    {getTicketsForColumn(column.status).map((ticket, index) => (
+                      <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={`ticket-card ${isOverdue(ticket) ? 'overdue' : ''} ${
+                              snapshot.isDragging ? 'dragging' : ''
+                            }`}
+                            onClick={() => setSelectedTicket(ticket)}
+                          >
+                            <div className="ticket-header">
+                              <span
+                                className="priority-indicator"
+                                style={{ background: getPriorityColor(ticket.priority) }}
+                              />
+                              <span className={`badge badge-${ticket.priority.toLowerCase()}`}>
+                                {ticket.priority}
+                              </span>
+                            </div>
 
-                  <h4 className="ticket-title">{ticket.title}</h4>
+                            <h4 className="ticket-title">{ticket.title}</h4>
 
-                  <p className="ticket-description">
-                    {ticket.description.substring(0, 100)}
-                    {ticket.description.length > 100 ? '...' : ''}
-                  </p>
+                            <p className="ticket-description">
+                              {ticket.description.substring(0, 100)}
+                              {ticket.description.length > 100 ? '...' : ''}
+                            </p>
 
-                  <div className="ticket-footer">
-                    <div className="ticket-meta">
-                      {ticket.assignedTo && (
-                        <span className="assignee">
-                          👤 {ticket.assignedTo.firstName}
-                        </span>
-                      )}
-                      <span className="due-date">
-                        ⏱️ {new Date(ticket.dueDate).toLocaleDateString('it-IT')}
-                      </span>
-                    </div>
-                    {ticket.slaViolated && (
-                      <span className="sla-badge sla-violated">SLA Violato</span>
+                            <div className="ticket-footer">
+                              <div className="ticket-meta">
+                                {ticket.assignedTo && (
+                                  <span className="assignee">
+                                    👤 {ticket.assignedTo.firstName}
+                                  </span>
+                                )}
+                                <span className="due-date">
+                                  ⏱️ {new Date(ticket.dueDate).toLocaleDateString('it-IT')}
+                                </span>
+                              </div>
+                              {ticket.slaViolated && (
+                                <span className="sla-badge sla-violated">SLA Violato</span>
+                              )}
+                            </div>
+
+                            {ticket.attachments?.length > 0 && (
+                              <div className="attachments-indicator">
+                                📎 {ticket.attachments.length} file
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+
+                    {getTicketsForColumn(column.status).length === 0 && (
+                      <div className="empty-column">Nessun ticket</div>
                     )}
                   </div>
-
-                  {ticket.attachments?.length > 0 && (
-                    <div className="attachments-indicator">
-                      📎 {ticket.attachments.length} file
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {getTicketsForColumn(column.status).length === 0 && (
-                <div className="empty-column">Nessun ticket</div>
-              )}
+                )}
+              </Droppable>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </DragDropContext>
 
       {selectedTicket && (
         <TicketModal
@@ -168,29 +209,72 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
   const [comment, setComment] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
-  const handleAddComment = async () => {
-    if (!comment.trim()) return;
+  // Unified handler for both comment and file
+  const handleSubmit = async () => {
+    if (!comment.trim() && !file) return;
 
     try {
-      await ticketsApi.addComment(ticket.id, comment);
+      // Upload file if present
+      if (file) {
+        await ticketsApi.uploadFile(ticket.id, file);
+      }
+
+      // Add comment if present
+      if (comment.trim()) {
+        await ticketsApi.addComment(ticket.id, comment);
+      }
+
+      // Reset form
       setComment('');
-      onUpdate();
-    } catch (error) {
-      console.error('Errore aggiunta commento:', error);
-    }
-  };
-
-  const handleUploadFile = async () => {
-    if (!file) return;
-
-    try {
-      await ticketsApi.uploadFile(ticket.id, file);
       setFile(null);
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
       onUpdate();
     } catch (error) {
-      console.error('Errore upload file:', error);
+      console.error('Errore invio:', error);
+      alert('Errore durante l\'invio. Riprova.');
     }
   };
+
+  // Create unified timeline with both comments and files
+  const getTimeline = () => {
+    const items: any[] = [];
+
+    // Add comments
+    if (ticket.comments) {
+      ticket.comments.forEach((c: any) => {
+        items.push({
+          type: 'comment',
+          id: c.id,
+          date: new Date(c.createdAt),
+          user: c.user,
+          content: c.content,
+        });
+      });
+    }
+
+    // Add files
+    if (ticket.attachments) {
+      ticket.attachments.forEach((att: any) => {
+        items.push({
+          type: 'file',
+          id: att.id,
+          date: new Date(att.createdAt || Date.now()),
+          user: att.uploadedBy,
+          fileName: att.fileName,
+          filePath: att.filePath,
+          fileSize: att.fileSize,
+        });
+      });
+    }
+
+    // Sort by date descending (newest first)
+    return items.sort((a, b) => b.date.getTime() - a.date.getTime());
+  };
+
+  const timeline = getTimeline();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -252,78 +336,108 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
             </div>
           </div>
 
-          {/* File allegati */}
-          {ticket.attachments && ticket.attachments.length > 0 && (
-            <div className="attachments-section">
-              <strong>File Allegati (IMMUTABILI):</strong>
-              <div className="attachments-list">
-                {ticket.attachments.map((att: any) => (
-                  <div key={att.id} className="attachment-item">
-                    📎 {att.fileName}
-                    <span className="file-size">
-                      ({(att.fileSize / 1024).toFixed(1)} KB)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Upload file */}
-          <div className="upload-section">
-            <strong>Carica File (non eliminabile dopo invio):</strong>
-            <div className="upload-controls">
-              <input
-                type="file"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-              <button
-                className="btn btn-primary"
-                onClick={handleUploadFile}
-                disabled={!file}
-              >
-                Carica
-              </button>
-            </div>
-          </div>
-
-          {/* Commenti */}
-          <div className="comments-section">
-            <strong>Commenti (IMMUTABILI):</strong>
-            <div className="comments-list">
-              {ticket.comments && ticket.comments.length > 0 ? (
-                ticket.comments.map((c: any) => (
-                  <div key={c.id} className="comment">
-                    <div className="comment-header">
-                      <strong>
-                        {c.user.firstName} {c.user.lastName}
-                      </strong>
-                      <span className="comment-date">
-                        {new Date(c.createdAt).toLocaleString('it-IT')}
-                      </span>
-                    </div>
-                    <p>{c.content}</p>
+          {/* Timeline unificata - Commenti e File */}
+          <div className="timeline-section">
+            <strong>Attività (IMMUTABILI):</strong>
+            <div className="timeline-list">
+              {timeline.length > 0 ? (
+                timeline.map((item) => (
+                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}`}>
+                    {item.type === 'comment' ? (
+                      <>
+                        <div className="timeline-icon">💬</div>
+                        <div className="timeline-content">
+                          <div className="timeline-header">
+                            <strong>
+                              {item.user.firstName} {item.user.lastName}
+                            </strong>
+                            {item.user.department && (
+                              <span className="user-department">({item.user.department})</span>
+                            )}
+                            <span className="timeline-date">
+                              {item.date.toLocaleString('it-IT')}
+                            </span>
+                          </div>
+                          <p className="timeline-text">{item.content}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="timeline-icon">📎</div>
+                        <div className="timeline-content">
+                          <div className="timeline-header">
+                            <strong>
+                              {item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Utente'}
+                            </strong>
+                            {item.user?.department && (
+                              <span className="user-department">({item.user.department})</span>
+                            )}
+                            <span className="timeline-date">
+                              {item.date.toLocaleString('it-IT')}
+                            </span>
+                          </div>
+                          <div className="timeline-file">
+                            <a
+                              href={`http://localhost:3001/uploads/${item.filePath}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                            >
+                              📎 {item.fileName}
+                            </a>
+                            <span className="file-size">
+                              ({(item.fileSize / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))
               ) : (
-                <p className="no-comments">Nessun commento</p>
+                <p className="no-activity">Nessuna attività</p>
               )}
             </div>
 
-            <div className="add-comment">
+            {/* Form unificato per commento e file */}
+            <div className="unified-form">
+              <strong>Aggiungi Commento e/o File (non eliminabile dopo invio):</strong>
               <textarea
                 className="input"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Aggiungi un commento (non eliminabile dopo invio)..."
+                placeholder="Scrivi un commento (opzionale)..."
                 rows={3}
               />
+              <div className="file-input-wrapper">
+                <input
+                  type="file"
+                  id="file-upload"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+                <label htmlFor="file-upload" className="file-label">
+                  {file ? `📎 ${file.name}` : '📎 Allega file (opzionale)'}
+                </label>
+                {file && (
+                  <button
+                    className="clear-file-btn"
+                    onClick={() => {
+                      setFile(null);
+                      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <button
                 className="btn btn-primary"
-                onClick={handleAddComment}
-                disabled={!comment.trim()}
+                onClick={handleSubmit}
+                disabled={!comment.trim() && !file}
               >
-                Aggiungi Commento
+                Invia
               </button>
             </div>
           </div>

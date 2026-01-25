@@ -139,8 +139,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <p>Gestisci i ticket</p>
             </div>
           </a>
-          {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
+          {user.role === 'ADMIN' && (
             <>
+              <a href="/users" className="quick-link">
+                <span className="icon">👥</span>
+                <div>
+                  <h3>Gestione Utenti</h3>
+                  <p>Crea, modifica, elimina utenti</p>
+                </div>
+              </a>
               <a href="/onboarding" className="quick-link">
                 <span className="icon">🚀</span>
                 <div>
