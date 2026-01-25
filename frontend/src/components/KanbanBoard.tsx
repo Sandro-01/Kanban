@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { tickets as ticketsApi } from '../services/api';
+import { tickets as ticketsApi, users as usersApi } from '../services/api';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -212,6 +212,33 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [file, setFile] = useState<File | null>(null);
   const [ticket, setTicket] = useState(initialTicket);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAssignments, setShowAssignments] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+
+  // Load all users for assignment
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await usersApi.getAll();
+        setAllUsers(response.data);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  // Initialize selected assignments from ticket
+  useEffect(() => {
+    if (ticket.assignments) {
+      setSelectedUsers(ticket.assignments.map((a: any) => a.userId));
+    }
+    if (ticket.assignedDepartments) {
+      setSelectedDepartments(ticket.assignedDepartments);
+    }
+  }, [ticket]);
 
   // Refresh ticket data
   const refreshTicket = async () => {
@@ -226,6 +253,34 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       setRefreshing(false);
     }
   };
+
+  // Handle assignment changes
+  const handleAssignUsers = async () => {
+    try {
+      await ticketsApi.assignUsers(ticket.id, selectedUsers);
+      await refreshTicket();
+      onUpdate();
+      alert('Utenti assegnati con successo!');
+    } catch (error) {
+      console.error('Error assigning users:', error);
+      alert('Errore durante l\'assegnazione utenti');
+    }
+  };
+
+  const handleAssignDepartments = async () => {
+    try {
+      await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
+      await refreshTicket();
+      onUpdate();
+      alert('Reparti assegnati con successo!');
+    } catch (error) {
+      console.error('Error assigning departments:', error);
+      alert('Errore durante l\'assegnazione reparti');
+    }
+  };
+
+  // Get unique departments from users
+  const allDepartments = Array.from(new Set(allUsers.map((u: any) => u.department).filter(Boolean)));
 
   // Unified handler for both comment and file
   const handleSubmit = async () => {
@@ -365,6 +420,116 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Assegnazioni */}
+          <div className="assignments-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong>Assegnazioni:</strong>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowAssignments(!showAssignments)}
+                style={{ fontSize: '12px', padding: '5px 10px' }}
+              >
+                {showAssignments ? 'Nascondi' : 'Gestisci'}
+              </button>
+            </div>
+
+            {/* Current assignments display */}
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              {ticket.assignments && ticket.assignments.length > 0 && (
+                <div>
+                  <strong>👤 Utenti assegnati:</strong>
+                  <div style={{ marginLeft: '10px' }}>
+                    {ticket.assignments.map((assignment: any) => (
+                      <div key={assignment.id}>
+                        • {assignment.user.firstName} {assignment.user.lastName}
+                        {assignment.user.department && ` (${assignment.user.department})`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {ticket.assignedDepartments && ticket.assignedDepartments.length > 0 && (
+                <div style={{ marginTop: '5px' }}>
+                  <strong>🏢 Reparti assegnati:</strong>
+                  <div style={{ marginLeft: '10px' }}>
+                    {ticket.assignedDepartments.map((dept: string) => (
+                      <div key={dept}>• {dept}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(!ticket.assignments || ticket.assignments.length === 0) &&
+               (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) && (
+                <div style={{ color: '#999', fontStyle: 'italic' }}>
+                  Nessuna assegnazione - Visibile a tutti (status OPEN)
+                </div>
+              )}
+            </div>
+
+            {/* Assignment management UI */}
+            {showAssignments && (
+              <div style={{ marginTop: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
+                {/* User assignment */}
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Assegna Utenti:
+                  </label>
+                  <select
+                    multiple
+                    value={selectedUsers}
+                    onChange={(e) => setSelectedUsers(Array.from(e.target.selectedOptions, option => option.value))}
+                    style={{ width: '100%', minHeight: '100px', padding: '5px' }}
+                  >
+                    {allUsers.map((u: any) => (
+                      <option key={u.id} value={u.id}>
+                        {u.firstName} {u.lastName} {u.department && `(${u.department})`}
+                      </option>
+                    ))}
+                  </select>
+                  <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
+                    Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più utenti
+                  </small>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleAssignUsers}
+                    style={{ marginTop: '10px', fontSize: '12px', padding: '5px 15px' }}
+                  >
+                    Assegna Utenti Selezionati
+                  </button>
+                </div>
+
+                {/* Department assignment */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Assegna Reparti:
+                  </label>
+                  <select
+                    multiple
+                    value={selectedDepartments}
+                    onChange={(e) => setSelectedDepartments(Array.from(e.target.selectedOptions, option => option.value))}
+                    style={{ width: '100%', minHeight: '80px', padding: '5px' }}
+                  >
+                    {allDepartments.map((dept: string) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                  <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
+                    Tutti gli utenti del reparto selezionato potranno vedere il ticket
+                  </small>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleAssignDepartments}
+                    style={{ marginTop: '10px', fontSize: '12px', padding: '5px 15px' }}
+                  >
+                    Assegna Reparti Selezionati
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Timeline unificata - Commenti e File */}
