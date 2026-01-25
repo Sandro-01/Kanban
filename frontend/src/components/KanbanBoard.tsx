@@ -7,14 +7,16 @@ interface KanbanBoardProps {
   user: any;
 }
 
+// Define columns outside component for react-beautiful-dnd stability
+const COLUMNS = [
+  { id: 'OPEN', name: 'To Do', status: 'OPEN' },
+  { id: 'IN_PROGRESS', name: 'In Progress', status: 'IN_PROGRESS' },
+  { id: 'WAITING', name: 'Waiting', status: 'WAITING' },
+  { id: 'RESOLVED', name: 'Resolved', status: 'RESOLVED' },
+];
+
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   const [tickets, setTickets] = useState<any[]>([]);
-  const [columns] = useState([
-    { id: 'OPEN', name: 'To Do', status: 'OPEN' },
-    { id: 'IN_PROGRESS', name: 'In Progress', status: 'IN_PROGRESS' },
-    { id: 'WAITING', name: 'Waiting', status: 'WAITING' },
-    { id: 'RESOLVED', name: 'Resolved', status: 'RESOLVED' },
-  ]);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="kanban-board">
-          {columns.map((column) => (
+          {COLUMNS.map((column) => (
             <div key={column.id} className="kanban-column">
               <div className="column-header">
                 <h3>{column.name}</h3>

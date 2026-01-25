@@ -45,20 +45,25 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       where,
       include: {
         createdBy: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         assignedTo: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         column: true,
         attachments: {
-          where: { isDeleted: false }
+          where: { isDeleted: false },
+          include: {
+            uploadedBy: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
         },
         comments: {
           where: { isDeleted: false },
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
             }
           },
           orderBy: { createdAt: 'asc' }
@@ -178,7 +183,7 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
       },
       include: {
         user: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         }
       }
     });
