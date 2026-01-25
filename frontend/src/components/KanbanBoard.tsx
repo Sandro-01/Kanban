@@ -302,19 +302,23 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
-  // Handle user selection - clear departments when users are selected
-  const handleUserSelection = (selectedOptions: string[]) => {
-    setSelectedUsers(selectedOptions);
-    if (selectedOptions.length > 0) {
+  // Handle user selection - clear departments when user is selected
+  const handleUserSelection = (userId: string) => {
+    if (userId) {
+      setSelectedUsers([userId]);
       setSelectedDepartments([]); // Clear departments
+    } else {
+      setSelectedUsers([]);
     }
   };
 
-  // Handle department selection - clear users when departments are selected
-  const handleDepartmentSelection = (selectedOptions: string[]) => {
-    setSelectedDepartments(selectedOptions);
-    if (selectedOptions.length > 0) {
+  // Handle department selection - clear users when department is selected
+  const handleDepartmentSelection = (department: string) => {
+    if (department) {
+      setSelectedDepartments([department]);
       setSelectedUsers([]); // Clear users
+    } else {
+      setSelectedDepartments([]);
     }
   };
 
@@ -511,28 +515,27 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             {showAssignments && (
               <div style={{ marginTop: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
                 <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#fffbcc', borderRadius: '5px', fontSize: '13px' }}>
-                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket O a utenti O a reparti, non entrambi.
-                  Selezionando utenti verranno deselezionati i reparti e viceversa.
+                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket O a un utente O a un reparto, non entrambi.
+                  Selezionando un utente verrà deselezionato il reparto e viceversa.
                 </div>
 
                 {/* User assignment */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Utenti:
+                    Assegna a Utente:
                   </label>
                   <select
-                    multiple
-                    value={selectedUsers}
-                    onChange={(e) => handleUserSelection(Array.from(e.target.selectedOptions, option => option.value))}
+                    value={selectedUsers[0] || ''}
+                    onChange={(e) => handleUserSelection(e.target.value)}
                     disabled={selectedDepartments.length > 0}
                     style={{
                       width: '100%',
-                      minHeight: '100px',
-                      padding: '5px',
+                      padding: '8px',
                       opacity: selectedDepartments.length > 0 ? 0.5 : 1,
                       cursor: selectedDepartments.length > 0 ? 'not-allowed' : 'pointer'
                     }}
                   >
+                    <option value="">Nessun utente</option>
                     {allUsers.map((u: any) => (
                       <option key={u.id} value={u.id}>
                         {u.firstName} {u.lastName} {u.department && `(${u.department})`}
@@ -541,29 +544,28 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   </select>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
                     {selectedDepartments.length > 0
-                      ? '⚠️ Deseleziona i reparti per assegnare a utenti'
-                      : 'Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più utenti'}
+                      ? '⚠️ Deseleziona i reparti per assegnare a un utente'
+                      : 'Seleziona un utente a cui assegnare il ticket'}
                   </small>
                 </div>
 
                 {/* Department assignment */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Reparti:
+                    Assegna a Reparto:
                   </label>
                   <select
-                    multiple
-                    value={selectedDepartments}
-                    onChange={(e) => handleDepartmentSelection(Array.from(e.target.selectedOptions, option => option.value))}
+                    value={selectedDepartments[0] || ''}
+                    onChange={(e) => handleDepartmentSelection(e.target.value)}
                     disabled={selectedUsers.length > 0}
                     style={{
                       width: '100%',
-                      minHeight: '80px',
-                      padding: '5px',
+                      padding: '8px',
                       opacity: selectedUsers.length > 0 ? 0.5 : 1,
                       cursor: selectedUsers.length > 0 ? 'not-allowed' : 'pointer'
                     }}
                   >
+                    <option value="">Nessun reparto</option>
                     {allDepartments.map((dept: string) => (
                       <option key={dept} value={dept}>
                         {dept}
@@ -572,7 +574,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   </select>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
                     {selectedUsers.length > 0
-                      ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
+                      ? '⚠️ Deseleziona l\'utente per assegnare a un reparto'
                       : 'Tutti gli utenti del reparto selezionato potranno vedere il ticket'}
                   </small>
                 </div>
