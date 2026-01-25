@@ -279,6 +279,45 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
+  // Unified assignment handler
+  const handleAssign = async () => {
+    try {
+      // Users have priority - if users are selected, assign users only
+      if (selectedUsers.length > 0) {
+        await ticketsApi.assignUsers(ticket.id, selectedUsers);
+      }
+      // If no users, check for departments
+      else if (selectedDepartments.length > 0) {
+        await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
+      }
+
+      await refreshTicket();
+      onUpdate();
+
+      // Close the assignment panel after successful assignment
+      setShowAssignments(false);
+    } catch (error) {
+      console.error('Error during assignment:', error);
+      alert('Errore durante l\'assegnazione');
+    }
+  };
+
+  // Handle user selection - clear departments when users are selected
+  const handleUserSelection = (selectedOptions: string[]) => {
+    setSelectedUsers(selectedOptions);
+    if (selectedOptions.length > 0) {
+      setSelectedDepartments([]); // Clear departments
+    }
+  };
+
+  // Handle department selection - clear users when departments are selected
+  const handleDepartmentSelection = (selectedOptions: string[]) => {
+    setSelectedDepartments(selectedOptions);
+    if (selectedOptions.length > 0) {
+      setSelectedUsers([]); // Clear users
+    }
+  };
+
   // Get unique departments from users
   const allDepartments = Array.from(new Set(allUsers.map((u: any) => u.department).filter(Boolean)));
 
@@ -471,16 +510,28 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             {/* Assignment management UI */}
             {showAssignments && (
               <div style={{ marginTop: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
+                <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#fffbcc', borderRadius: '5px', fontSize: '13px' }}>
+                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket O a utenti O a reparti, non entrambi.
+                  Selezionando utenti verranno deselezionati i reparti e viceversa.
+                </div>
+
                 {/* User assignment */}
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna Utenti:
+                    Assegna a Utenti:
                   </label>
                   <select
                     multiple
                     value={selectedUsers}
-                    onChange={(e) => setSelectedUsers(Array.from(e.target.selectedOptions, option => option.value))}
-                    style={{ width: '100%', minHeight: '100px', padding: '5px' }}
+                    onChange={(e) => handleUserSelection(Array.from(e.target.selectedOptions, option => option.value))}
+                    disabled={selectedDepartments.length > 0}
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '5px',
+                      opacity: selectedDepartments.length > 0 ? 0.5 : 1,
+                      cursor: selectedDepartments.length > 0 ? 'not-allowed' : 'pointer'
+                    }}
                   >
                     {allUsers.map((u: any) => (
                       <option key={u.id} value={u.id}>
@@ -489,27 +540,29 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     ))}
                   </select>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
-                    Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più utenti
+                    {selectedDepartments.length > 0
+                      ? '⚠️ Deseleziona i reparti per assegnare a utenti'
+                      : 'Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più utenti'}
                   </small>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleAssignUsers}
-                    style={{ marginTop: '10px', fontSize: '12px', padding: '5px 15px' }}
-                  >
-                    Assegna Utenti Selezionati
-                  </button>
                 </div>
 
                 {/* Department assignment */}
-                <div>
+                <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna Reparti:
+                    Assegna a Reparti:
                   </label>
                   <select
                     multiple
                     value={selectedDepartments}
-                    onChange={(e) => setSelectedDepartments(Array.from(e.target.selectedOptions, option => option.value))}
-                    style={{ width: '100%', minHeight: '80px', padding: '5px' }}
+                    onChange={(e) => handleDepartmentSelection(Array.from(e.target.selectedOptions, option => option.value))}
+                    disabled={selectedUsers.length > 0}
+                    style={{
+                      width: '100%',
+                      minHeight: '80px',
+                      padding: '5px',
+                      opacity: selectedUsers.length > 0 ? 0.5 : 1,
+                      cursor: selectedUsers.length > 0 ? 'not-allowed' : 'pointer'
+                    }}
                   >
                     {allDepartments.map((dept: string) => (
                       <option key={dept} value={dept}>
@@ -518,16 +571,26 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     ))}
                   </select>
                   <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
-                    Tutti gli utenti del reparto selezionato potranno vedere il ticket
+                    {selectedUsers.length > 0
+                      ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
+                      : 'Tutti gli utenti del reparto selezionato potranno vedere il ticket'}
                   </small>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleAssignDepartments}
-                    style={{ marginTop: '10px', fontSize: '12px', padding: '5px 15px' }}
-                  >
-                    Assegna Reparti Selezionati
-                  </button>
                 </div>
+
+                {/* Single unified button */}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleAssign}
+                  disabled={selectedUsers.length === 0 && selectedDepartments.length === 0}
+                  style={{
+                    width: '100%',
+                    fontSize: '14px',
+                    padding: '10px',
+                    opacity: (selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
+                  }}
+                >
+                  Invia Assegnazione
+                </button>
               </div>
             )}
           </div>

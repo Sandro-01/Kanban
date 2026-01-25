@@ -434,22 +434,25 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
       select: { title: true, status: true }
     });
 
-    // Create assignments for each user
+    // Clear department assignments (mutually exclusive)
+    await prisma.ticket.update({
+      where: { id },
+      data: { assignedDepartments: [] }
+    });
+    console.log('🏢 Cleared department assignments (users have priority)');
+
+    // Remove all existing user assignments first
+    await prisma.ticketAssignment.deleteMany({
+      where: { ticketId: id }
+    });
+
+    // Create new assignments for each user
     const assignments = await Promise.all(
       userIds.map((userId: string) =>
-        prisma.ticketAssignment.upsert({
-          where: {
-            ticketId_userId: {
-              ticketId: id,
-              userId: userId
-            }
-          },
-          create: {
+        prisma.ticketAssignment.create({
+          data: {
             ticketId: id,
             userId: userId,
-            assignedBy: req.user!.id
-          },
-          update: {
             assignedBy: req.user!.id
           },
           include: {
@@ -529,14 +532,22 @@ router.post('/:id/assign-departments', authenticate, auditLog('ASSIGN_DEPARTMENT
 
     console.log(`🏢 Assigning departments to ticket ${id}:`, departments);
 
+    // Clear user assignments (mutually exclusive)
+    await prisma.ticketAssignment.deleteMany({
+      where: { ticketId: id }
+    });
+    console.log('👥 Cleared user assignments (departments have priority)');
+
+    // Update ticket with department assignments
     const ticket = await prisma.ticket.update({
       where: { id },
       data: {
-        assignedDepartments: departments
+        assignedDepartments: departments,
+        status: 'OPEN' // Keep in OPEN when assigning to departments
       }
     });
 
-    console.log(`✅ Successfully assigned departments`);
+    console.log(`✅ Successfully assigned departments, ticket status: ${ticket.status}`);
     res.json({ message: 'Departments assigned successfully', assignedDepartments: ticket.assignedDepartments });
   } catch (error: any) {
     console.error('❌ Error assigning departments:', error);
