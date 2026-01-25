@@ -43,13 +43,19 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     if (boardId) where.boardId = boardId;
 
     // Visibility rules:
-    // 1. OPEN tickets → visible to everyone
+    // 1. OPEN tickets with NO assignments → visible to everyone
     // 2. Assigned to specific user → only that user can see
     // 3. Assigned to department → all users in that department can see
     // 4. Multi-assigned → users in assignments list can see
     where.OR = [
-      // Rule 1: All OPEN tickets
-      { status: 'OPEN' },
+      // Rule 1: OPEN tickets with NO assignments (visible to all)
+      {
+        AND: [
+          { status: 'OPEN' },
+          { assignedDepartments: { isEmpty: true } },
+          { assignments: { none: {} } }
+        ]
+      },
       // Rule 2: Assigned directly to me (old single assignment)
       { assignedToId: currentUser.id },
       // Rule 3: Assigned to my department
@@ -418,6 +424,12 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
 
     console.log(`👥 Assigning ${userIds.length} users to ticket ${id}`);
 
+    // Get ticket info for notifications
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { title: true, status: true }
+    });
+
     // Create assignments for each user
     const assignments = await Promise.all(
       userIds.map((userId: string) =>
@@ -444,6 +456,30 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
         })
       )
     );
+
+    // If assigning to users, move ticket to IN_PROGRESS
+    if (ticket && ticket.status === 'OPEN') {
+      await prisma.ticket.update({
+        where: { id },
+        data: { status: 'IN_PROGRESS' }
+      });
+      console.log('📊 Ticket moved to IN_PROGRESS');
+    }
+
+    // Send email notifications to assigned users
+    for (const assignment of assignments) {
+      try {
+        await notifyTicketUpdate(
+          id,
+          'Assegnazione ticket',
+          `Ti è stato assegnato il ticket: "${ticket?.title}". Controlla la tua board Kanban.`
+        );
+        console.log(`📧 Email sent to ${assignment.user.email}`);
+      } catch (emailError: any) {
+        console.error(`⚠️ Failed to send email to ${assignment.user.email}:`, emailError.message);
+        // Don't fail the request if email fails
+      }
+    }
 
     console.log(`✅ Successfully assigned ${assignments.length} users`);
     res.json({ message: 'Users assigned successfully', assignments });
