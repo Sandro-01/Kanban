@@ -204,9 +204,21 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
       data: {
         ticketId: id,
         fileName: req.file.originalname,
-        filePath: req.file.path,
+        filePath: req.file.filename,
         fileSize: req.file.size,
-        mimeType: req.file.mimetype
+        mimeType: req.file.mimetype,
+        uploadedById: req.user!.id
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        }
       }
     });
 
