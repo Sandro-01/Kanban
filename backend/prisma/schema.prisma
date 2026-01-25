@@ -18,6 +18,7 @@ model User {
   firstName     String
   lastName      String
   role          UserRole @default(USER)
+  department    String?
   status        UserStatus @default(ACTIVE)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -26,6 +27,7 @@ model User {
   assignedTickets Ticket[] @relation("AssignedTickets")
   createdTickets  Ticket[] @relation("CreatedTickets")
   comments        Comment[]
+  attachments     Attachment[]
   auditLogs       AuditLog[]
   onboardings     Onboarding[] @relation("OnboardingUser")
   managedOnboardings Onboarding[] @relation("OnboardingManager")
@@ -33,13 +35,12 @@ model User {
   managedOffboardings Offboarding[] @relation("OffboardingManager")
 
   @@index([email])
+  @@index([department])
 }
 
 enum UserRole {
   ADMIN
-  MANAGER
   USER
-  AUDITOR
 }
 
 enum UserStatus {
@@ -241,16 +242,20 @@ model Attachment {
   id          String   @id @default(uuid())
   ticketId    String
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
   fileName    String
   filePath    String
   fileSize    Int
   mimeType    String
+  createdAt   DateTime @default(now())
   uploadedAt  DateTime @default(now())
 
   // IMMUTABILE: Non può essere eliminato
   isDeleted   Boolean  @default(false) // Soft delete solo per UI, ma file rimane
 
   @@index([ticketId])
+  @@index([uploadedById])
 }
 
 // ============ TICKET HISTORY (ISO COMPLIANCE) ============
