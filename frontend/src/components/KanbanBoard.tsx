@@ -207,9 +207,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 };
 
 // Componente modale ticket
-const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove }) => {
+const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUpdate, onMove }) => {
   const [comment, setComment] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [ticket, setTicket] = useState(initialTicket);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Refresh ticket data
+  const refreshTicket = async () => {
+    try {
+      setRefreshing(true);
+      const response = await ticketsApi.getById(ticket.id);
+      setTicket(response.data);
+      console.log('✅ Ticket refreshed');
+    } catch (error) {
+      console.error('Error refreshing ticket:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Unified handler for both comment and file
   const handleSubmit = async () => {
@@ -238,6 +254,10 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
+      // Refresh ticket data to show new comment/file
+      await refreshTicket();
+
+      // Also update the main ticket list
       onUpdate();
     } catch (error) {
       console.error('Errore invio:', error);

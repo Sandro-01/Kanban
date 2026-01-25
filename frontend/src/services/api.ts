@@ -26,6 +26,7 @@ export const auth = {
 // Tickets
 export const tickets = {
   getAll: (params?: any) => api.get('/tickets', { params }),
+  getById: (id: string) => api.get(`/tickets/${id}`),
   create: (data: any) => api.post('/tickets', data),
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
   addComment: (id: string, content: string) =>

@@ -86,6 +86,59 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Get singolo ticket
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: {
+        createdBy: {
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+        },
+        assignedTo: {
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+        },
+        column: true,
+        attachments: {
+          where: { isDeleted: false },
+          include: {
+            uploadedBy: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
+        comments: {
+          where: { isDeleted: false },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            },
+            attachments: {
+              where: { isDeleted: false },
+              include: {
+                uploadedBy: {
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                }
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket non trovato' });
+    }
+
+    res.json(ticket);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Crea ticket
 router.post('/', authenticate, auditLog('CREATE_TICKET', 'Ticket'), async (req: AuthRequest, res: Response) => {
   try {
