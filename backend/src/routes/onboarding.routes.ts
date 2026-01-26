@@ -170,6 +170,72 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       `
     );
 
+    // CREA TICKET AUTOMATICO PER IT CON RICHIESTA DOTAZIONI
+    // Trova il board principale e la colonna "To Do"
+    const board = await prisma.board.findFirst({
+      where: { name: 'Main Board' },
+      include: { columns: true }
+    });
+
+    if (board) {
+      const todoColumn = board.columns.find(col => col.name === 'To Do') || board.columns[0];
+
+      // Prepara descrizione dettagliata per il ticket
+      let ticketDescription = `**RICHIESTA DOTAZIONI PER NUOVO DIPENDENTE**\n\n`;
+      ticketDescription += `**Dipendente:** ${user.firstName} ${user.lastName} (${user.email})\n`;
+      ticketDescription += `**Responsabile:** ${onboarding.manager.firstName} ${onboarding.manager.lastName}\n`;
+      if (sede) ticketDescription += `**Sede:** ${sede}\n`;
+      if (department) ticketDescription += `**Reparto:** ${department}\n`;
+      if (role) ticketDescription += `**Ruolo:** ${role}\n`;
+      ticketDescription += `**Data Inizio:** ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}\n\n`;
+
+      // Dotazioni hardware
+      if (computerType || phoneType || needsHeadset || needsWebcam || additionalMonitor) {
+        ticketDescription += `---\n## 💻 DOTAZIONI HARDWARE RICHIESTE\n\n`;
+        if (computerType && computerType !== 'Non necessario') ticketDescription += `- **Computer:** ${computerType}\n`;
+        if (phoneType && phoneType !== 'Non necessario') ticketDescription += `- **Telefono:** ${phoneType}\n`;
+        if (needsHeadset) ticketDescription += `- ✅ Cuffie\n`;
+        if (needsWebcam) ticketDescription += `- ✅ Webcam\n`;
+        if (additionalMonitor) ticketDescription += `- ✅ Schermo aggiuntivo\n`;
+        ticketDescription += `\n`;
+      }
+
+      // Software e accessi
+      if (needsMicrosoft365 || softwareNeeded || systemAccess) {
+        ticketDescription += `---\n## 🔐 SOFTWARE E ACCESSI RICHIESTI\n\n`;
+        if (needsMicrosoft365) ticketDescription += `- ✅ Pacchetto Microsoft 365\n`;
+        if (softwareNeeded) ticketDescription += `- **Software Specifici:** ${softwareNeeded}\n`;
+        if (systemAccess) ticketDescription += `- **Accessi Sistemi:** ${systemAccess}\n`;
+        ticketDescription += `\n`;
+      }
+
+      // Note aggiuntive
+      if (additionalNotes) {
+        ticketDescription += `---\n## 📝 NOTE AGGIUNTIVE\n\n${additionalNotes}\n\n`;
+      }
+
+      ticketDescription += `---\n⚠️ **Preparare tutto entro il:** ${finalExpectedEndDate.toLocaleDateString('it-IT')}\n`;
+      ticketDescription += `🔗 **Link Onboarding:** #${onboarding.id}`;
+
+      // Crea il ticket assegnato al reparto IT
+      const ticket = await prisma.ticket.create({
+        data: {
+          title: `🆕 Onboarding: ${user.firstName} ${user.lastName} - Preparazione Dotazioni`,
+          description: ticketDescription,
+          boardId: board.id,
+          columnId: todoColumn.id,
+          createdById: req.user!.id,
+          assignedDepartments: ['IT'], // Assegna automaticamente a IT
+          priority: 'HIGH',
+          category: 'Richiesta Onboarding',
+          slaHours: 24,
+          dueDate: finalExpectedEndDate
+        }
+      });
+
+      console.log(`✅ Ticket automatico creato per onboarding ${onboarding.id}: ${ticket.id}`);
+    }
+
     res.json(onboarding);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

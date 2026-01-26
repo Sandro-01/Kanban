@@ -596,6 +596,14 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
             ℹ️ La checklist di onboarding standard verrà creata automaticamente
           </div>
 
+          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
+            <strong>🎫 Ticket Automatico per IT</strong><br />
+            <span style={{ fontSize: '14px' }}>
+              Verrà creato automaticamente un ticket per il reparto IT con tutte le dotazioni richieste.
+              IT riceverà la notifica e potrà preparare tutto in anticipo.
+            </span>
+          </div>
+
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Annulla

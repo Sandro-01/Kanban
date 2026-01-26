@@ -212,6 +212,16 @@ async function main() {
       }
     }),
     prisma.sLAConfig.upsert({
+      where: { category: 'Richiesta Onboarding' },
+      update: {},
+      create: {
+        category: 'Richiesta Onboarding',
+        priority: 'HIGH',
+        hours: 24,
+        description: 'Preparazione dotazioni per nuovo dipendente'
+      }
+    }),
+    prisma.sLAConfig.upsert({
       where: { category: 'Richiesta Funzionalità' },
       update: {},
       create: {
