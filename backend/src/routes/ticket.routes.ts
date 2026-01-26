@@ -7,6 +7,7 @@ import { authenticate, AuthRequest, authorize } from '../middleware/auth.middlew
 import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
 import { notifyTicketUpdate } from '../services/email.service';
+import { sendTicketEmail } from '../services/emailIntegration.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -557,6 +558,138 @@ router.post('/:id/assign-departments', authenticate, auditLog('ASSIGN_DEPARTMENT
     res.json({ message: 'Departments assigned successfully', assignedDepartments: ticket.assignedDepartments });
   } catch (error: any) {
     console.error('❌ Error assigning departments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ EMAIL INTEGRATION ============
+
+// Aggiungi contatti esterni al ticket
+router.post('/:id/external-contacts', authenticate, auditLog('ADD_EXTERNAL_CONTACTS', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { emails } = req.body; // Array of email addresses
+
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ error: 'emails must be a non-empty array' });
+    }
+
+    // Valida formato email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = emails.filter((email: string) => !emailRegex.test(email));
+    if (invalidEmails.length > 0) {
+      return res.status(400).json({ error: `Invalid email format: ${invalidEmails.join(', ')}` });
+    }
+
+    // Recupera ticket esistente
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { externalContacts: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Aggiungi nuovi contatti (evita duplicati)
+    const existingContacts = new Set(ticket.externalContacts);
+    emails.forEach((email: string) => existingContacts.add(email.toLowerCase()));
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        externalContacts: Array.from(existingContacts),
+      },
+    });
+
+    console.log(`📧 Contatti esterni aggiunti al ticket ${id}:`, emails);
+    res.json({
+      message: 'External contacts added successfully',
+      externalContacts: updatedTicket.externalContacts
+    });
+  } catch (error: any) {
+    console.error('❌ Error adding external contacts:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Invia email a contatti esterni
+router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subject, body, toEmails } = req.body;
+    const currentUser = req.user!;
+
+    if (!subject || !body) {
+      return res.status(400).json({ error: 'subject and body are required' });
+    }
+
+    if (!Array.isArray(toEmails) || toEmails.length === 0) {
+      return res.status(400).json({ error: 'toEmails must be a non-empty array' });
+    }
+
+    // Verifica che ticket esista
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Invia email
+    await sendTicketEmail(id, toEmails, subject, body, currentUser.id);
+
+    // Crea commento per tracciare l'invio email
+    await prisma.comment.create({
+      data: {
+        ticketId: id,
+        userId: currentUser.id,
+        content: `📤 **Email inviata a:** ${toEmails.join(', ')}\n\n**Oggetto:** ${subject}\n\n**Messaggio:**\n${body}`,
+      },
+    });
+
+    console.log(`✅ Email inviata per ticket ${id} a ${toEmails.join(', ')}`);
+    res.json({ message: 'Email sent successfully', sentTo: toEmails });
+  } catch (error: any) {
+    console.error('❌ Error sending email:', error);
+    res.status(500).json({ error: error.message || 'Failed to send email' });
+  }
+});
+
+// Rimuovi contatto esterno
+router.delete('/:id/external-contacts/:email', authenticate, auditLog('REMOVE_EXTERNAL_CONTACT', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, email } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { externalContacts: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Rimuovi contatto
+    const updatedContacts = ticket.externalContacts.filter(
+      (contact) => contact.toLowerCase() !== email.toLowerCase()
+    );
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        externalContacts: updatedContacts,
+      },
+    });
+
+    console.log(`🗑️ Contatto esterno rimosso dal ticket ${id}:`, email);
+    res.json({
+      message: 'External contact removed successfully',
+      externalContacts: updatedTicket.externalContacts
+    });
+  } catch (error: any) {
+    console.error('❌ Error removing external contact:', error);
     res.status(500).json({ error: error.message });
   }
 });

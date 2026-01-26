@@ -218,6 +218,7 @@ model Ticket {
 
   // Email integration
   emailThreadId String?
+  externalContacts String[] @default([]) // Array of external email addresses (fornitori, clienti)
 
   // Relations
   comments      Comment[]
@@ -277,11 +278,17 @@ model Comment {
   // IMMUTABILE: Non può essere eliminato o modificato
   isDeleted Boolean  @default(false) // Soft delete solo per UI, ma dati rimangono
 
+  // Email integration
+  isEmailReply    Boolean  @default(false) // True se questo commento viene da email esterna
+  fromEmail       String?  // Email del mittente esterno (se isEmailReply = true)
+  emailMessageId  String?  // ID univoco del messaggio email per evitare duplicati
+
   // Relation to attachments (files can be attached to a comment)
   attachments Attachment[]
 
   @@index([ticketId])
   @@index([userId])
+  @@index([emailMessageId])
 }
 
 // ============ FILE ATTACHMENTS (IMMUTABLE) ============

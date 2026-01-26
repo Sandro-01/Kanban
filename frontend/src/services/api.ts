@@ -51,6 +51,13 @@ export const tickets = {
     api.delete(`/tickets/${id}/assign-users/${userId}`),
   assignDepartments: (id: string, departments: string[]) =>
     api.post(`/tickets/${id}/assign-departments`, { departments }),
+  // Email integration
+  addExternalContacts: (id: string, emails: string[]) =>
+    api.post(`/tickets/${id}/external-contacts`, { emails }),
+  removeExternalContact: (id: string, email: string) =>
+    api.delete(`/tickets/${id}/external-contacts/${email}`),
+  sendEmail: (id: string, data: { subject: string; body: string; toEmails: string[] }) =>
+    api.post(`/tickets/${id}/send-email`, data),
 };
 
 // Onboarding
