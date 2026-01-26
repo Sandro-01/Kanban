@@ -11,6 +11,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [selectedOnboarding, setSelectedOnboarding] = useState<any>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showEquipmentForm, setShowEquipmentForm] = useState<any>(null);
   const [allUsers, setAllUsers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -144,14 +145,48 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
         <div className="modal-overlay" onClick={() => setSelectedOnboarding(null)}>
           <div className="modal process-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
-                <h2>
-                  Onboarding: {selectedOnboarding.employeeFirstName}{' '}
-                  {selectedOnboarding.employeeLastName}
-                </h2>
-                <span className={`status-badge status-${selectedOnboarding.status.toLowerCase()}`}>
-                  {selectedOnboarding.status}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', width: '100%' }}>
+                <div style={{ flex: 1 }}>
+                  <h2>
+                    Onboarding: {selectedOnboarding.employeeFirstName}{' '}
+                    {selectedOnboarding.employeeLastName}
+                  </h2>
+                  <span className={`status-badge status-${selectedOnboarding.status.toLowerCase()}`}>
+                    {selectedOnboarding.status}
+                  </span>
+                </div>
+                {selectedOnboarding.status === 'PENDING_EQUIPMENT' && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setShowEquipmentForm(selectedOnboarding);
+                    }}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    ➕ Aggiungi Dotazioni
+                  </button>
+                )}
+                {user.role === 'ADMIN' && (
+                  <button
+                    className="btn"
+                    onClick={async () => {
+                      if (window.confirm('Sei sicuro di voler eliminare questo onboarding?')) {
+                        try {
+                          await onboardingApi.delete(selectedOnboarding.id);
+                          alert('Onboarding eliminato con successo');
+                          loadOnboardings();
+                          setSelectedOnboarding(null);
+                        } catch (error) {
+                          console.error('Errore eliminazione:', error);
+                          alert('Errore durante l\'eliminazione');
+                        }
+                      }
+                    }}
+                    style={{ backgroundColor: '#ef4444', color: 'white', whiteSpace: 'nowrap' }}
+                  >
+                    🗑️ Elimina
+                  </button>
+                )}
               </div>
               <button className="close-btn" onClick={() => setSelectedOnboarding(null)}>
                 ×
@@ -159,6 +194,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
             </div>
 
             <div className="modal-content">
+              {selectedOnboarding.status === 'PENDING_EQUIPMENT' && (
+                <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '12px' }}>
+                  <strong>⚠️ In Attesa di Dotazioni</strong><br />
+                  <span style={{ fontSize: '14px' }}>
+                    Le informazioni di base sono state inserite da HR. Il Responsabile deve aggiungere le dotazioni necessarie.
+                  </span>
+                </div>
+              )}
+
               <div className="process-details">
                 <div style={{ marginBottom: '20px' }}>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
@@ -314,11 +358,23 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
           onCreated={loadOnboardings}
         />
       )}
+
+      {showEquipmentForm && (
+        <EquipmentModal
+          onboarding={showEquipmentForm}
+          onClose={() => setShowEquipmentForm(null)}
+          onUpdated={() => {
+            loadOnboardings();
+            setShowEquipmentForm(null);
+            setSelectedOnboarding(null);
+          }}
+        />
+      )}
     </div>
   );
 };
 
-// Modal per creare nuovo onboarding
+// Modal per creare nuovo onboarding (STEP 1 - HR: Solo informazioni di base)
 const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
   const [formData, setFormData] = useState({
     // Informazioni nuovo dipendente
@@ -331,19 +387,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
     // Informazioni dipendente
     sede: '',
     department: '',
-    role: '',
-    // Dotazioni hardware
-    computerType: '',
-    phoneType: '',
-    needsHeadset: false,
-    needsWebcam: false,
-    additionalMonitor: false,
-    // Software e accessi
-    needsMicrosoft365: false,
-    softwareNeeded: '',
-    systemAccess: '',
-    // Note
-    additionalNotes: ''
+    role: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -488,6 +532,74 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
             </div>
           </div>
 
+          <div className="alert alert-info" style={{ marginBottom: '15px' }}>
+            ℹ️ <strong>Workflow in 2 step:</strong><br />
+            <span style={{ fontSize: '14px' }}>
+              1. HR crea l'onboarding con le informazioni di base (questo form)<br />
+              2. Il Responsabile aggiungerà successivamente le dotazioni necessarie<br />
+              3. IT riceverà il ticket solo quando le dotazioni saranno definite
+            </span>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Annulla
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Crea Onboarding
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Modal per aggiungere dotazioni (STEP 2 - Responsabile)
+const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
+  const [formData, setFormData] = useState({
+    // Dotazioni hardware
+    computerType: '',
+    phoneType: '',
+    needsHeadset: false,
+    needsWebcam: false,
+    additionalMonitor: false,
+    // Software e accessi
+    needsMicrosoft365: false,
+    softwareNeeded: '',
+    systemAccess: '',
+    // Note
+    additionalNotes: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await onboardingApi.updateEquipment(onboarding.id, formData);
+      alert('Dotazioni aggiunte con successo! Il ticket IT è stato creato automaticamente.');
+      onUpdated();
+    } catch (error: any) {
+      console.error('Errore aggiunta dotazioni:', error);
+      alert(error.response?.data?.error || 'Errore durante l\'aggiunta delle dotazioni');
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="modal-header">
+          <h2>Aggiungi Dotazioni - {onboarding.employeeFirstName} {onboarding.employeeLastName}</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+
+        <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
+          <strong>👤 Responsabile</strong><br />
+          <span style={{ fontSize: '14px' }}>
+            Compila le dotazioni necessarie per il nuovo dipendente. Una volta salvate, verrà creato automaticamente un ticket per IT.
+          </span>
+        </div>
+
+        <form onSubmit={handleSubmit}>
           {/* SEZIONE: Dotazioni Hardware */}
           <div style={{ marginBottom: '25px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '6px' }}>
@@ -616,15 +728,11 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
             </div>
           </div>
 
-          <div className="alert alert-info" style={{ marginBottom: '15px' }}>
-            ℹ️ La checklist di onboarding standard verrà creata automaticamente
-          </div>
-
-          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
+          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#dcfce7', border: '1px solid #10b981', borderRadius: '6px', padding: '12px' }}>
             <strong>🎫 Ticket Automatico per IT</strong><br />
             <span style={{ fontSize: '14px' }}>
-              Verrà creato automaticamente un ticket per il reparto IT con tutte le dotazioni richieste.
-              IT riceverà la notifica e potrà preparare tutto in anticipo.
+              Salvando le dotazioni, verrà creato automaticamente un ticket per il reparto IT con tutti i dettagli.
+              IT riceverà la notifica e potrà preparare tutto per tempo.
             </span>
           </div>
 
@@ -633,7 +741,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               Annulla
             </button>
             <button type="submit" className="btn btn-primary">
-              Crea Onboarding
+              Salva Dotazioni e Crea Ticket IT
             </button>
           </div>
         </form>

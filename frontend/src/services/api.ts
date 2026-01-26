@@ -57,9 +57,11 @@ export const tickets = {
 export const onboarding = {
   getAll: () => api.get('/onboarding'),
   create: (data: any) => api.post('/onboarding', data),
+  updateEquipment: (id: string, data: any) => api.put(`/onboarding/${id}/equipment`, data),
   updateTask: (id: string, taskId: string, completed: boolean) =>
     api.put(`/onboarding/${id}/tasks/${taskId}`, { completed }),
   get: (id: string) => api.get(`/onboarding/${id}`),
+  delete: (id: string) => api.delete(`/onboarding/${id}`),
 };
 
 // Offboarding

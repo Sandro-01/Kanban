@@ -171,6 +171,67 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
       // Continua comunque - l'email è opzionale
     }
 
+    // NOTA: Il ticket IT verrà creato solo quando il responsabile aggiungerà le dotazioni
+    // (workflow 2 step: HR crea → Responsabile aggiunge dotazioni → IT riceve ticket)
+
+    res.json(onboarding);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Aggiungi dotazioni onboarding (Responsabile - STEP 2)
+router.put('/:id/equipment', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), auditLog('ADD_EQUIPMENT_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      computerType,
+      phoneType,
+      needsHeadset,
+      needsWebcam,
+      additionalMonitor,
+      needsMicrosoft365,
+      softwareNeeded,
+      systemAccess,
+      additionalNotes
+    } = req.body;
+
+    // Recupera onboarding
+    const onboarding = await prisma.onboarding.findUnique({
+      where: { id },
+      include: { manager: true }
+    });
+
+    if (!onboarding) {
+      return res.status(404).json({ error: 'Onboarding non trovato' });
+    }
+
+    // Verifica che sia in stato PENDING_EQUIPMENT
+    if (onboarding.status !== 'PENDING_EQUIPMENT') {
+      return res.status(400).json({ error: 'Le dotazioni possono essere aggiunte solo per onboarding in stato PENDING_EQUIPMENT' });
+    }
+
+    // Aggiorna onboarding con dotazioni e cambia status a IN_PROGRESS
+    const updatedOnboarding = await prisma.onboarding.update({
+      where: { id },
+      data: {
+        computerType,
+        phoneType,
+        needsHeadset: needsHeadset || false,
+        needsWebcam: needsWebcam || false,
+        additionalMonitor: additionalMonitor || false,
+        needsMicrosoft365: needsMicrosoft365 || false,
+        softwareNeeded,
+        systemAccess,
+        additionalNotes,
+        status: 'IN_PROGRESS' // Cambia status a IN_PROGRESS
+      },
+      include: {
+        manager: true,
+        tasks: { orderBy: { order: 'asc' } }
+      }
+    });
+
     // CREA TICKET AUTOMATICO PER IT CON RICHIESTA DOTAZIONI
     // Trova il board principale e la colonna "To Do"
     const board = await prisma.board.findFirst({
@@ -183,12 +244,12 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
 
       // Prepara descrizione dettagliata per il ticket
       let ticketDescription = `**RICHIESTA DOTAZIONI PER NUOVO DIPENDENTE**\n\n`;
-      ticketDescription += `**Dipendente:** ${employeeFirstName} ${employeeLastName} (${employeeEmail})\n`;
-      ticketDescription += `**Responsabile:** ${onboarding.manager.firstName} ${onboarding.manager.lastName}\n`;
-      if (sede) ticketDescription += `**Sede:** ${sede}\n`;
-      if (department) ticketDescription += `**Reparto:** ${department}\n`;
-      if (role) ticketDescription += `**Ruolo:** ${role}\n`;
-      ticketDescription += `**Data Inizio:** ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}\n\n`;
+      ticketDescription += `**Dipendente:** ${updatedOnboarding.employeeFirstName} ${updatedOnboarding.employeeLastName} (${updatedOnboarding.employeeEmail})\n`;
+      ticketDescription += `**Responsabile:** ${updatedOnboarding.manager.firstName} ${updatedOnboarding.manager.lastName}\n`;
+      if (updatedOnboarding.sede) ticketDescription += `**Sede:** ${updatedOnboarding.sede}\n`;
+      if (updatedOnboarding.department) ticketDescription += `**Reparto:** ${updatedOnboarding.department}\n`;
+      if (updatedOnboarding.role) ticketDescription += `**Ruolo:** ${updatedOnboarding.role}\n`;
+      ticketDescription += `**Data Inizio:** ${new Date(updatedOnboarding.startDate).toLocaleDateString('it-IT')}\n\n`;
 
       // Dotazioni hardware
       if (computerType || phoneType || needsHeadset || needsWebcam || additionalMonitor) {
@@ -215,13 +276,13 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
         ticketDescription += `---\n## 📝 NOTE AGGIUNTIVE\n\n${additionalNotes}\n\n`;
       }
 
-      ticketDescription += `---\n⚠️ **Preparare tutto entro il:** ${finalExpectedEndDate.toLocaleDateString('it-IT')}\n`;
-      ticketDescription += `🔗 **Link Onboarding:** #${onboarding.id}`;
+      ticketDescription += `---\n⚠️ **Preparare tutto entro il:** ${new Date(updatedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}\n`;
+      ticketDescription += `🔗 **Link Onboarding:** #${updatedOnboarding.id}`;
 
       // Crea il ticket assegnato al reparto IT
       const ticket = await prisma.ticket.create({
         data: {
-          title: `🆕 Onboarding: ${employeeFirstName} ${employeeLastName} - Preparazione Dotazioni`,
+          title: `🆕 Onboarding: ${updatedOnboarding.employeeFirstName} ${updatedOnboarding.employeeLastName} - Preparazione Dotazioni`,
           description: ticketDescription,
           boardId: board.id,
           columnId: todoColumn.id,
@@ -230,14 +291,14 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
           priority: 'HIGH',
           category: 'Richiesta Onboarding',
           slaHours: 24,
-          dueDate: finalExpectedEndDate
+          dueDate: updatedOnboarding.expectedEndDate
         }
       });
 
-      console.log(`✅ Ticket automatico creato per onboarding ${onboarding.id}: ${ticket.id}`);
+      console.log(`✅ Ticket automatico creato per onboarding ${updatedOnboarding.id}: ${ticket.id}`);
     }
 
-    res.json(onboarding);
+    res.json(updatedOnboarding);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
