@@ -100,6 +100,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
         </button>
       </div>
 
+      <div className="alert alert-info" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '24px' }}>🖱️</span>
+        <div>
+          <strong>Drag & Drop Attivo!</strong>
+          <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>
+            Trascina i ticket tra le colonne per aggiornare il loro stato.
+            Passa il mouse su un ticket per vedere l'indicatore di trascinamento.
+          </p>
+        </div>
+      </div>
+
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="kanban-board">
           {COLUMNS.map((column) => (
