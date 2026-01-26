@@ -46,7 +46,29 @@ router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthReq
 // Crea processo onboarding
 router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
   try {
-    const { userId, expectedDays } = req.body;
+    const {
+      userId,
+      managerId,
+      startDate,
+      expectedEndDate,
+      expectedDays,
+      // Informazioni dipendente
+      sede,
+      department,
+      role,
+      // Dotazioni hardware
+      computerType,
+      phoneType,
+      needsHeadset,
+      needsWebcam,
+      additionalMonitor,
+      // Software e accessi
+      needsMicrosoft365,
+      softwareNeeded,
+      systemAccess,
+      // Note
+      additionalNotes
+    } = req.body;
 
     // Verifica utente
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -60,14 +82,40 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       data: { status: 'ONBOARDING' }
     });
 
-    const expectedEndDate = new Date();
-    expectedEndDate.setDate(expectedEndDate.getDate() + (expectedDays || 7));
+    // Calcola data fine se non fornita
+    let finalExpectedEndDate: Date;
+    if (expectedEndDate) {
+      finalExpectedEndDate = new Date(expectedEndDate);
+    } else {
+      finalExpectedEndDate = new Date();
+      finalExpectedEndDate.setDate(finalExpectedEndDate.getDate() + (expectedDays || 7));
+    }
+
+    // Usa managerId dal body se fornito, altrimenti usa l'utente corrente
+    const finalManagerId = managerId || req.user!.id;
 
     const onboarding = await prisma.onboarding.create({
       data: {
         userId,
-        managerId: req.user!.id,
-        expectedEndDate,
+        managerId: finalManagerId,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        expectedEndDate: finalExpectedEndDate,
+        // Informazioni dipendente
+        sede,
+        department,
+        role,
+        // Dotazioni hardware
+        computerType,
+        phoneType,
+        needsHeadset: needsHeadset || false,
+        needsWebcam: needsWebcam || false,
+        additionalMonitor: additionalMonitor || false,
+        // Software e accessi
+        needsMicrosoft365: needsMicrosoft365 || false,
+        softwareNeeded,
+        systemAccess,
+        // Note
+        additionalNotes,
         tasks: {
           create: DEFAULT_ONBOARDING_TASKS
         }
@@ -81,6 +129,27 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       }
     });
 
+    // Prepara riepilogo dotazioni per email
+    let equipmentSummary = '';
+    if (computerType || phoneType || needsHeadset || needsWebcam || additionalMonitor) {
+      equipmentSummary = '<h3>Dotazioni Assegnate:</h3><ul>';
+      if (computerType && computerType !== 'Non necessario') equipmentSummary += `<li>💻 Computer: ${computerType}</li>`;
+      if (phoneType && phoneType !== 'Non necessario') equipmentSummary += `<li>📱 Telefono: ${phoneType}</li>`;
+      if (needsHeadset) equipmentSummary += '<li>🎧 Cuffie</li>';
+      if (needsWebcam) equipmentSummary += '<li>📹 Webcam</li>';
+      if (additionalMonitor) equipmentSummary += '<li>🖥️ Schermo aggiuntivo</li>';
+      equipmentSummary += '</ul>';
+    }
+
+    let softwareSummary = '';
+    if (needsMicrosoft365 || softwareNeeded || systemAccess) {
+      softwareSummary = '<h3>Software e Accessi:</h3><ul>';
+      if (needsMicrosoft365) softwareSummary += '<li>📦 Microsoft 365</li>';
+      if (softwareNeeded) softwareSummary += `<li>💿 Software: ${softwareNeeded}</li>`;
+      if (systemAccess) softwareSummary += `<li>🔐 Accessi: ${systemAccess}</li>`;
+      softwareSummary += '</ul>';
+    }
+
     // Invia email benvenuto
     await sendEmail(
       user.email,
@@ -89,7 +158,14 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
         <h2>Benvenuto ${user.firstName}!</h2>
         <p>È stato avviato il tuo processo di onboarding.</p>
         <p><strong>Responsabile:</strong> ${onboarding.manager.firstName} ${onboarding.manager.lastName}</p>
-        <p><strong>Data prevista completamento:</strong> ${expectedEndDate.toLocaleDateString('it-IT')}</p>
+        ${sede ? `<p><strong>Sede:</strong> ${sede}</p>` : ''}
+        ${department ? `<p><strong>Reparto:</strong> ${department}</p>` : ''}
+        ${role ? `<p><strong>Ruolo:</strong> ${role}</p>` : ''}
+        <p><strong>Data inizio:</strong> ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}</p>
+        <p><strong>Data prevista completamento:</strong> ${finalExpectedEndDate.toLocaleDateString('it-IT')}</p>
+        ${equipmentSummary}
+        ${softwareSummary}
+        ${additionalNotes ? `<p><strong>Note:</strong> ${additionalNotes}</p>` : ''}
         <p>Riceverai aggiornamenti durante il processo.</p>
       `
     );

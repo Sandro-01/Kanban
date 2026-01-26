@@ -67,10 +67,31 @@ model Onboarding {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // Informazioni dipendente
+  sede            String?
+  department      String?
+  role            String?  // Ruolo/Mansione
+
+  // Dotazioni hardware
+  computerType    String?  // "Portatile", "Desktop", "Non necessario"
+  phoneType       String?  // "Fisso", "Android", "Non necessario"
+  needsHeadset    Boolean  @default(false)
+  needsWebcam     Boolean  @default(false)
+  additionalMonitor Boolean @default(false)
+
+  // Software e accessi
+  needsMicrosoft365 Boolean @default(false)
+  softwareNeeded    String?  // PackWay, HubSpot, ArtiosCAD, etc (testo libero)
+  systemAccess      String?  // VPN, cartelle condivise, ERP, CRM (testo libero)
+
+  // Note aggiuntive
+  additionalNotes   String?
+
   tasks           OnboardingTask[]
 
   @@index([userId])
   @@index([status])
+  @@index([department])
 }
 
 model OnboardingTask {
