@@ -60,7 +60,7 @@ model Onboarding {
   user            User?    @relation("OnboardingUser", fields: [userId], references: [id])
   managerId       String
   manager         User     @relation("OnboardingManager", fields: [managerId], references: [id])
-  status          OnboardingStatus @default(IN_PROGRESS)
+  status          OnboardingStatus @default(PENDING_EQUIPMENT)
   startDate       DateTime @default(now())
   expectedEndDate DateTime
   actualEndDate   DateTime?
@@ -113,9 +113,10 @@ model OnboardingTask {
 }
 
 enum OnboardingStatus {
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+  PENDING_EQUIPMENT  // HR ha creato, aspetta che responsabile aggiunga dotazioni
+  IN_PROGRESS        // Dotazioni completate, onboarding in corso
+  COMPLETED          // Onboarding completato
+  CANCELLED          // Annullato
 }
 
 model Offboarding {
