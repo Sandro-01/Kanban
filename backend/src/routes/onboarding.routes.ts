@@ -274,16 +274,23 @@ router.put('/:id/tasks/:taskId', authenticate, auditLog('COMPLETE_ONBOARDING_TAS
           }
         });
 
-        await prisma.user.update({
-          where: { id: onboarding.userId },
-          data: { status: 'ACTIVE' }
-        });
+        // Aggiorna status utente solo se esiste un account collegato
+        if (onboarding.userId) {
+          await prisma.user.update({
+            where: { id: onboarding.userId },
+            data: { status: 'ACTIVE' }
+          });
+        }
+
+        // Invia email di completamento
+        const recipientEmail = onboarding.user?.email || onboarding.employeeEmail;
+        const recipientName = onboarding.user?.firstName || onboarding.employeeFirstName;
 
         await sendEmail(
-          onboarding.user.email,
+          recipientEmail,
           'Onboarding Completato!',
           `
-            <h2>Congratulazioni ${onboarding.user.firstName}!</h2>
+            <h2>Congratulazioni ${recipientName}!</h2>
             <p>Hai completato con successo il processo di onboarding.</p>
             <p>Il tuo account è ora attivo.</p>
           `
