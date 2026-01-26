@@ -146,25 +146,30 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       softwareSummary += '</ul>';
     }
 
-    // Invia email benvenuto al nuovo dipendente
-    await sendEmail(
-      employeeEmail,
-      'Benvenuto - Processo di Onboarding',
-      `
-        <h2>Benvenuto ${employeeFirstName}!</h2>
-        <p>È stato avviato il tuo processo di onboarding.</p>
-        <p><strong>Responsabile:</strong> ${onboarding.manager.firstName} ${onboarding.manager.lastName}</p>
-        ${sede ? `<p><strong>Sede:</strong> ${sede}</p>` : ''}
-        ${department ? `<p><strong>Reparto:</strong> ${department}</p>` : ''}
-        ${role ? `<p><strong>Ruolo:</strong> ${role}</p>` : ''}
-        <p><strong>Data inizio:</strong> ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}</p>
-        <p><strong>Data prevista completamento:</strong> ${finalExpectedEndDate.toLocaleDateString('it-IT')}</p>
-        ${equipmentSummary}
-        ${softwareSummary}
-        ${additionalNotes ? `<p><strong>Note:</strong> ${additionalNotes}</p>` : ''}
-        <p>Riceverai aggiornamenti durante il processo.</p>
-      `
-    );
+    // Invia email benvenuto al nuovo dipendente (opzionale - non blocca se fallisce)
+    try {
+      await sendEmail(
+        employeeEmail,
+        'Benvenuto - Processo di Onboarding',
+        `
+          <h2>Benvenuto ${employeeFirstName}!</h2>
+          <p>È stato avviato il tuo processo di onboarding.</p>
+          <p><strong>Responsabile:</strong> ${onboarding.manager.firstName} ${onboarding.manager.lastName}</p>
+          ${sede ? `<p><strong>Sede:</strong> ${sede}</p>` : ''}
+          ${department ? `<p><strong>Reparto:</strong> ${department}</p>` : ''}
+          ${role ? `<p><strong>Ruolo:</strong> ${role}</p>` : ''}
+          <p><strong>Data inizio:</strong> ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}</p>
+          <p><strong>Data prevista completamento:</strong> ${finalExpectedEndDate.toLocaleDateString('it-IT')}</p>
+          ${equipmentSummary}
+          ${softwareSummary}
+          ${additionalNotes ? `<p><strong>Note:</strong> ${additionalNotes}</p>` : ''}
+          <p>Riceverai aggiornamenti durante il processo.</p>
+        `
+      );
+    } catch (emailError: any) {
+      console.warn('⚠️ Impossibile inviare email di benvenuto:', emailError.message);
+      // Continua comunque - l'email è opzionale
+    }
 
     // CREA TICKET AUTOMATICO PER IT CON RICHIESTA DOTAZIONI
     // Trova il board principale e la colonna "To Do"
@@ -282,19 +287,24 @@ router.put('/:id/tasks/:taskId', authenticate, auditLog('COMPLETE_ONBOARDING_TAS
           });
         }
 
-        // Invia email di completamento
+        // Invia email di completamento (opzionale - non blocca se fallisce)
         const recipientEmail = onboarding.user?.email || onboarding.employeeEmail;
         const recipientName = onboarding.user?.firstName || onboarding.employeeFirstName;
 
-        await sendEmail(
-          recipientEmail,
-          'Onboarding Completato!',
-          `
-            <h2>Congratulazioni ${recipientName}!</h2>
-            <p>Hai completato con successo il processo di onboarding.</p>
-            <p>Il tuo account è ora attivo.</p>
-          `
-        );
+        try {
+          await sendEmail(
+            recipientEmail,
+            'Onboarding Completato!',
+            `
+              <h2>Congratulazioni ${recipientName}!</h2>
+              <p>Hai completato con successo il processo di onboarding.</p>
+              <p>Il tuo account è ora attivo.</p>
+            `
+          );
+        } catch (emailError: any) {
+          console.warn('⚠️ Impossibile inviare email di completamento:', emailError.message);
+          // Continua comunque - l'email è opzionale
+        }
       }
     }
 
