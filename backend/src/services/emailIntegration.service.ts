@@ -30,19 +30,32 @@ const transporter = nodemailer.createTransport(EMAIL_CONFIG);
 /**
  * Invia email a contatti esterni per un ticket
  * L'oggetto include il ticket ID per tracking delle risposte
+ * Supporta l'invio di allegati
  */
 export const sendTicketEmail = async (
   ticketId: string,
   toEmails: string[],
   subject: string,
   body: string,
-  fromUserId: string
+  fromUserId: string,
+  attachmentIds?: string[] // IDs degli allegati da includere
 ) => {
   try {
-    // Recupera ticket per thread ID
+    // Recupera ticket per thread ID e allegati
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { createdBy: true },
+      include: {
+        createdBy: true,
+        attachments: {
+          where: {
+            isDeleted: false,
+            ...(attachmentIds && attachmentIds.length > 0
+              ? { id: { in: attachmentIds } }
+              : {}
+            )
+          }
+        }
+      },
     });
 
     if (!ticket) {
@@ -62,6 +75,19 @@ export const sendTicketEmail = async (
     // Oggetto email include ticket ID per tracking
     const emailSubject = `[Ticket #${ticketId.slice(0, 8)}] ${subject}`;
 
+    // Lista allegati in HTML
+    let attachmentsHtml = '';
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      attachmentsHtml = `
+        <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 6px;">
+          <strong>📎 Allegati (${ticket.attachments.length}):</strong>
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            ${ticket.attachments.map(att => `<li>${att.fileName}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
     // Corpo email con footer
     const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -72,7 +98,8 @@ export const sendTicketEmail = async (
           <div style="background: white; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
             ${body}
           </div>
-          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+          ${attachmentsHtml}
+          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
             <p><strong>💬 Per rispondere:</strong> Rispondi direttamente a questa email. La tua risposta verrà aggiunta automaticamente al ticket.</p>
             <p><strong>🔖 Riferimento Ticket:</strong> #${ticketId.slice(0, 8)}</p>
             <p style="margin-top: 15px; font-size: 11px;">Questo messaggio è stato inviato dal sistema Kanban ISO di Europoligrafico.</p>
@@ -81,12 +108,19 @@ export const sendTicketEmail = async (
       </div>
     `;
 
-    // Invia email a tutti i destinatari
+    // Prepara allegati per nodemailer
+    const emailAttachments = ticket.attachments.map(att => ({
+      filename: att.fileName,
+      path: att.filePath
+    }));
+
+    // Invia email a tutti i destinatari con allegati
     const info = await transporter.sendMail({
       from: `"Europoligrafico - Assistenza" <${EMAIL_CONFIG.auth.user}>`,
       to: toEmails.join(', '),
       subject: emailSubject,
       html: emailBody,
+      attachments: emailAttachments,
       headers: {
         'Message-ID': emailThreadId,
         'In-Reply-To': emailThreadId,
@@ -95,6 +129,9 @@ export const sendTicketEmail = async (
     });
 
     console.log(`✅ Email inviata per ticket ${ticketId} a: ${toEmails.join(', ')}`);
+    if (emailAttachments.length > 0) {
+      console.log(`   📎 Allegati inclusi: ${emailAttachments.length}`);
+    }
     return info;
   } catch (error: any) {
     console.error('❌ Errore invio email:', error.message);
@@ -185,6 +222,7 @@ export const checkInboxForReplies = async (): Promise<void> => {
 
 /**
  * Elabora una email in arrivo e crea un commento sul ticket corrispondente
+ * Include il download e salvataggio degli allegati
  */
 async function processIncomingEmail(parsed: any) {
   const subject = parsed.subject || '';
@@ -192,9 +230,13 @@ async function processIncomingEmail(parsed: any) {
   const text = parsed.text || '';
   const html = parsed.html || '';
   const messageId = parsed.messageId;
+  const attachments = parsed.attachments || [];
 
   console.log(`\n📨 Elaborazione email da: ${from}`);
   console.log(`   Oggetto: ${subject}`);
+  if (attachments.length > 0) {
+    console.log(`   📎 Allegati: ${attachments.length}`);
+  }
 
   // Estrai ticket ID dall'oggetto
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
@@ -247,6 +289,50 @@ async function processIncomingEmail(parsed: any) {
       emailMessageId: messageId,
     },
   });
+
+  // Salva allegati se presenti
+  if (attachments.length > 0) {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    for (const attachment of attachments) {
+      try {
+        // Salta allegati inline (immagini embedded)
+        if (attachment.contentDisposition === 'inline') {
+          continue;
+        }
+
+        const fileName = attachment.filename || `attachment-${Date.now()}`;
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+
+        // Salva file su disco
+        fs.writeFileSync(filePath, attachment.content);
+
+        // Crea record in database
+        await prisma.attachment.create({
+          data: {
+            ticketId: ticket.id,
+            commentId: comment.id,
+            uploadedById: ticket.createdById,
+            fileName: fileName,
+            filePath: filePath,
+            fileSize: attachment.size || attachment.content.length,
+            mimeType: attachment.contentType || 'application/octet-stream',
+          },
+        });
+
+        console.log(`   ✅ Allegato salvato: ${fileName}`);
+      } catch (error) {
+        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, error);
+      }
+    }
+  }
 
   // Aggiorna il ticket (updated timestamp)
   await prisma.ticket.update({

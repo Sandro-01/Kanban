@@ -613,11 +613,11 @@ router.post('/:id/external-contacts', authenticate, auditLog('ADD_EXTERNAL_CONTA
   }
 });
 
-// Invia email a contatti esterni
+// Invia email a contatti esterni (con allegati opzionali)
 router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { subject, body, toEmails } = req.body;
+    const { subject, body, toEmails, attachmentIds } = req.body;
     const currentUser = req.user!;
 
     if (!subject || !body) {
@@ -631,26 +631,53 @@ router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), a
     // Verifica che ticket esista
     const ticket = await prisma.ticket.findUnique({
       where: { id },
+      include: {
+        attachments: {
+          where: {
+            isDeleted: false,
+            ...(attachmentIds && attachmentIds.length > 0
+              ? { id: { in: attachmentIds } }
+              : {}
+            )
+          }
+        }
+      }
     });
 
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    // Invia email
-    await sendTicketEmail(id, toEmails, subject, body, currentUser.id);
+    // Invia email con allegati
+    await sendTicketEmail(id, toEmails, subject, body, currentUser.id, attachmentIds);
+
+    // Prepara testo commento con info allegati
+    let commentContent = `📤 **Email inviata a:** ${toEmails.join(', ')}\n\n**Oggetto:** ${subject}\n\n**Messaggio:**\n${body}`;
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      commentContent += `\n\n**📎 Allegati inclusi (${ticket.attachments.length}):**\n`;
+      ticket.attachments.forEach(att => {
+        commentContent += `- ${att.fileName}\n`;
+      });
+    }
 
     // Crea commento per tracciare l'invio email
     await prisma.comment.create({
       data: {
         ticketId: id,
         userId: currentUser.id,
-        content: `📤 **Email inviata a:** ${toEmails.join(', ')}\n\n**Oggetto:** ${subject}\n\n**Messaggio:**\n${body}`,
+        content: commentContent,
       },
     });
 
     console.log(`✅ Email inviata per ticket ${id} a ${toEmails.join(', ')}`);
-    res.json({ message: 'Email sent successfully', sentTo: toEmails });
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      console.log(`   📎 Con ${ticket.attachments.length} allegati`);
+    }
+    res.json({
+      message: 'Email sent successfully',
+      sentTo: toEmails,
+      attachmentsCount: ticket.attachments?.length || 0
+    });
   } catch (error: any) {
     console.error('❌ Error sending email:', error);
     res.status(500).json({ error: error.message || 'Failed to send email' });

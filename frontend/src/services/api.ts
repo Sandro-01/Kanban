@@ -56,7 +56,7 @@ export const tickets = {
     api.post(`/tickets/${id}/external-contacts`, { emails }),
   removeExternalContact: (id: string, email: string) =>
     api.delete(`/tickets/${id}/external-contacts/${email}`),
-  sendEmail: (id: string, data: { subject: string; body: string; toEmails: string[] }) =>
+  sendEmail: (id: string, data: { subject: string; body: string; toEmails: string[]; attachmentIds?: string[] }) =>
     api.post(`/tickets/${id}/send-email`, data),
 };
 

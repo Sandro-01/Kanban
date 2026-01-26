@@ -95,17 +95,20 @@ Questo aggiungerà:
 2. **Clicca "📧 Comunicazioni Esterne"**
 3. **Aggiunge contatti esterni** (email fornitori/clienti)
 4. **Compone e invia email**
-5. **Sistema invia email** con riferimento ticket nell'oggetto: `[Ticket #abc12345]`
-6. **Crea commento** nel ticket per tracciare l'invio
+5. **Seleziona allegati opzionali** (se il ticket ha allegati, puoi includerli)
+6. **Sistema invia email** con riferimento ticket nell'oggetto: `[Ticket #abc12345]` e allegati inclusi
+7. **Crea commento** nel ticket per tracciare l'invio e lista allegati inviati
 
 ### Workflow Ricezione Email
 
-1. **Fornitore/Cliente risponde** all'email
+1. **Fornitore/Cliente risponde** all'email (può includere allegati)
 2. **Sistema controlla inbox** ogni 2 minuti (polling automatico)
 3. **Trova nuove email** con riferimento `[Ticket #abc12345]` nell'oggetto
-4. **Crea commento automatico** sul ticket con la risposta
-5. **Marca commento** come proveniente da email esterna (badge 📧)
-6. **Utente vede la risposta** nel ticket senza uscire dal sistema
+4. **Scarica allegati automaticamente** se presenti nella risposta
+5. **Crea commento automatico** sul ticket con la risposta
+6. **Allega i file ricevuti** al commento e al ticket
+7. **Marca commento** come proveniente da email esterna (badge 📧)
+8. **Utente vede risposta e allegati** nel ticket senza uscire dal sistema
 
 ### Esempio Flusso Completo
 
@@ -124,17 +127,20 @@ Questo aggiungerà:
 │ 3. IT invia email:                                      │
 │    Oggetto: [Ticket #a1b2c3d4] Preventivo stampante    │
 │    Corpo: "Buongiorno, avremmo bisogno di..."          │
+│    Allegati: specifiche.pdf, layout_ufficio.png        │
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
 │ 4. Fornitore riceve email → Risponde                    │
 │    "Gent.le Cliente, il preventivo è..."                │
+│    Allegati: preventivo_stampanti.pdf                   │
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
 │ 5. Sistema riceve risposta automaticamente              │
 │    Crea commento: 📧 Risposta da vendite@fornitore.it  │
 │    "Gent.le Cliente, il preventivo è..."                │
+│    Scarica allegato: preventivo_stampanti.pdf           │
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
@@ -185,6 +191,35 @@ Aggiungi il modale alla fine del JSX:
 )}
 ```
 
+## Gestione Allegati
+
+### Invio Allegati
+
+Quando invii un'email, puoi selezionare quali allegati del ticket includere:
+
+1. **Nel modale "Invia Email"** vedrai una sezione "📎 Allegati da Includere"
+2. **Checkbox per ogni allegato** del ticket (nome file + dimensione)
+3. **Seleziona quali includere** (puoi selezionare tutti, alcuni o nessuno)
+4. **Gli allegati vengono automaticamente allegati** all'email
+
+**Limiti:**
+- Dimensione massima per allegato: 10 MB (configurabile in `.env`)
+- Dimensione massima email totale: dipende dal provider SMTP
+
+### Ricezione Allegati
+
+Quando ricevi un'email con allegati:
+
+1. **Sistema scarica automaticamente** tutti gli allegati (esclusi inline/embedded)
+2. **Salva in `uploads/`** con nome univoco per evitare conflitti
+3. **Collega al ticket** e al commento della risposta
+4. **Tu li vedi** come normali allegati del ticket
+5. **Puoi scaricarli** cliccando sul nome file
+
+**Tipi supportati:**
+- Tutti i tipi di file (PDF, immagini, ZIP, documenti, etc.)
+- File inline (immagini embedded) vengono ignorati per evitare duplicati
+
 ## Indicatori Visivi
 
 ### Commenti da Email
@@ -193,6 +228,14 @@ I commenti ricevuti da email esterna hanno:
 - Badge **📧** all'inizio
 - Testo: `"📧 Risposta da email@fornitore.it:"`
 - Contenuto pulito (senza quote e firme)
+- **Allegati collegati** visibili sotto il commento
+
+### Commenti Invio Email
+
+I commenti di invio email mostrano:
+- **📤** badge per identificare invii
+- Lista destinatari
+- **📎 Lista allegati inclusi** se presenti
 
 ### Badge Contatti Esterni
 
@@ -269,18 +312,23 @@ Tutte le operazioni sono registrate:
 
 - **Polling interval**: 2 minuti (configurabile in `index.ts`)
 - **Max email/invio**: Illimitato (configura rate limit se necessario)
-- **Max dimensione allegati**: Non supportato nella versione corrente
+- **Max dimensione allegato**: 10 MB per file (configurabile in backend)
+- **Max allegati per email**: Illimitato (dipende da limiti SMTP provider)
 - **Timeout IMAP**: 30 secondi
 - **Timeout SMTP**: 10 secondi
+- **Allegati supportati**: Tutti i tipi di file
+- **Formato nomi file**: Univoci con timestamp per evitare conflitti
 
 ## Prossimi Sviluppi
 
-- [ ] Supporto allegati email
+- [x] ~~Supporto allegati email~~ ✅ **IMPLEMENTATO**
 - [ ] Filtri anti-spam
 - [ ] Email template personalizzabili
 - [ ] Webhook invece di polling (se provider lo supporta)
 - [ ] Notifiche push su nuove risposte
 - [ ] Integrazione con AI per categorizzazione automatica
+- [ ] Limite dimensione allegati configurabile
+- [ ] Compressione automatica allegati grandi
 
 ## Supporto
 

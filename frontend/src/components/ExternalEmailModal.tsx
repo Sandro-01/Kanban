@@ -18,6 +18,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleAddContact = async (e: React.FormEvent) => {
@@ -67,11 +68,18 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
         subject: emailSubject,
         body: emailBody,
         toEmails: selectedEmails,
+        attachmentIds: selectedAttachments.length > 0 ? selectedAttachments : undefined,
       });
-      alert('Email inviata con successo!');
+
+      const attachmentMsg = selectedAttachments.length > 0
+        ? ` con ${selectedAttachments.length} allegati`
+        : '';
+      alert(`Email inviata con successo${attachmentMsg}!`);
+
       setEmailSubject('');
       setEmailBody('');
       setSelectedEmails([]);
+      setSelectedAttachments([]);
       setMode('manage');
       onSuccess();
     } catch (error: any) {
@@ -87,6 +95,14 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
       setSelectedEmails(selectedEmails.filter((e) => e !== email));
     } else {
       setSelectedEmails([...selectedEmails, email]);
+    }
+  };
+
+  const toggleAttachmentSelection = (attachmentId: string) => {
+    if (selectedAttachments.includes(attachmentId)) {
+      setSelectedAttachments(selectedAttachments.filter((id) => id !== attachmentId));
+    } else {
+      setSelectedAttachments([...selectedAttachments, attachmentId]);
     }
   };
 
@@ -288,6 +304,49 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                   required
                 />
               </div>
+
+              {/* Selezione Allegati */}
+              {ticket.attachments && ticket.attachments.length > 0 && (
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="label">
+                    📎 Allegati da Includere ({selectedAttachments.length}/{ticket.attachments.length})
+                  </label>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '10px' }}>
+                    Seleziona gli allegati del ticket da includere nell'email
+                  </div>
+                  {ticket.attachments.filter((att: any) => !att.isDeleted).map((attachment: any) => (
+                    <label
+                      key={attachment.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px',
+                        background: selectedAttachments.includes(attachment.id) ? '#dbeafe' : '#f9fafb',
+                        border: `1px solid ${selectedAttachments.includes(attachment.id) ? '#3b82f6' : '#e5e7eb'}`,
+                        borderRadius: '6px',
+                        marginBottom: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedAttachments.includes(attachment.id)}
+                          onChange={() => toggleAttachmentSelection(attachment.id)}
+                          style={{ marginRight: '10px', width: '18px', height: '18px' }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: '500' }}>📄 {attachment.fileName}</div>
+                          <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                            {(attachment.fileSize / 1024).toFixed(1)} KB
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
 
               <div className="modal-actions">
                 <button
