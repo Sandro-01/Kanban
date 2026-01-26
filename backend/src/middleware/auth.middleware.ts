@@ -65,3 +65,24 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+// Autorizza basato su reparti specifici (ADMIN ha sempre accesso)
+export const authorizeDepartment = (...departments: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Non autenticato' });
+    }
+
+    // ADMIN ha sempre accesso a tutto
+    if (req.user.role === 'ADMIN') {
+      return next();
+    }
+
+    // Verifica che l'utente appartenga a uno dei reparti autorizzati
+    if (!req.user.department || !departments.includes(req.user.department)) {
+      return res.status(403).json({ error: 'Accesso negato - reparto non autorizzato' });
+    }
+
+    next();
+  };
+};

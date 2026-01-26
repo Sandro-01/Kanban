@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, AuthRequest, authorize } from '../middleware/auth.middleware';
+import { authenticate, AuthRequest, authorize, authorizeDepartment } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { sendEmail } from '../services/email.service';
 
@@ -19,8 +19,8 @@ const DEFAULT_ONBOARDING_TASKS = [
   { title: 'Accesso badge/chiavi', description: 'Fornire badge accesso e chiavi ufficio', order: 8, mandatory: true }
 ];
 
-// Lista onboarding
-router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthRequest, res: Response) => {
+// Lista onboarding (accessibile a HR, IT, Amministrazione)
+router.get('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), async (req: AuthRequest, res: Response) => {
   try {
     const onboardings = await prisma.onboarding.findMany({
       include: {
@@ -43,8 +43,8 @@ router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthReq
   }
 });
 
-// Crea processo onboarding
-router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
+// Crea processo onboarding (HR può creare, Responsabile può aggiungere dotazioni)
+router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), auditLog('CREATE_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
   try {
     const {
       employeeFirstName,
@@ -335,6 +335,31 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     res.json(onboarding);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Elimina onboarding (solo ADMIN)
+router.delete('/:id', authenticate, authorize('ADMIN'), auditLog('DELETE_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const onboarding = await prisma.onboarding.findUnique({
+      where: { id },
+      include: { tasks: true }
+    });
+
+    if (!onboarding) {
+      return res.status(404).json({ error: 'Onboarding non trovato' });
+    }
+
+    // Elimina tutte le task associate (cascade)
+    await prisma.onboarding.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Onboarding eliminato con successo' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
