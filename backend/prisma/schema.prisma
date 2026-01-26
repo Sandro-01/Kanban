@@ -56,8 +56,8 @@ enum UserStatus {
 
 model Onboarding {
   id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation("OnboardingUser", fields: [userId], references: [id])
+  userId          String?
+  user            User?    @relation("OnboardingUser", fields: [userId], references: [id])
   managerId       String
   manager         User     @relation("OnboardingManager", fields: [managerId], references: [id])
   status          OnboardingStatus @default(IN_PROGRESS)
@@ -67,7 +67,10 @@ model Onboarding {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Informazioni dipendente
+  // Informazioni nuovo dipendente (non ancora nel sistema)
+  employeeFirstName String   // Nome del nuovo dipendente
+  employeeLastName  String   // Cognome del nuovo dipendente
+  employeeEmail     String   // Email del nuovo dipendente
   sede            String?
   department      String?
   role            String?  // Ruolo/Mansione

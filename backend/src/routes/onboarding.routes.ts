@@ -47,7 +47,9 @@ router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthReq
 router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
   try {
     const {
-      userId,
+      employeeFirstName,
+      employeeLastName,
+      employeeEmail,
       managerId,
       startDate,
       expectedEndDate,
@@ -70,17 +72,10 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       additionalNotes
     } = req.body;
 
-    // Verifica utente
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ error: 'Utente non trovato' });
+    // Validazione campi obbligatori
+    if (!employeeFirstName || !employeeLastName || !employeeEmail) {
+      return res.status(400).json({ error: 'Nome, cognome ed email del dipendente sono obbligatori' });
     }
-
-    // Aggiorna status utente
-    await prisma.user.update({
-      where: { id: userId },
-      data: { status: 'ONBOARDING' }
-    });
 
     // Calcola data fine se non fornita
     let finalExpectedEndDate: Date;
@@ -96,7 +91,9 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
 
     const onboarding = await prisma.onboarding.create({
       data: {
-        userId,
+        employeeFirstName,
+        employeeLastName,
+        employeeEmail,
         managerId: finalManagerId,
         startDate: startDate ? new Date(startDate) : new Date(),
         expectedEndDate: finalExpectedEndDate,
@@ -121,7 +118,6 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
         }
       },
       include: {
-        user: true,
         manager: true,
         tasks: {
           orderBy: { order: 'asc' }
@@ -150,12 +146,12 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       softwareSummary += '</ul>';
     }
 
-    // Invia email benvenuto
+    // Invia email benvenuto al nuovo dipendente
     await sendEmail(
-      user.email,
+      employeeEmail,
       'Benvenuto - Processo di Onboarding',
       `
-        <h2>Benvenuto ${user.firstName}!</h2>
+        <h2>Benvenuto ${employeeFirstName}!</h2>
         <p>È stato avviato il tuo processo di onboarding.</p>
         <p><strong>Responsabile:</strong> ${onboarding.manager.firstName} ${onboarding.manager.lastName}</p>
         ${sede ? `<p><strong>Sede:</strong> ${sede}</p>` : ''}
@@ -182,7 +178,7 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
 
       // Prepara descrizione dettagliata per il ticket
       let ticketDescription = `**RICHIESTA DOTAZIONI PER NUOVO DIPENDENTE**\n\n`;
-      ticketDescription += `**Dipendente:** ${user.firstName} ${user.lastName} (${user.email})\n`;
+      ticketDescription += `**Dipendente:** ${employeeFirstName} ${employeeLastName} (${employeeEmail})\n`;
       ticketDescription += `**Responsabile:** ${onboarding.manager.firstName} ${onboarding.manager.lastName}\n`;
       if (sede) ticketDescription += `**Sede:** ${sede}\n`;
       if (department) ticketDescription += `**Reparto:** ${department}\n`;
@@ -220,7 +216,7 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
       // Crea il ticket assegnato al reparto IT
       const ticket = await prisma.ticket.create({
         data: {
-          title: `🆕 Onboarding: ${user.firstName} ${user.lastName} - Preparazione Dotazioni`,
+          title: `🆕 Onboarding: ${employeeFirstName} ${employeeLastName} - Preparazione Dotazioni`,
           description: ticketDescription,
           boardId: board.id,
           columnId: todoColumn.id,

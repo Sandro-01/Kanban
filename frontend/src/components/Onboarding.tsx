@@ -89,7 +89,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
           >
             <div className="process-header">
               <h3>
-                {onb.user.firstName} {onb.user.lastName}
+                {onb.employeeFirstName} {onb.employeeLastName}
               </h3>
               <span className={`status-badge status-${onb.status.toLowerCase()}`}>
                 {onb.status}
@@ -146,8 +146,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
             <div className="modal-header">
               <div>
                 <h2>
-                  Onboarding: {selectedOnboarding.user.firstName}{' '}
-                  {selectedOnboarding.user.lastName}
+                  Onboarding: {selectedOnboarding.employeeFirstName}{' '}
+                  {selectedOnboarding.employeeLastName}
                 </h2>
                 <span className={`status-badge status-${selectedOnboarding.status.toLowerCase()}`}>
                   {selectedOnboarding.status}
@@ -165,7 +165,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     📋 Informazioni di Base
                   </h4>
                   <div className="detail-item">
-                    <strong>Email:</strong> {selectedOnboarding.user.email}
+                    <strong>Email:</strong> {selectedOnboarding.employeeEmail}
                   </div>
                   <div className="detail-item">
                     <strong>Manager:</strong> {selectedOnboarding.manager.firstName}{' '}
@@ -321,7 +321,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 // Modal per creare nuovo onboarding
 const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
   const [formData, setFormData] = useState({
-    userId: '',
+    // Informazioni nuovo dipendente
+    employeeFirstName: '',
+    employeeLastName: '',
+    employeeEmail: '',
     managerId: currentUser.id,
     startDate: new Date().toISOString().split('T')[0],
     expectedEndDate: '',
@@ -371,21 +374,42 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               📋 Informazioni di Base
             </h3>
 
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div className="form-group">
+                <label className="label">Nome *</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="es. Marco"
+                  value={formData.employeeFirstName}
+                  onChange={(e) => setFormData({ ...formData, employeeFirstName: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Cognome *</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="es. Rossi"
+                  value={formData.employeeLastName}
+                  onChange={(e) => setFormData({ ...formData, employeeLastName: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="form-group">
-              <label className="label">Nuovo Dipendente *</label>
-              <select
+              <label className="label">Email *</label>
+              <input
+                type="email"
                 className="input"
-                value={formData.userId}
-                onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+                placeholder="es. marco.rossi@europoligrafico.it"
+                value={formData.employeeEmail}
+                onChange={(e) => setFormData({ ...formData, employeeEmail: e.target.value })}
                 required
-              >
-                <option value="">Seleziona un dipendente...</option>
-                {allUsers.map((u: any) => (
-                  <option key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName} ({u.email})
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="form-group">
