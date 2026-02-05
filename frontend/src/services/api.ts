@@ -26,25 +26,49 @@ export const auth = {
 // Tickets
 export const tickets = {
   getAll: (params?: any) => api.get('/tickets', { params }),
+  getById: (id: string) => api.get(`/tickets/${id}`),
   create: (data: any) => api.post('/tickets', data),
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
+  delete: (id: string) => api.delete(`/tickets/${id}`),
   addComment: (id: string, content: string) =>
     api.post(`/tickets/${id}/comments`, { content }),
-  uploadFile: (id: string, file: File) => {
+  deleteComment: (ticketId: string, commentId: string) =>
+    api.delete(`/tickets/${ticketId}/comments/${commentId}`),
+  uploadFile: (id: string, file: File, commentId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (commentId) {
+      formData.append('commentId', commentId);
+    }
     return api.post(`/tickets/${id}/attachments`, formData);
   },
+  deleteAttachment: (ticketId: string, attachmentId: string) =>
+    api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`),
   getHistory: (id: string) => api.get(`/tickets/${id}/history`),
+  assignUsers: (id: string, userIds: string[]) =>
+    api.post(`/tickets/${id}/assign-users`, { userIds }),
+  unassignUser: (id: string, userId: string) =>
+    api.delete(`/tickets/${id}/assign-users/${userId}`),
+  assignDepartments: (id: string, departments: string[]) =>
+    api.post(`/tickets/${id}/assign-departments`, { departments }),
+  // Email integration
+  addExternalContacts: (id: string, emails: string[]) =>
+    api.post(`/tickets/${id}/external-contacts`, { emails }),
+  removeExternalContact: (id: string, email: string) =>
+    api.delete(`/tickets/${id}/external-contacts/${email}`),
+  sendEmail: (id: string, data: { subject: string; body: string; toEmails: string[]; attachmentIds?: string[] }) =>
+    api.post(`/tickets/${id}/send-email`, data),
 };
 
 // Onboarding
 export const onboarding = {
   getAll: () => api.get('/onboarding'),
   create: (data: any) => api.post('/onboarding', data),
+  updateEquipment: (id: string, data: any) => api.put(`/onboarding/${id}/equipment`, data),
   updateTask: (id: string, taskId: string, completed: boolean) =>
     api.put(`/onboarding/${id}/tasks/${taskId}`, { completed }),
   get: (id: string) => api.get(`/onboarding/${id}`),
+  delete: (id: string) => api.delete(`/onboarding/${id}`),
 };
 
 // Offboarding
@@ -62,6 +86,11 @@ export const sla = {
   getConfig: () => api.get('/sla/config'),
   updateConfig: (data: any) => api.post('/sla/config', data),
   getViolations: () => api.get('/sla/violations'),
+};
+
+// Users
+export const users = {
+  getAll: () => api.get('/users'),
 };
 
 // Audit

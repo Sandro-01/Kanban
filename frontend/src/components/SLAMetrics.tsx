@@ -32,6 +32,21 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
       setConfigs(configsRes.data);
     } catch (error) {
       console.error('Errore caricamento SLA:', error);
+      // Set default values in case of error
+      setMetrics({
+        total: 0,
+        withinSLA: 0,
+        nearingSLA: 0,
+        violated: 0,
+        byPriority: {
+          CRITICAL: { total: 0, violated: 0 },
+          HIGH: { total: 0, violated: 0 },
+          MEDIUM: { total: 0, violated: 0 },
+          LOW: { total: 0, violated: 0 },
+        }
+      });
+      setViolations([]);
+      setConfigs([]);
     } finally {
       setLoading(false);
     }
@@ -39,6 +54,10 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
 
   if (loading) {
     return <div className="loading">Caricamento metriche SLA...</div>;
+  }
+
+  if (!metrics) {
+    return <div className="error">Errore nel caricamento dei dati SLA. Ricarica la pagina.</div>;
   }
 
   const slaCompliance = metrics.total > 0

@@ -37,6 +37,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       setSlaMetrics(slaRes.data);
     } catch (error) {
       console.error('Errore caricamento dati:', error);
+      // Set default values in case of error
+      setStats({
+        total: 0,
+        open: 0,
+        inProgress: 0,
+        resolved: 0,
+        closed: 0,
+        myTickets: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -46,52 +55,101 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     return <div className="loading">Caricamento...</div>;
   }
 
+  if (!stats) {
+    return <div className="error">Errore nel caricamento dei dati. Ricarica la pagina.</div>;
+  }
+
   return (
     <div className="page dashboard">
       <div className="page-header">
         <h1>Dashboard</h1>
-        <p>Benvenuto, {user.firstName}!</p>
+        <p>Benvenuto, {user.firstName} {user.lastName}!</p>
+        {user.role === 'ADMIN' ? (
+          <span className="badge" style={{ backgroundColor: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '5px', fontSize: '14px' }}>
+            👑 Amministratore
+          </span>
+        ) : (
+          <span className="badge" style={{ backgroundColor: '#3b82f6', color: 'white', padding: '5px 10px', borderRadius: '5px', fontSize: '14px' }}>
+            👤 {user.department || 'Utente'}
+          </span>
+        )}
       </div>
 
-      <div className="iso-banner">
-        <h2>Sistema Conforme ISO 9001/27001</h2>
-        <div className="iso-features">
-          <div className="iso-feature">
-            <span className="icon">🔒</span>
-            <span>Audit Logging</span>
-          </div>
-          <div className="iso-feature">
-            <span className="icon">📊</span>
-            <span>SLA Tracking</span>
-          </div>
-          <div className="iso-feature">
-            <span className="icon">📁</span>
-            <span>File Immutabili</span>
-          </div>
-          <div className="iso-feature">
-            <span className="icon">👥</span>
-            <span>Onboarding/Offboarding</span>
+      {user.role === 'ADMIN' ? (
+        // Admin view - show ISO banner
+        <div className="iso-banner">
+          <h2>Sistema Conforme ISO 9001/27001</h2>
+          <div className="iso-features">
+            <div className="iso-feature">
+              <span className="icon">🔒</span>
+              <span>Audit Logging</span>
+            </div>
+            <div className="iso-feature">
+              <span className="icon">📊</span>
+              <span>SLA Tracking</span>
+            </div>
+            <div className="iso-feature">
+              <span className="icon">📁</span>
+              <span>File Immutabili</span>
+            </div>
+            <div className="iso-feature">
+              <span className="icon">👥</span>
+              <span>Onboarding/Offboarding</span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // User view - show personalized message
+        <div className="card" style={{ padding: '20px', marginBottom: '20px', backgroundColor: '#f0f9ff', border: '1px solid #3b82f6' }}>
+          <h2 style={{ margin: '0 0 10px 0', color: '#1e40af' }}>👋 Benvenuto nella tua area personale</h2>
+          <p style={{ margin: 0, color: '#1e3a8a' }}>
+            Qui puoi visualizzare i tuoi ticket assegnati, monitorare le priorità e gestire le tue attività.
+          </p>
+        </div>
+      )}
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Ticket Totali</h3>
-          <div className="stat-value">{stats.total}</div>
-        </div>
-        <div className="stat-card">
-          <h3>Aperti</h3>
-          <div className="stat-value stat-warning">{stats.open}</div>
-        </div>
-        <div className="stat-card">
-          <h3>In Lavorazione</h3>
-          <div className="stat-value stat-info">{stats.inProgress}</div>
-        </div>
-        <div className="stat-card">
-          <h3>I Miei Ticket</h3>
-          <div className="stat-value stat-primary">{stats.myTickets}</div>
-        </div>
+        {user.role === 'ADMIN' ? (
+          // Admin stats - show all tickets
+          <>
+            <div className="stat-card">
+              <h3>Ticket Totali</h3>
+              <div className="stat-value">{stats.total}</div>
+            </div>
+            <div className="stat-card">
+              <h3>Aperti</h3>
+              <div className="stat-value stat-warning">{stats.open}</div>
+            </div>
+            <div className="stat-card">
+              <h3>In Lavorazione</h3>
+              <div className="stat-value stat-info">{stats.inProgress}</div>
+            </div>
+            <div className="stat-card">
+              <h3>Risolti</h3>
+              <div className="stat-value stat-success">{stats.resolved}</div>
+            </div>
+          </>
+        ) : (
+          // User stats - show only personal tickets
+          <>
+            <div className="stat-card">
+              <h3>I Miei Ticket</h3>
+              <div className="stat-value stat-primary">{stats.myTickets}</div>
+            </div>
+            <div className="stat-card">
+              <h3>Da Fare</h3>
+              <div className="stat-value stat-warning">{stats.open}</div>
+            </div>
+            <div className="stat-card">
+              <h3>In Lavorazione</h3>
+              <div className="stat-value stat-info">{stats.inProgress}</div>
+            </div>
+            <div className="stat-card">
+              <h3>Completati</h3>
+              <div className="stat-value stat-success">{stats.resolved}</div>
+            </div>
+          </>
+        )}
       </div>
 
       {slaMetrics && (
@@ -139,24 +197,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <p>Gestisci i ticket</p>
             </div>
           </a>
-          {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
-            <>
-              <a href="/onboarding" className="quick-link">
-                <span className="icon">🚀</span>
-                <div>
-                  <h3>Onboarding</h3>
-                  <p>Gestisci nuovi utenti</p>
-                </div>
-              </a>
-              <a href="/offboarding" className="quick-link">
-                <span className="icon">👋</span>
-                <div>
-                  <h3>Offboarding</h3>
-                  <p>Processo uscita</p>
-                </div>
-              </a>
-            </>
-          )}
           <a href="/sla" className="quick-link">
             <span className="icon">⏱️</span>
             <div>
@@ -164,6 +204,50 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <p>Monitoraggio SLA</p>
             </div>
           </a>
+
+          {/* Admin-only links */}
+          {user.role === 'ADMIN' && (
+            <>
+              <a href="/users" className="quick-link">
+                <span className="icon">👥</span>
+                <div>
+                  <h3>Gestione Utenti</h3>
+                  <p>Crea, modifica, elimina utenti</p>
+                </div>
+              </a>
+              <a href="/audit" className="quick-link">
+                <span className="icon">📝</span>
+                <div>
+                  <h3>Audit Logs</h3>
+                  <p>Tracciamento attività</p>
+                </div>
+              </a>
+            </>
+          )}
+
+          {/* Onboarding - visible to ADMIN and HR department */}
+          {(user.role === 'ADMIN' || user.department === 'Risorse Umane') && (
+            <a href="/onboarding" className="quick-link">
+              <span className="icon">🚀</span>
+              <div>
+                <h3>Onboarding</h3>
+                <p>Gestisci nuovi dipendenti</p>
+              </div>
+            </a>
+          )}
+
+          {/* Offboarding - visible to ADMIN, HR and IT departments */}
+          {(user.role === 'ADMIN' ||
+            user.department === 'Risorse Umane' ||
+            user.department === 'IT/Sistemi') && (
+            <a href="/offboarding" className="quick-link">
+              <span className="icon">👋</span>
+              <div>
+                <h3>Offboarding</h3>
+                <p>Processo uscita dipendenti</p>
+              </div>
+            </a>
+          )}
         </div>
       </div>
     </div>

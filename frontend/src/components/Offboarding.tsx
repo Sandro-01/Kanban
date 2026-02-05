@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { offboarding as offboardingApi } from '../services/api';
+import { offboarding as offboardingApi, users as usersApi } from '../services/api';
 import './ProcessList.css';
 
 interface OffboardingProps {
@@ -10,9 +10,12 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
   const [offboardings, setOffboardings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOffboarding, setSelectedOffboarding] = useState<any>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   useEffect(() => {
     loadOffboardings();
+    loadUsers();
   }, []);
 
   const loadOffboardings = async () => {
@@ -23,6 +26,15 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
       console.error('Errore caricamento offboarding:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await usersApi.getAll();
+      setAllUsers(response.data);
+    } catch (error) {
+      console.error('Errore caricamento utenti:', error);
     }
   };
 
@@ -54,6 +66,13 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
       <div className="page-header">
         <h1>Offboarding</h1>
         <p>Gestisci i processi di offboarding e revoca accessi</p>
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowNewForm(true)}
+          style={{ marginLeft: 'auto' }}
+        >
+          + Nuovo Offboarding
+        </button>
       </div>
 
       <div className="alert alert-warning">
@@ -219,6 +238,146 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
           </div>
         </div>
       )}
+
+      {showNewForm && (
+        <NewOffboardingModal
+          allUsers={allUsers}
+          currentUser={user}
+          onClose={() => setShowNewForm(false)}
+          onCreated={loadOffboardings}
+        />
+      )}
+    </div>
+  );
+};
+
+// Modal per creare nuovo offboarding
+const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
+  const [formData, setFormData] = useState({
+    userId: '',
+    managerId: currentUser.id,
+    startDate: new Date().toISOString().split('T')[0],
+    expectedEndDate: '',
+    reason: 'Dimissioni'
+  });
+
+  const reasons = [
+    'Dimissioni',
+    'Licenziamento',
+    'Fine Contratto',
+    'Pensionamento',
+    'Trasferimento',
+    'Altro'
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await offboardingApi.create(formData);
+      alert('Offboarding creato con successo!');
+      onCreated();
+      onClose();
+    } catch (error: any) {
+      console.error('Errore creazione offboarding:', error);
+      alert(error.response?.data?.error || 'Errore durante la creazione dell\'offboarding');
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Nuovo Offboarding</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">Dipendente in Uscita *</label>
+            <select
+              className="input"
+              value={formData.userId}
+              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+              required
+            >
+              <option value="">Seleziona un dipendente...</option>
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} ({u.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Manager Responsabile *</label>
+            <select
+              className="input"
+              value={formData.managerId}
+              onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+              required
+            >
+              {allUsers.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} {u.department && `(${u.department})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Motivo Uscita *</label>
+            <select
+              className="input"
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              required
+            >
+              {reasons.map((reason) => (
+                <option key={reason} value={reason}>
+                  {reason}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Data Inizio Processo *</label>
+            <input
+              type="date"
+              className="input"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Data Prevista Completamento *</label>
+            <input
+              type="date"
+              className="input"
+              value={formData.expectedEndDate}
+              onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="alert alert-danger" style={{ marginBottom: '15px' }}>
+            ⚠️ <strong>ISO 27001:</strong> La checklist di revoca accessi verrà creata automaticamente.
+            Tutti i task obbligatori devono essere completati.
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Annulla
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Crea Offboarding
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

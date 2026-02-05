@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, AuthRequest, authorize } from '../middleware/auth.middleware';
+import { authenticate, AuthRequest, authorize, authorizeDepartment } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { sendEmail } from '../services/email.service';
 
@@ -19,8 +19,8 @@ const DEFAULT_OFFBOARDING_TASKS = [
   { title: 'Documenti finali', description: 'Firma documenti di fine rapporto', order: 8, mandatory: true }
 ];
 
-// Lista offboarding
-router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthRequest, res: Response) => {
+// Lista offboarding (accessibile a HR, IT, Amministrazione)
+router.get('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), async (req: AuthRequest, res: Response) => {
   try {
     const offboardings = await prisma.offboarding.findMany({
       include: {
@@ -43,8 +43,8 @@ router.get('/', authenticate, authorize('ADMIN', 'MANAGER'), async (req: AuthReq
   }
 });
 
-// Crea processo offboarding
-router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_OFFBOARDING', 'Offboarding'), async (req: AuthRequest, res: Response) => {
+// Crea processo offboarding (HR, IT, Amministrazione)
+router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), auditLog('CREATE_OFFBOARDING', 'Offboarding'), async (req: AuthRequest, res: Response) => {
   try {
     const { userId, reason, expectedDays } = req.body;
 
@@ -101,8 +101,8 @@ router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('CREATE_O
   }
 });
 
-// Completa task offboarding
-router.put('/:id/tasks/:taskId', authenticate, authorize('ADMIN', 'MANAGER'), auditLog('COMPLETE_OFFBOARDING_TASK', 'OffboardingTask'), async (req: AuthRequest, res: Response) => {
+// Completa task offboarding (HR, IT, Amministrazione)
+router.put('/:id/tasks/:taskId', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), auditLog('COMPLETE_OFFBOARDING_TASK', 'OffboardingTask'), async (req: AuthRequest, res: Response) => {
   try {
     const { taskId } = req.params;
     const { completed } = req.body;
@@ -125,8 +125,8 @@ router.put('/:id/tasks/:taskId', authenticate, authorize('ADMIN', 'MANAGER'), au
     });
 
     if (offboarding) {
-      const mandatoryTasks = offboarding.tasks.filter(t => t.mandatory);
-      const completedMandatory = mandatoryTasks.filter(t => t.completed);
+      const mandatoryTasks = offboarding.tasks.filter((t: any) => t.mandatory);
+      const completedMandatory = mandatoryTasks.filter((t: any) => t.completed);
 
       if (mandatoryTasks.length === completedMandatory.length) {
         await prisma.offboarding.update({
@@ -181,6 +181,31 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     res.json(offboarding);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Elimina offboarding (solo ADMIN)
+router.delete('/:id', authenticate, authorize('ADMIN'), auditLog('DELETE_OFFBOARDING', 'Offboarding'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const offboarding = await prisma.offboarding.findUnique({
+      where: { id },
+      include: { tasks: true }
+    });
+
+    if (!offboarding) {
+      return res.status(404).json({ error: 'Offboarding non trovato' });
+    }
+
+    // Elimina tutte le task associate (cascade)
+    await prisma.offboarding.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Offboarding eliminato con successo' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
