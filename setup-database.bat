@@ -50,7 +50,8 @@ REM Create a temporary SQL file
 echo DROP DATABASE IF EXISTS kanban_dev; > temp_setup.sql
 echo DROP USER IF EXISTS kanban_dev; >> temp_setup.sql
 echo CREATE DATABASE kanban_dev; >> temp_setup.sql
-echo CREATE USER kanban_dev WITH PASSWORD 'kanban123'; >> temp_setup.sql
+echo CREATE USER kanban_dev WITH PASSWORD 'kanban123' CREATEDB; >> temp_setup.sql
+echo GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev; >> temp_setup.sql
 echo ALTER DATABASE kanban_dev OWNER TO kanban_dev; >> temp_setup.sql
 
 REM Execute all commands in a single connection
