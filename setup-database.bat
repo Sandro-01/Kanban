@@ -9,6 +9,38 @@ echo.
 REM Set PostgreSQL path (adjust if your version is different)
 set PSQL_PATH=C:\Program Files\PostgreSQL\16\bin\psql.exe
 
+echo 📋 Step 0: Verifica file .env...
+if not exist "backend\.env" (
+    echo Creazione file .env...
+    (
+        echo DATABASE_URL="postgresql://kanban_dev:kanban123@localhost:5432/kanban_dev?schema=public"
+        echo.
+        echo PORT=4000
+        echo NODE_ENV=development
+        echo.
+        echo JWT_SECRET=development-secret-key-change-in-production
+        echo.
+        echo EMAIL_HOST=smtp.gmail.com
+        echo EMAIL_PORT=587
+        echo EMAIL_SECURE=false
+        echo EMAIL_USER=assistenza@europoligrafico.it
+        echo EMAIL_PASSWORD=
+        echo EMAIL_FROM=assistenza@europoligrafico.it
+        echo.
+        echo MAX_FILE_SIZE=10485760
+        echo UPLOAD_DIR=../uploads
+        echo.
+        echo SLA_CRITICAL=4
+        echo SLA_HIGH=24
+        echo SLA_MEDIUM=72
+        echo SLA_LOW=168
+    ) > backend\.env
+    echo ✅ File .env creato!
+) else (
+    echo ✅ File .env già esistente
+)
+echo.
+
 echo 📋 Step 1: Creazione database e utente...
 echo.
 
