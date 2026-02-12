@@ -43,22 +43,30 @@ echo.
 
 echo 📋 Step 1: Creazione database e utente...
 echo.
+echo ATTENZIONE: Ti verrà chiesta la password di PostgreSQL (utente postgres)
+echo.
 
-REM Create database and user
-"%PSQL_PATH%" -U postgres -c "DROP DATABASE IF EXISTS kanban_dev;"
-"%PSQL_PATH%" -U postgres -c "DROP USER IF EXISTS kanban_dev;"
-"%PSQL_PATH%" -U postgres -c "CREATE DATABASE kanban_dev;"
-"%PSQL_PATH%" -U postgres -c "CREATE USER kanban_dev WITH PASSWORD 'kanban123';"
-"%PSQL_PATH%" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev;"
-"%PSQL_PATH%" -U postgres -c "ALTER DATABASE kanban_dev OWNER TO kanban_dev;"
+REM Create a temporary SQL file
+echo DROP DATABASE IF EXISTS kanban_dev; > temp_setup.sql
+echo DROP USER IF EXISTS kanban_dev; >> temp_setup.sql
+echo CREATE DATABASE kanban_dev; >> temp_setup.sql
+echo CREATE USER kanban_dev WITH PASSWORD 'kanban123'; >> temp_setup.sql
+echo ALTER DATABASE kanban_dev OWNER TO kanban_dev; >> temp_setup.sql
+
+REM Execute all commands in a single connection
+"%PSQL_PATH%" -U postgres -f temp_setup.sql
 
 if errorlevel 1 (
     echo.
     echo ❌ Errore nella creazione del database!
     echo Verifica che PostgreSQL sia avviato e che la password di postgres sia corretta.
+    del temp_setup.sql
     pause
     exit /b 1
 )
+
+REM Clean up temp file
+del temp_setup.sql
 
 echo ✅ Database creato!
 echo.
