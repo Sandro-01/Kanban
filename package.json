@@ -1,19 +1,44 @@
 {
   "name": "kanban-iso-compliance",
   "version": "1.0.0",
-  "description": "Kanban board with ISO 9001/27001 compliance, onboarding/offboarding, and SLA tracking",
+  "description": "Sistema Kanban ISO 9001/27001 Compliant con Onboarding/Offboarding e SLA Tracking",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
-    "build": "cd frontend && npm run build",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "db:setup": "cd backend && npx prisma generate && npx prisma migrate deploy && npx prisma db seed",
+    "db:reset": "cd backend && npx prisma migrate reset",
+    "db:studio": "cd backend && npx prisma studio",
+    "db:seed": "cd backend && npx prisma db seed",
+    "start:prod": "cd backend && npm start"
   },
-  "keywords": ["kanban", "iso", "compliance", "sla", "onboarding"],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sandro-01/Kanban.git"
+  },
+  "keywords": [
+    "kanban",
+    "iso-9001",
+    "iso-27001",
+    "compliance",
+    "onboarding",
+    "offboarding",
+    "sla",
+    "ticketing",
+    "audit"
+  ],
+  "author": "Europoligrafico",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
