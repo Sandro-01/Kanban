@@ -12,7 +12,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 # Configura encoding console per supportare caratteri Unicode
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
-$null = chcp 65001
+$null = chcp 65001 2>$null
 
 # Versione minima richiesta
 $RequiredNodeVersion = 20
@@ -27,9 +27,9 @@ function Write-ColorOutput {
 }
 
 Write-Host ""
-Write-ColorOutput "╔════════════════════════════════════════════════════════════╗" "Cyan"
-Write-ColorOutput "║  Script Installazione Progetto Kanban ISO 9001/27001     ║" "Cyan"
-Write-ColorOutput "╚════════════════════════════════════════════════════════════╝" "Cyan"
+Write-ColorOutput "+============================================================+" "Cyan"
+Write-ColorOutput "|  Script Installazione Progetto Kanban ISO 9001/27001     |" "Cyan"
+Write-ColorOutput "+============================================================+" "Cyan"
 Write-Host ""
 
 # Funzione per verificare se un comando esiste
@@ -41,7 +41,7 @@ function Test-CommandExists {
 
 # Funzione per trovare PostgreSQL in vari percorsi Windows
 function Find-PostgreSQL {
-    # Controlla se psql è già nel PATH
+    # Controlla se psql e' gia' nel PATH
     if (Test-CommandExists "psql") {
         return $true
     }
@@ -90,7 +90,7 @@ Write-ColorOutput "[1/7] Verifica prerequisiti..." "Yellow"
 
 # Verifica Node.js
 if (-not (Test-NodeVersion)) {
-    Write-ColorOutput "✗ Node.js $RequiredNodeVersion LTS o superiore richiesto!" "Red"
+    Write-ColorOutput "[X] Node.js $RequiredNodeVersion LTS o superiore richiesto!" "Red"
     Write-Host ""
     Write-Host "Scarica e installa Node.js da: https://nodejs.org/"
     Write-Host ""
@@ -104,24 +104,24 @@ if (-not (Test-NodeVersion)) {
 }
 
 $NodeVersion = node -v
-Write-ColorOutput "✓ Node.js installato: $NodeVersion" "Green"
+Write-ColorOutput "[OK] Node.js installato: $NodeVersion" "Green"
 
 # Verifica npm
 if (-not (Test-CommandExists "npm")) {
-    Write-ColorOutput "✗ npm non è installato!" "Red"
+    Write-ColorOutput "[X] npm non e' installato!" "Red"
     exit 1
 }
 
 $NpmVersion = npm -v
-Write-ColorOutput "✓ npm installato: v$NpmVersion" "Green"
+Write-ColorOutput "[OK] npm installato: v$NpmVersion" "Green"
 
 # Verifica PostgreSQL (opzionale)
 if (Find-PostgreSQL) {
     $PgVersion = psql --version
-    Write-ColorOutput "✓ PostgreSQL installato: $PgVersion" "Green"
+    Write-ColorOutput "[OK] PostgreSQL installato: $PgVersion" "Green"
 }
 else {
-    Write-ColorOutput "⚠ PostgreSQL non trovato (opzionale per sviluppo locale)" "Yellow"
+    Write-ColorOutput "[!] PostgreSQL non trovato (opzionale per sviluppo locale)" "Yellow"
     Write-Host "   Installalo da: https://www.postgresql.org/download/windows/"
 }
 
@@ -130,10 +130,10 @@ Write-Host ""
 Write-ColorOutput "[2/7] Installazione dipendenze root..." "Yellow"
 npm install
 if ($LASTEXITCODE -ne 0) {
-    Write-ColorOutput "✗ Errore installazione dipendenze root!" "Red"
+    Write-ColorOutput "[X] Errore installazione dipendenze root!" "Red"
     exit 1
 }
-Write-ColorOutput "✓ Dipendenze root installate" "Green"
+Write-ColorOutput "[OK] Dipendenze root installate" "Green"
 
 # Installazione dipendenze backend
 Write-Host ""
@@ -142,21 +142,21 @@ Push-Location backend
 npm install
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
-    Write-ColorOutput "✗ Errore installazione dipendenze backend!" "Red"
+    Write-ColorOutput "[X] Errore installazione dipendenze backend!" "Red"
     exit 1
 }
-Write-ColorOutput "✓ Dipendenze backend installate" "Green"
+Write-ColorOutput "[OK] Dipendenze backend installate" "Green"
 
 # Configurazione .env backend
 Write-Host ""
 Write-ColorOutput "[4/7] Configurazione ambiente backend..." "Yellow"
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
-    Write-ColorOutput "✓ File .env creato da .env.example" "Green"
-    Write-ColorOutput "⚠ IMPORTANTE: Modifica backend\.env con le tue credenziali!" "Yellow"
+    Write-ColorOutput "[OK] File .env creato da .env.example" "Green"
+    Write-ColorOutput "[!] IMPORTANTE: Modifica backend\.env con le tue credenziali!" "Yellow"
 }
 else {
-    Write-ColorOutput "⚠ File .env già esistente, non sovrascritto" "Yellow"
+    Write-ColorOutput "[!] File .env gia' esistente, non sovrascritto" "Yellow"
 }
 
 # Setup Prisma
@@ -165,13 +165,13 @@ Write-ColorOutput "[5/7] Setup Prisma ORM..." "Yellow"
 npx prisma generate
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
-    Write-ColorOutput "✗ Errore generazione Prisma client!" "Red"
+    Write-ColorOutput "[X] Errore generazione Prisma client!" "Red"
     exit 1
 }
-Write-ColorOutput "✓ Prisma client generato" "Green"
+Write-ColorOutput "[OK] Prisma client generato" "Green"
 
 # Nota per database
-Write-ColorOutput "⚠ NOTA: Per creare il database esegui:" "Yellow"
+Write-ColorOutput "[!] NOTA: Per creare il database esegui:" "Yellow"
 Write-Host "  npx prisma migrate dev"
 Write-Host "  npx prisma db seed"
 
@@ -184,10 +184,10 @@ Push-Location frontend
 npm install
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
-    Write-ColorOutput "✗ Errore installazione dipendenze frontend!" "Red"
+    Write-ColorOutput "[X] Errore installazione dipendenze frontend!" "Red"
     exit 1
 }
-Write-ColorOutput "✓ Dipendenze frontend installate" "Green"
+Write-ColorOutput "[OK] Dipendenze frontend installate" "Green"
 Pop-Location
 
 # Creazione directory uploads
@@ -195,17 +195,17 @@ Write-Host ""
 Write-ColorOutput "[7/7] Configurazione directory..." "Yellow"
 if (-not (Test-Path "uploads")) {
     New-Item -ItemType Directory -Path "uploads" | Out-Null
-    Write-ColorOutput "✓ Directory uploads creata" "Green"
+    Write-ColorOutput "[OK] Directory uploads creata" "Green"
 }
 else {
-    Write-ColorOutput "✓ Directory uploads già esistente" "Green"
+    Write-ColorOutput "[OK] Directory uploads gia' esistente" "Green"
 }
 
 # Riepilogo
 Write-Host ""
-Write-ColorOutput "╔════════════════════════════════════════════════════════════╗" "Green"
-Write-ColorOutput "║  ✓ Installazione completata con successo!                 ║" "Green"
-Write-ColorOutput "╚════════════════════════════════════════════════════════════╝" "Green"
+Write-ColorOutput "+============================================================+" "Green"
+Write-ColorOutput "|  [OK] Installazione completata con successo!              |" "Green"
+Write-ColorOutput "+============================================================+" "Green"
 Write-Host ""
 Write-ColorOutput "Prossimi passi:" "Cyan"
 Write-Host ""
@@ -223,7 +223,7 @@ Write-Host "   cd backend"
 Write-Host "   npx prisma migrate dev"
 Write-Host "   npx prisma db seed"
 Write-Host ""
-Write-ColorOutput "4. Avvia il progetto in modalità sviluppo" "Yellow"
+Write-ColorOutput "4. Avvia il progetto in modalita' sviluppo" "Yellow"
 Write-Host "   Dalla root del progetto:"
 Write-ColorOutput "   npm run dev" "Green"
 Write-Host ""
@@ -242,5 +242,5 @@ Write-Host "   Admin:   admin@europoligrafico.it / admin123"
 Write-Host "   Manager: manager@europoligrafico.it / manager123"
 Write-Host "   User:    user@europoligrafico.it / user123"
 Write-Host ""
-Write-ColorOutput "⚠ Cambia le password in produzione!" "Yellow"
+Write-ColorOutput "[!] Cambia le password in produzione!" "Yellow"
 Write-Host ""
