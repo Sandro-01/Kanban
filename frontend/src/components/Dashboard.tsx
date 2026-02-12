@@ -37,6 +37,21 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       setSlaMetrics(slaRes.data);
     } catch (error) {
       console.error('Errore caricamento dati:', error);
+      // Set default values on error
+      setStats({
+        total: 0,
+        open: 0,
+        inProgress: 0,
+        resolved: 0,
+        closed: 0,
+        myTickets: 0,
+      });
+      setSlaMetrics({
+        withinSLA: 0,
+        nearingSLA: 0,
+        violated: 0,
+        byPriority: {},
+      });
     } finally {
       setLoading(false);
     }

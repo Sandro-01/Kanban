@@ -39,6 +39,14 @@ if not exist "backend\.env" (
 ) else (
     echo ✅ File .env già esistente
 )
+
+if not exist "frontend\.env" (
+    echo Creazione file frontend\.env...
+    echo REACT_APP_API_URL=http://localhost:4000/api > frontend\.env
+    echo ✅ File frontend\.env creato!
+) else (
+    echo ✅ File frontend\.env già esistente
+)
 echo.
 
 echo 📋 Step 1: Creazione database e utente...
