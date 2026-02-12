@@ -9,6 +9,11 @@
 # Imposta policy di esecuzione
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 # Versione minima richiesta
 $RequiredNodeVersion = 20
 
@@ -32,6 +37,40 @@ function Test-CommandExists {
     param($Command)
     $null = Get-Command $Command -ErrorAction SilentlyContinue
     return $?
+}
+
+# Funzione per trovare PostgreSQL in vari percorsi Windows
+function Find-PostgreSQL {
+    # Controlla se psql è già nel PATH
+    if (Test-CommandExists "psql") {
+        return $true
+    }
+
+    # Percorsi comuni di installazione PostgreSQL su Windows
+    $pgPaths = @(
+        "C:\Program Files\PostgreSQL\*\bin",
+        "C:\Programmi\PostgreSQL\*\bin",
+        "C:\Program Files (x86)\PostgreSQL\*\bin",
+        "$env:ProgramFiles\PostgreSQL\*\bin",
+        "${env:ProgramFiles(x86)}\PostgreSQL\*\bin"
+    )
+
+    foreach ($pathPattern in $pgPaths) {
+        $resolvedPaths = Get-Item $pathPattern -ErrorAction SilentlyContinue
+        if ($resolvedPaths) {
+            # Prendi l'ultima versione trovata
+            $pgBinPath = ($resolvedPaths | Sort-Object -Descending | Select-Object -First 1).FullName
+
+            # Aggiungi temporaneamente al PATH per questa sessione
+            $env:Path = "$pgBinPath;$env:Path"
+
+            if (Test-CommandExists "psql") {
+                return $true
+            }
+        }
+    }
+
+    return $false
 }
 
 # Funzione per verificare versione Node.js
@@ -77,12 +116,13 @@ $NpmVersion = npm -v
 Write-ColorOutput "✓ npm installato: v$NpmVersion" "Green"
 
 # Verifica PostgreSQL (opzionale)
-if (Test-CommandExists "psql") {
+if (Find-PostgreSQL) {
     $PgVersion = psql --version
     Write-ColorOutput "✓ PostgreSQL installato: $PgVersion" "Green"
 }
 else {
     Write-ColorOutput "⚠ PostgreSQL non trovato (opzionale per sviluppo locale)" "Yellow"
+    Write-Host "   Installalo da: https://www.postgresql.org/download/windows/"
 }
 
 # Installazione dipendenze root

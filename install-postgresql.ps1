@@ -5,6 +5,11 @@
 # Richiede privilegi di amministratore
 # ==============================================================================
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 # Verifica privilegi amministratore
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -26,9 +31,30 @@ Write-Host ""
 
 # Verifica se PostgreSQL è già installato
 Write-Host "🔍 Verifica se PostgreSQL è già installato..." -ForegroundColor Yellow
-$postgresInstalled = Test-Path "C:\Program Files\PostgreSQL\15"
-if ($postgresInstalled) {
-    Write-Host "✅ PostgreSQL 15 è già installato!" -ForegroundColor Green
+
+# Controlla in vari percorsi possibili (Windows standard e italiano)
+$pgPaths = @(
+    "C:\Program Files\PostgreSQL\*",
+    "C:\Programmi\PostgreSQL\*",
+    "C:\Program Files (x86)\PostgreSQL\*",
+    "$env:ProgramFiles\PostgreSQL\*",
+    "${env:ProgramFiles(x86)}\PostgreSQL\*"
+)
+
+$existingInstallations = @()
+foreach ($pathPattern in $pgPaths) {
+    $found = Get-Item $pathPattern -ErrorAction SilentlyContinue
+    if ($found) {
+        $existingInstallations += $found
+    }
+}
+
+if ($existingInstallations.Count -gt 0) {
+    Write-Host "✅ PostgreSQL già installato:" -ForegroundColor Green
+    foreach ($installation in $existingInstallations) {
+        Write-Host "   - $($installation.FullName)" -ForegroundColor Cyan
+    }
+    Write-Host ""
     $response = Read-Host "Vuoi procedere comunque con l'installazione? (S/N)"
     if ($response -ne "S" -and $response -ne "s") {
         Write-Host "Installazione annullata." -ForegroundColor Yellow

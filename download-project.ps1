@@ -9,6 +9,11 @@
 # Imposta policy di esecuzione
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 # Configurazione
 $RepoUrl = "https://github.com/Sandro-01/Kanban.git"
 $DefaultDir = "C:\Kanban"

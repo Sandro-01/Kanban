@@ -25,6 +25,11 @@
 
 $ErrorActionPreference = "Stop"
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 # Funzioni per output colorato
 function Write-Info {
     param([string]$Message)
@@ -50,6 +55,40 @@ function Test-CommandExists {
     param([string]$Command)
     $null = Get-Command $Command -ErrorAction SilentlyContinue
     return $?
+}
+
+# Funzione per trovare PostgreSQL in vari percorsi Windows
+function Find-PostgreSQL {
+    # Controlla se psql è già nel PATH
+    if (Test-CommandExists "psql") {
+        return $true
+    }
+
+    # Percorsi comuni di installazione PostgreSQL su Windows
+    $pgPaths = @(
+        "C:\Program Files\PostgreSQL\*\bin",
+        "C:\Programmi\PostgreSQL\*\bin",
+        "C:\Program Files (x86)\PostgreSQL\*\bin",
+        "$env:ProgramFiles\PostgreSQL\*\bin",
+        "${env:ProgramFiles(x86)}\PostgreSQL\*\bin"
+    )
+
+    foreach ($pathPattern in $pgPaths) {
+        $resolvedPaths = Get-Item $pathPattern -ErrorAction SilentlyContinue
+        if ($resolvedPaths) {
+            # Prendi l'ultima versione trovata
+            $pgBinPath = ($resolvedPaths | Sort-Object -Descending | Select-Object -First 1).FullName
+
+            # Aggiungi temporaneamente al PATH per questa sessione
+            $env:Path = "$pgBinPath;$env:Path"
+
+            if (Test-CommandExists "psql") {
+                return $true
+            }
+        }
+    }
+
+    return $false
 }
 
 # Banner
@@ -102,7 +141,7 @@ if (Test-CommandExists "npm") {
 }
 
 # Verifica PostgreSQL (opzionale)
-if (Test-CommandExists "psql") {
+if (Find-PostgreSQL) {
     $psqlVersion = (psql --version).Split(" ")[2]
     Write-Success "PostgreSQL installato (versione $psqlVersion)"
 } else {

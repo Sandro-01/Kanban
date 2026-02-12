@@ -2,6 +2,11 @@
 # Script di Avvio Kanban ISO - Backend + Frontend (PowerShell)
 # ==============================================================================
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 Write-Host ""
 Write-Host "====================================================================" -ForegroundColor Cyan
 Write-Host "  Avvio Sistema Kanban ISO 9001/27001" -ForegroundColor Cyan
