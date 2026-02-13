@@ -19,7 +19,7 @@ echo.
 echo ✅ Sistema avviato!
 echo.
 echo 🌐 Frontend: http://localhost:3000
-echo 🔌 Backend:  http://localhost:4000
+echo 🔌 Backend:  http://localhost:5000
 echo.
 echo 📧 Login: admin@europoligrafico.it / admin123
 echo.
