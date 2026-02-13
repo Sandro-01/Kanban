@@ -174,7 +174,7 @@ export const checkInboxForReplies = async (): Promise<void> => {
 
           fetch.on('message', (msg, seqno) => {
             msg.on('body', (stream, info) => {
-              simpleParser(stream, async (err, parsed) => {
+              simpleParser(stream as any, async (err, parsed) => {
                 if (err) {
                   console.error('Errore parsing email:', err);
                   return;
