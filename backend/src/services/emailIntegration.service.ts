@@ -148,14 +148,14 @@ export const checkInboxForReplies = async (): Promise<void> => {
     const imap = new Imap(IMAP_CONFIG);
 
     imap.once('ready', () => {
-      imap.openBox('INBOX', false, (err, box) => {
+      imap.openBox('INBOX', false, (err: Error, box: any) => {
         if (err) {
           reject(err);
           return;
         }
 
         // Cerca email non lette
-        imap.search(['UNSEEN'], (err, results) => {
+        imap.search(['UNSEEN'], (err: Error, results: any) => {
           if (err) {
             reject(err);
             return;
@@ -172,9 +172,9 @@ export const checkInboxForReplies = async (): Promise<void> => {
 
           const fetch = imap.fetch(results, { bodies: '' });
 
-          fetch.on('message', (msg, seqno) => {
-            msg.on('body', (stream, info) => {
-              simpleParser(stream as any, async (err, parsed) => {
+          fetch.on('message', (msg: any, seqno: any) => {
+            msg.on('body', (stream: any, info: any) => {
+              simpleParser(stream as any, async (err: any, parsed: any) => {
                 if (err) {
                   console.error('Errore parsing email:', err);
                   return;
@@ -183,7 +183,7 @@ export const checkInboxForReplies = async (): Promise<void> => {
                 try {
                   await processIncomingEmail(parsed);
                   // Marca email come letta
-                  imap.addFlags(seqno, ['\\Seen'], (err) => {
+                  imap.addFlags(seqno, ['\\Seen'], (err: any) => {
                     if (err) console.error('Errore marcatura email:', err);
                   });
                 } catch (error) {
@@ -193,7 +193,7 @@ export const checkInboxForReplies = async (): Promise<void> => {
             });
           });
 
-          fetch.once('error', (err) => {
+          fetch.once('error', (err: any) => {
             console.error('Fetch error:', err);
             reject(err);
           });
@@ -207,7 +207,7 @@ export const checkInboxForReplies = async (): Promise<void> => {
       });
     });
 
-    imap.once('error', (err) => {
+    imap.once('error', (err: any) => {
       console.error('IMAP error:', err);
       reject(err);
     });
