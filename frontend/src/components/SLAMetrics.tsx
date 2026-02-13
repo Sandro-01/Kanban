@@ -57,7 +57,6 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
   }
 
   if (!metrics) {
-<<<<<<< HEAD
     return (
       <div className="page sla-page">
         <div className="page-header">
@@ -69,9 +68,6 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
         </div>
       </div>
     );
-=======
-    return <div className="error">Errore nel caricamento dei dati SLA. Ricarica la pagina.</div>;
->>>>>>> 2df48cc6f0f16cd3f334fca0bbd2f02934777f9b
   }
 
   const slaCompliance = metrics.total > 0

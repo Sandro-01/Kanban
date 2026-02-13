@@ -1,29 +1,4 @@
 @echo off
-<<<<<<< HEAD
-REM 🚀 Script Avvio SUPER SEMPLICE (Windows)
-
-echo ╔════════════════════════════════════╗
-echo ║   🚀 Avvio Kanban...              ║
-echo ╚════════════════════════════════════╝
-echo.
-
-REM Avvia backend in una nuova finestra
-start "Kanban Backend" cmd /k "cd backend && npm run dev"
-
-REM Aspetta 8 secondi
-timeout /t 8 /nobreak >nul
-
-REM Avvia frontend in una nuova finestra
-start "Kanban Frontend" cmd /k "cd frontend && npm start"
-
-echo.
-echo ✅ Sistema avviato!
-echo.
-echo 🌐 Frontend: http://localhost:3000
-echo 🔌 Backend:  http://localhost:5000
-echo.
-echo 📧 Login: admin@europoligrafico.it / admin123
-=======
 REM ==============================================================================
 REM Script di Avvio Kanban ISO - Backend + Frontend
 REM ==============================================================================
@@ -59,6 +34,5 @@ echo.
 echo Per fermare il sistema:
 echo   - Premi Ctrl+C in entrambe le finestre
 echo   - Oppure chiudi le finestre del prompt
->>>>>>> 2df48cc6f0f16cd3f334fca0bbd2f02934777f9b
 echo.
 pause
