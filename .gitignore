@@ -39,4 +39,4 @@ uploads/*
 Thumbs.db
 
 # Prisma
-backend/prisma/migrations/*_migration.sql
+# Migration files should be tracked in git
