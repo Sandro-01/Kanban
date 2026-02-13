@@ -5,6 +5,11 @@
 # IMPORTANTE: Esegui come Amministratore
 # Click destro su PowerShell → "Esegui come amministratore"
 
+# Configura encoding console per supportare caratteri Unicode
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$null = chcp 65001
+
 # ============================================
 # CONFIGURAZIONE - MODIFICARE QUESTI VALORI
 # ============================================

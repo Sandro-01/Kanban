@@ -65,19 +65,19 @@ router.get('/iso-report', authenticate, authorize('ADMIN', 'AUDITOR'), async (re
     const stats = {
       total: logs.length,
       byIsoStandard: {
-        ISO9001: logs.filter(l => l.isoStandard.includes('ISO9001')).length,
-        ISO27001: logs.filter(l => l.isoStandard.includes('ISO27001')).length
+        ISO9001: logs.filter((l: any) => l.isoStandard.includes('ISO9001')).length,
+        ISO27001: logs.filter((l: any) => l.isoStandard.includes('ISO27001')).length
       },
       bySeverity: {
-        INFO: logs.filter(l => l.severity === 'INFO').length,
-        WARNING: logs.filter(l => l.severity === 'WARNING').length,
-        CRITICAL: logs.filter(l => l.severity === 'CRITICAL').length
+        INFO: logs.filter((l: any) => l.severity === 'INFO').length,
+        WARNING: logs.filter((l: any) => l.severity === 'WARNING').length,
+        CRITICAL: logs.filter((l: any) => l.severity === 'CRITICAL').length
       },
-      byAction: logs.reduce((acc: any, log) => {
+      byAction: logs.reduce((acc: any, log: any) => {
         acc[log.action] = (acc[log.action] || 0) + 1;
         return acc;
       }, {}),
-      byUser: logs.reduce((acc: any, log) => {
+      byUser: logs.reduce((acc: any, log: any) => {
         const key = `${log.user.firstName} ${log.user.lastName}`;
         acc[key] = (acc[key] || 0) + 1;
         return acc;
@@ -120,7 +120,7 @@ router.get('/export', authenticate, authorize('ADMIN', 'AUDITOR'), async (req: A
     // Genera CSV
     const csv = [
       'Timestamp,User,Email,Action,Entity,EntityID,Severity,ISO Standards,IP Address',
-      ...logs.map(log =>
+      ...logs.map((log: any) =>
         `${log.timestamp.toISOString()},${log.user.firstName} ${log.user.lastName},${log.user.email},${log.action},${log.entity},${log.entityId},${log.severity},"${log.isoStandard.join(',')}",${log.ipAddress || 'N/A'}`
       )
     ].join('\n');

@@ -12,6 +12,35 @@ Sistema professionale di gestione Kanban con **completa conformità ISO 9001/270
 
 📖 **Leggi prima**: [`QUALE-GUIDA-USARE.md`](QUALE-GUIDA-USARE.md) - Ti aiuta a scegliere la guida giusta
 
+### **⚡ Download Automatico (Consigliato)**
+
+Usa questi script per scaricare e installare automaticamente il progetto:
+
+#### **🪟 Windows**
+```powershell
+# PowerShell come Amministratore
+Set-ExecutionPolicy Bypass -Scope Process -Force
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Sandro-01/Kanban/main/download-install.ps1'))
+```
+
+#### **🐧 Linux / macOS**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Sandro-01/Kanban/main/download-install.sh | bash
+# oppure
+wget -qO- https://raw.githubusercontent.com/Sandro-01/Kanban/main/download-install.sh | bash
+```
+
+Lo script:
+- ✅ Verifica prerequisiti (Git, Node.js, PostgreSQL)
+- ✅ Clona il repository da GitHub
+- ✅ Installa tutte le dipendenze (backend + frontend)
+- ✅ Crea file `.env` di configurazione
+- ✅ Opzionalmente configura il database
+
+⏱️ **Tempo**: 5-10 minuti | 🎯 **Ideale per**: Setup sviluppo rapido
+
+---
+
 ### **🪟 Windows Server**
 - **Non tecnico**: [`QUICK-START-WINDOWS.md`](QUICK-START-WINDOWS.md) - 30 minuti
 - **Tecnico/IT**: [`DEPLOYMENT-WINDOWS.md`](DEPLOYMENT-WINDOWS.md) - Guida completa
@@ -127,7 +156,21 @@ Sistema professionale di gestione Kanban con **completa conformità ISO 9001/270
 - PostgreSQL 14+
 - npm o yarn
 
-### Setup Rapido
+### Setup Rapido (Automatico) ⚡
+
+Usa lo script di download automatico (vedi sezione **Quick Start** sopra):
+
+```bash
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/Sandro-01/Kanban/main/download-install.sh | bash
+
+# Windows PowerShell
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Sandro-01/Kanban/main/download-install.ps1'))
+```
+
+### Setup Manuale
+
+Se preferisci l'installazione manuale:
 
 ```bash
 # Clone repository
@@ -248,6 +291,8 @@ Kanban/
 │   └── package.json
 ├── uploads/                      # File allegati (IMMUTABILI)
 ├── docker-compose.yml            # Docker setup
+├── download-install.sh           # Linux/Mac download & install script
+├── download-install.ps1          # Windows download & install script
 ├── deploy-production.sh          # Linux deployment script
 ├── deploy-windows.ps1            # Windows deployment script
 └── README.md                     # This file
@@ -269,6 +314,8 @@ Kanban/
 - ✨ **[FEATURES.md](FEATURES.md)** - Funzionalità dettagliate e ISO compliance
 
 ### **Script Automatici**
+- ⚡ **[download-install.sh](download-install.sh)** - Download e setup sviluppo (Linux/macOS)
+- ⚡ **[download-install.ps1](download-install.ps1)** - Download e setup sviluppo (Windows)
 - 🪟 **[deploy-windows.ps1](deploy-windows.ps1)** - PowerShell per Windows Server
 - 🐧 **[deploy-production.sh](deploy-production.sh)** - Bash per Ubuntu/Linux
 
