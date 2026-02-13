@@ -90,7 +90,7 @@ cd ..
 psql -U postgres
 
 # Dentro psql, digita:
-CREATE DATABASE kanban_dev;
+CREATE DATABASE kanban_iso;
 \q
 ```
 
@@ -111,7 +111,7 @@ notepad .env
 
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:TUA_PASSWORD_POSTGRES@localhost:5432/kanban_dev"
+DATABASE_URL="postgresql://postgres:TUA_PASSWORD_POSTGRES@localhost:5432/kanban_iso"
 
 # JWT Secret
 JWT_SECRET="chiave-segreta-per-sviluppo-123456789"

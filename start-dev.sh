@@ -36,7 +36,7 @@ echo ""
 if [ ! -f "backend/.env" ]; then
     echo -e "${YELLOW}⚠️  File .env non trovato, lo creo...${NC}"
     cat > backend/.env <<EOF
-DATABASE_URL="postgresql://kanban_dev:kanban123@localhost:5432/kanban_dev?schema=public"
+DATABASE_URL="postgresql://kanban_iso:kanban123@localhost:5432/kanban_iso?schema=public"
 JWT_SECRET="development-secret-key"
 EMAIL_HOST="smtp.gmail.com"
 EMAIL_PORT="587"
@@ -71,13 +71,13 @@ echo ""
 echo -e "${YELLOW}🗄️  Controllo database...${NC}"
 
 # Controlla se il database esiste
-if ! psql -U postgres -lqt | cut -d \| -f 1 | grep -qw kanban_dev; then
+if ! psql -U postgres -lqt | cut -d \| -f 1 | grep -qw kanban_iso; then
     echo "Creazione database..."
     sudo -u postgres psql <<EOF
-CREATE DATABASE kanban_dev;
-CREATE USER kanban_dev WITH PASSWORD 'kanban123';
-GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev;
-ALTER DATABASE kanban_dev OWNER TO kanban_dev;
+CREATE DATABASE kanban_iso;
+CREATE USER kanban_iso WITH PASSWORD 'kanban123';
+GRANT ALL PRIVILEGES ON DATABASE kanban_iso TO kanban_iso;
+ALTER DATABASE kanban_iso OWNER TO kanban_iso;
 EOF
 
     echo "Esecuzione migrazioni..."

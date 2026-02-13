@@ -41,7 +41,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
   const loadUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3001/api/users', {
+      const response = await axios.get('http://localhost:5000/api/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(response.data);
@@ -100,7 +100,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
       if (editingUser) {
         // Update existing user
         await axios.put(
-          `http://localhost:3001/api/users/${editingUser.id}`,
+          `http://localhost:5000/api/users/${editingUser.id}`,
           formData,
           config
         );
@@ -111,7 +111,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
           setError('La password è obbligatoria per nuovi utenti');
           return;
         }
-        await axios.post('http://localhost:3001/api/users', formData, config);
+        await axios.post('http://localhost:5000/api/users', formData, config);
         setSuccess('Utente creato con successo');
       }
 
@@ -131,7 +131,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3001/api/users/${userId}`, {
+      await axios.delete(`http://localhost:5000/api/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccess('Utente eliminato con successo');

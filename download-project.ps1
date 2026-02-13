@@ -3,9 +3,6 @@
 # Scarica il progetto completo dal repository Git (Windows)
 ###############################################################################
 
-# Richiede esecuzione come Amministratore per alcune operazioni
-#Requires -RunAsAdministrator
-
 # Imposta policy di esecuzione
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 

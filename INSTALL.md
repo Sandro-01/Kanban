@@ -52,7 +52,7 @@ Dopo aver installato PostgreSQL (con qualsiasi metodo):
 ### 1. Aggiorna Codice
 
 ```powershell
-git pull origin claude/add-download-install-scripts-oU8iV
+git pull origin main
 ```
 
 ### 2. Configura Database
@@ -101,7 +101,7 @@ npm run dev
 
 Vedrai:
 ```
-🚀 Server in ascolto su porta 3001
+🚀 Server in ascolto su porta 5000
 📊 SLA Monitor avviato
 ```
 
@@ -160,14 +160,14 @@ Il database non è stato creato.
 psql -U postgres -c "CREATE DATABASE kanban_iso;"
 ```
 
-### ❌ "Port 3001 already in use"
+### ❌ "Port 5000 already in use"
 
 Un altro processo usa la porta.
 
 **Soluzione:**
 Cambia porta in `backend\.env`:
 ```env
-PORT=3002
+PORT=5001
 ```
 
 ### ❌ "npm: command not found"
@@ -205,7 +205,7 @@ Se incontri problemi:
 - [ ] Dipendenze installate (`npm install`)
 - [ ] Migrazioni eseguite (`npx prisma migrate deploy`)
 - [ ] Seed eseguito (`npm run seed`)
-- [ ] Backend avviato (porta 3001)
+- [ ] Backend avviato (porta 5000)
 - [ ] Frontend avviato (porta 3000)
 - [ ] Login funzionante
 

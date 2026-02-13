@@ -46,7 +46,7 @@ function Write-Warning {
     Write-Host "⚠️  $Message" -ForegroundColor Yellow
 }
 
-function Write-Error {
+function Write-ErrorMsg {
     param([string]$Message)
     Write-Host "❌ $Message" -ForegroundColor Red
 }
@@ -110,7 +110,7 @@ if (Test-CommandExists "git") {
     $gitVersion = (git --version).Split(" ")[2]
     Write-Success "Git installato (versione $gitVersion)"
 } else {
-    Write-Error "Git non trovato. Installa Git per Windows prima di continuare."
+    Write-ErrorMsg "Git non trovato. Installa Git per Windows prima di continuare."
     Write-Host "   Download: https://git-scm.com/download/win" -ForegroundColor Yellow
     $MissingDeps = $true
 }
@@ -126,7 +126,7 @@ if (Test-CommandExists "node") {
         Write-Warning "Node.js versione $nodeVersion trovata. Si consiglia Node.js 20 LTS."
     }
 } else {
-    Write-Error "Node.js non trovato. Installa Node.js 20 LTS."
+    Write-ErrorMsg "Node.js non trovato. Installa Node.js 20 LTS."
     Write-Host "   Download: https://nodejs.org/" -ForegroundColor Yellow
     $MissingDeps = $true
 }
@@ -136,7 +136,7 @@ if (Test-CommandExists "npm") {
     $npmVersion = npm --version
     Write-Success "npm installato (versione $npmVersion)"
 } else {
-    Write-Error "npm non trovato. npm è incluso con Node.js."
+    Write-ErrorMsg "npm non trovato. npm è incluso con Node.js."
     $MissingDeps = $true
 }
 
@@ -153,7 +153,7 @@ if (Find-PostgreSQL) {
 Write-Host ""
 
 if ($MissingDeps) {
-    Write-Error "Alcuni prerequisiti mancano. Installali e riprova."
+    Write-ErrorMsg "Alcuni prerequisiti mancano. Installali e riprova."
     exit 1
 }
 
@@ -174,7 +174,7 @@ if (Test-Path $installDir) {
         Remove-Item -Path $installDir -Recurse -Force
         Write-Success "Directory eliminata"
     } else {
-        Write-Error "Installazione annullata"
+        Write-ErrorMsg "Installazione annullata"
         exit 1
     }
 }
@@ -200,7 +200,7 @@ if (-not (Test-Path ".env")) {
     Write-Info "Creando file .env per backend..."
     $envContent = @"
 # Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kanban_dev?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kanban_iso?schema=public"
 
 # JWT
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"

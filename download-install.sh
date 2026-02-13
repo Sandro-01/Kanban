@@ -128,7 +128,7 @@ read -p "Percorso [default: ./Kanban]: " INSTALL_DIR
 INSTALL_DIR=${INSTALL_DIR:-./Kanban}
 
 # Espandi il percorso
-INSTALL_DIR=$(eval echo "$INSTALL_DIR")
+INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
 
 # Verifica se la directory esiste già
 if [ -d "$INSTALL_DIR" ]; then
@@ -164,7 +164,7 @@ if [ ! -f ".env" ]; then
     print_info "Creando file .env per backend..."
     cat > .env << 'EOF'
 # Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kanban_dev?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kanban_iso?schema=public"
 
 # JWT
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"

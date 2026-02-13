@@ -43,7 +43,7 @@ docker-compose exec backend npx prisma db seed
 
 ### 3. Accedi all'applicazione
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
+- **Backend API**: http://localhost:5000
 - **PostgreSQL**: localhost:5432
 
 ## Opzione 2: Installazione Manuale
@@ -95,7 +95,7 @@ cd frontend
 npm install
 
 # Opzionale: crea .env.local per configurazione custom
-echo "REACT_APP_API_URL=http://localhost:3001/api" > .env.local
+echo "REACT_APP_API_URL=http://localhost:5000/api" > .env.local
 ```
 
 ### 4. Avvia Applicazione
@@ -171,7 +171,7 @@ sudo certbot --nginx -d your-domain.com
 NODE_ENV=production
 DATABASE_URL=postgresql://user:pass@prod-host:5432/kanban_iso
 JWT_SECRET=<strong-random-secret-key>
-PORT=3001
+PORT=5000
 ```
 
 ### Build Frontend

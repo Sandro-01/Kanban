@@ -758,7 +758,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                 <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   <div>
                                     <a
-                                      href={`http://localhost:3001/uploads/${att.filePath}`}
+                                      href={`http://localhost:5000/uploads/${att.filePath}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       download
@@ -827,7 +827,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           </div>
                           <div className="timeline-file">
                             <a
-                              href={`http://localhost:3001/uploads/${item.filePath}`}
+                              href={`http://localhost:5000/uploads/${item.filePath}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               download

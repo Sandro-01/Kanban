@@ -13,7 +13,7 @@ echo 📋 Step 0: Verifica file .env...
 if not exist "backend\.env" (
     echo Creazione file .env...
     (
-        echo DATABASE_URL="postgresql://kanban_dev:kanban123@localhost:5432/kanban_dev?schema=public"
+        echo DATABASE_URL="postgresql://kanban_iso:kanban123@localhost:5432/kanban_iso?schema=public"
         echo.
         echo PORT=4000
         echo NODE_ENV=development
@@ -55,12 +55,12 @@ echo ATTENZIONE: Ti verrà chiesta la password di PostgreSQL (utente postgres)
 echo.
 
 REM Create a temporary SQL file
-echo DROP DATABASE IF EXISTS kanban_dev; > temp_setup.sql
-echo DROP USER IF EXISTS kanban_dev; >> temp_setup.sql
-echo CREATE DATABASE kanban_dev; >> temp_setup.sql
-echo CREATE USER kanban_dev WITH PASSWORD 'kanban123' CREATEDB; >> temp_setup.sql
-echo GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev; >> temp_setup.sql
-echo ALTER DATABASE kanban_dev OWNER TO kanban_dev; >> temp_setup.sql
+echo DROP DATABASE IF EXISTS kanban_iso; > temp_setup.sql
+echo DROP USER IF EXISTS kanban_iso; >> temp_setup.sql
+echo CREATE DATABASE kanban_iso; >> temp_setup.sql
+echo CREATE USER kanban_iso WITH PASSWORD 'kanban123' CREATEDB; >> temp_setup.sql
+echo GRANT ALL PRIVILEGES ON DATABASE kanban_iso TO kanban_iso; >> temp_setup.sql
+echo ALTER DATABASE kanban_iso OWNER TO kanban_iso; >> temp_setup.sql
 
 REM Execute all commands in a single connection
 "%PSQL_PATH%" -U postgres -f temp_setup.sql

@@ -26,7 +26,7 @@ echo ====================================================================
 echo   Sistema Avviato!
 echo ====================================================================
 echo.
-echo Backend:  http://localhost:3001 (finestra: Kanban Backend)
+echo Backend:  http://localhost:5000 (finestra: Kanban Backend)
 echo Frontend: http://localhost:3000 (finestra: Kanban Frontend)
 echo.
 echo Il browser si aprira' automaticamente tra pochi secondi.

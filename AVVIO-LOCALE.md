@@ -48,9 +48,9 @@ Get-Service -Name postgresql*
 Start-Service postgresql-x64-14
 
 # Crea database
-& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "CREATE DATABASE kanban_dev;"
-& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "CREATE USER kanban_dev WITH PASSWORD 'kanban123';"
-& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev;"
+& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "CREATE DATABASE kanban_iso;"
+& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "CREATE USER kanban_iso WITH PASSWORD 'kanban123';"
+& "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE kanban_iso TO kanban_iso;"
 ```
 
 ### **Mac/Linux:**
@@ -65,10 +65,10 @@ sudo systemctl start postgresql
 
 # Crea database
 sudo -u postgres psql <<EOF
-CREATE DATABASE kanban_dev;
-CREATE USER kanban_dev WITH PASSWORD 'kanban123';
-GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev;
-ALTER DATABASE kanban_dev OWNER TO kanban_dev;
+CREATE DATABASE kanban_iso;
+CREATE USER kanban_iso WITH PASSWORD 'kanban123';
+GRANT ALL PRIVILEGES ON DATABASE kanban_iso TO kanban_iso;
+ALTER DATABASE kanban_iso OWNER TO kanban_iso;
 \q
 EOF
 ```
@@ -112,7 +112,7 @@ nano .env
 
 ```env
 # Database (usa questi valori esatti)
-DATABASE_URL="postgresql://kanban_dev:kanban123@localhost:5432/kanban_dev?schema=public"
+DATABASE_URL="postgresql://kanban_iso:kanban123@localhost:5432/kanban_iso?schema=public"
 
 # JWT Secret (genera uno casuale)
 JWT_SECRET="development-secret-key-change-in-production"
@@ -335,7 +335,7 @@ PORT=3001 npm start
 cat backend/.env
 
 # Se password diversa, ricrea utente:
-sudo -u postgres psql -c "ALTER USER kanban_dev WITH PASSWORD 'kanban123';"
+sudo -u postgres psql -c "ALTER USER kanban_iso WITH PASSWORD 'kanban123';"
 ```
 
 ### ❌ Errore: "Prisma Client not generated"

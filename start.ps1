@@ -30,7 +30,7 @@ Write-Host "====================================================================
 Write-Host "  Sistema Avviato!" -ForegroundColor Green
 Write-Host "====================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Backend:  http://localhost:3001 (finestra: Backend)" -ForegroundColor White
+Write-Host "Backend:  http://localhost:5000 (finestra: Backend)" -ForegroundColor White
 Write-Host "Frontend: http://localhost:3000 (finestra: Frontend)" -ForegroundColor White
 Write-Host ""
 Write-Host "Il browser si aprirà automaticamente tra pochi secondi." -ForegroundColor Cyan

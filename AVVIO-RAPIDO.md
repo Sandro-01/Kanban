@@ -18,8 +18,8 @@ Apri **PowerShell** nella cartella del progetto e esegui:
 ```
 
 **Cosa fa questo script**:
-- ✅ Crea il database `kanban_dev`
-- ✅ Crea l'utente database `kanban_dev`
+- ✅ Crea il database `kanban_iso`
+- ✅ Crea l'utente database `kanban_iso`
 - ✅ Genera il client Prisma
 - ✅ Crea tutte le tabelle
 - ✅ Inserisce utenti e dati di test

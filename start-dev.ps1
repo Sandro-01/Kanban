@@ -32,7 +32,7 @@ if (-not (Test-Path "backend\.env")) {
     Write-Host "⚠️  File .env non trovato, lo creo..." -ForegroundColor Yellow
 
     $envContent = @"
-DATABASE_URL="postgresql://kanban_dev:kanban123@localhost:5432/kanban_dev?schema=public"
+DATABASE_URL="postgresql://kanban_iso:kanban123@localhost:5432/kanban_iso?schema=public"
 JWT_SECRET="development-secret-key"
 EMAIL_HOST="smtp.gmail.com"
 EMAIL_PORT="587"
@@ -82,16 +82,16 @@ if ($pgService.Status -ne "Running") {
 
 # Controlla se il database esiste
 $env:PGPASSWORD = "postgres"
-$dbExists = & "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -lqt | Select-String -Pattern "kanban_dev"
+$dbExists = & "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres -lqt | Select-String -Pattern "kanban_iso"
 
 if (-not $dbExists) {
     Write-Host "Creazione database..." -ForegroundColor Cyan
 
     $sqlCommands = @"
-CREATE DATABASE kanban_dev;
-CREATE USER kanban_dev WITH PASSWORD 'kanban123';
-GRANT ALL PRIVILEGES ON DATABASE kanban_dev TO kanban_dev;
-ALTER DATABASE kanban_dev OWNER TO kanban_dev;
+CREATE DATABASE kanban_iso;
+CREATE USER kanban_iso WITH PASSWORD 'kanban123';
+GRANT ALL PRIVILEGES ON DATABASE kanban_iso TO kanban_iso;
+ALTER DATABASE kanban_iso OWNER TO kanban_iso;
 "@
 
     $sqlCommands | & "C:\Program Files\PostgreSQL\14\bin\psql.exe" -U postgres
