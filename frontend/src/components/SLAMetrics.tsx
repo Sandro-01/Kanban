@@ -41,6 +41,20 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
     return <div className="loading">Caricamento metriche SLA...</div>;
   }
 
+  if (!metrics) {
+    return (
+      <div className="page sla-page">
+        <div className="page-header">
+          <h1>SLA Metrics</h1>
+          <p>Monitoraggio in tempo reale dei Service Level Agreement</p>
+        </div>
+        <div className="card">
+          <p>Impossibile caricare le metriche SLA. Verifica che il backend sia avviato.</p>
+        </div>
+      </div>
+    );
+  }
+
   const slaCompliance = metrics.total > 0
     ? ((metrics.withinSLA / metrics.total) * 100).toFixed(1)
     : 0;
@@ -96,7 +110,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
       <div className="card">
         <h2>Distribuzione per Priorità</h2>
         <div className="priority-metrics">
-          {Object.entries(metrics.byPriority).map(([priority, data]: any) => {
+          {Object.entries(metrics.byPriority || {}).map(([priority, data]: any) => {
             const complianceRate = data.total > 0
               ? (((data.total - data.violated) / data.total) * 100).toFixed(1)
               : 100;
