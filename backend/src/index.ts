@@ -2,9 +2,11 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import { PrismaClient } from '@prisma/client';
 
 // Routes
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import ticketRoutes from './routes/ticket.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import offboardingRoutes from './routes/offboarding.routes';
@@ -14,8 +16,12 @@ import emailRoutes from './routes/email.routes';
 
 // Services
 import { startEmailListener } from './services/email.service';
+import { startEmailPolling } from './services/emailIntegration.service';
 
 dotenv.config();
+
+// Prisma Client (shared instance)
+export const prisma = new PrismaClient();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +36,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/offboarding', offboardingRoutes);
@@ -63,6 +70,10 @@ app.listen(PORT, () => {
 
   // Start email listener for incoming tickets
   startEmailListener().catch(console.error);
+
+  // Start email polling for external communications
+  // Controlla inbox ogni 2 minuti per risposte da fornitori/clienti
+  startEmailPolling(2);
 });
 
 export default app;

@@ -16,22 +16,37 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <nav className="nav">
             <Link to="/" className="nav-link">Dashboard</Link>
             <Link to="/board" className="nav-link">Board</Link>
-            {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
-              <>
-                <Link to="/onboarding" className="nav-link">Onboarding</Link>
-                <Link to="/offboarding" className="nav-link">Offboarding</Link>
-              </>
-            )}
             <Link to="/sla" className="nav-link">SLA</Link>
-            {(user.role === 'ADMIN' || user.role === 'AUDITOR') && (
+
+            {/* Onboarding - visible to ADMIN and HR department */}
+            {(user.role === 'ADMIN' || user.department === 'Risorse Umane') && (
+              <Link to="/onboarding" className="nav-link">Onboarding</Link>
+            )}
+
+            {/* Offboarding - visible to ADMIN, HR and IT departments */}
+            {(user.role === 'ADMIN' ||
+              user.department === 'Risorse Umane' ||
+              user.department === 'IT/Sistemi') && (
+              <Link to="/offboarding" className="nav-link">Offboarding</Link>
+            )}
+
+            {/* Audit - only ADMIN */}
+            {user.role === 'ADMIN' && (
               <Link to="/audit" className="nav-link">Audit</Link>
+            )}
+
+            {/* User Management - only ADMIN */}
+            {user.role === 'ADMIN' && (
+              <Link to="/users" className="nav-link">Utenti</Link>
             )}
           </nav>
         </div>
         <div className="header-right">
           <span className="user-badge">
             {user.firstName} {user.lastName}
-            <span className="role-badge">{user.role}</span>
+            <span className="role-badge">
+              {user.role === 'ADMIN' ? '👑 Admin' : user.department || 'User'}
+            </span>
           </span>
           <button onClick={onLogout} className="btn btn-secondary">
             Logout

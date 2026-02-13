@@ -1,13 +1,16 @@
-import { PrismaClient, Priority } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { notifyTicketUpdate } from './email.service';
 
 const prisma = new PrismaClient();
+
+// Define Priority type locally
+type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 /**
  * Calcola SLA per priorità
  */
 export function getSLAHours(priority: Priority): number {
-  const slaMap = {
+  const slaMap: Record<Priority, number> = {
     CRITICAL: parseInt(process.env.SLA_CRITICAL || '4'),
     HIGH: parseInt(process.env.SLA_HIGH || '24'),
     MEDIUM: parseInt(process.env.SLA_MEDIUM || '72'),
@@ -95,12 +98,13 @@ export async function getSLAMetrics() {
   for (const ticket of tickets) {
     const timeRemaining = ticket.dueDate.getTime() - now.getTime();
     const totalTime = ticket.slaHours * 60 * 60 * 1000;
+    const priority = ticket.priority as Priority;
 
-    metrics.byPriority[ticket.priority].total++;
+    metrics.byPriority[priority].total++;
 
     if (ticket.slaViolated || timeRemaining < 0) {
       metrics.violated++;
-      metrics.byPriority[ticket.priority].violated++;
+      metrics.byPriority[priority].violated++;
     } else if (timeRemaining < totalTime * 0.25) {
       metrics.nearingSLA++;
     } else {
