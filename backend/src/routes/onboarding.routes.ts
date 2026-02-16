@@ -330,7 +330,9 @@ router.put('/:id/equipment', authenticate, auditLog('ADD_EQUIPMENT_ONBOARDING', 
         ticketDescription += `---\n## 📝 NOTE AGGIUNTIVE\n\n${additionalNotes}\n\n`;
       }
 
-      ticketDescription += `---\n⚠️ **Preparare tutto entro il:** ${new Date(updatedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}\n`;
+      ticketDescription += updatedOnboarding.expectedEndDate
+        ? `---\n⚠️ **Preparare tutto entro il:** ${new Date(updatedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}\n`
+        : '';
       ticketDescription += `🔗 **Link Onboarding:** #${updatedOnboarding.id}`;
 
       // Crea il ticket assegnato al reparto IT
@@ -345,7 +347,7 @@ router.put('/:id/equipment', authenticate, auditLog('ADD_EQUIPMENT_ONBOARDING', 
           priority: 'HIGH',
           category: 'Richiesta Onboarding',
           slaHours: 24,
-          dueDate: updatedOnboarding.expectedEndDate
+          dueDate: updatedOnboarding.expectedEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }
       });
 
