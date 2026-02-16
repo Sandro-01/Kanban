@@ -96,7 +96,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
         employeeEmail,
         managerId: finalManagerId,
         startDate: startDate ? new Date(startDate) : new Date(),
-        expectedEndDate: finalExpectedEndDate,
+        expectedEndDate: finalExpectedEndDate as any,
         // Informazioni dipendente
         sede,
         department,
@@ -154,7 +154,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
         `
           <h2>Benvenuto ${employeeFirstName}!</h2>
           <p>È stato avviato il tuo processo di onboarding.</p>
-          <p><strong>Responsabile:</strong> ${onboarding.manager.firstName} ${onboarding.manager.lastName}</p>
+          <p><strong>Responsabile:</strong> ${(onboarding as any).manager.firstName} ${(onboarding as any).manager.lastName}</p>
           ${sede ? `<p><strong>Sede:</strong> ${sede}</p>` : ''}
           ${department ? `<p><strong>Reparto:</strong> ${department}</p>` : ''}
           ${role ? `<p><strong>Ruolo:</strong> ${role}</p>` : ''}
