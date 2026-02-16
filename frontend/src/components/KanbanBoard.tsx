@@ -154,8 +154,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             <h4 className="ticket-title">{ticket.title}</h4>
 
                             <p className="ticket-description">
-                              {ticket.description.substring(0, 100)}
-                              {ticket.description.length > 100 ? '...' : ''}
+                              {(() => {
+                                const clean = (ticket.description || '')
+                                  .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                                  .replace(/\*\*/g, '')
+                                  .replace(/^---$/gm, '')
+                                  .trim();
+                                return clean.substring(0, 100) + (clean.length > 100 ? '...' : '');
+                              })()}
                             </p>
 
                             <div className="ticket-footer">
@@ -483,9 +489,35 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         <div className="modal-header">
           <div>
             <h2>{ticket.title}</h2>
-            <span className={`badge badge-${ticket.priority.toLowerCase()}`}>
-              {ticket.priority}
-            </span>
+            <select
+              className={`badge badge-${ticket.priority.toLowerCase()}`}
+              value={ticket.priority}
+              onChange={async (e) => {
+                const newPriority = e.target.value;
+                try {
+                  await ticketsApi.update(ticket.id, { priority: newPriority });
+                  setTicket({ ...ticket, priority: newPriority });
+                  onUpdate();
+                } catch (err) {
+                  console.error('Errore aggiornamento priorità:', err);
+                }
+              }}
+              style={{
+                cursor: 'pointer',
+                border: '1px solid transparent',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                fontWeight: '600',
+                appearance: 'auto',
+                WebkitAppearance: 'auto'
+              }}
+            >
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {user.role === 'ADMIN' && (
@@ -512,7 +544,15 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         <div className="ticket-modal-content">
           <div className="ticket-info">
             <p><strong>Descrizione:</strong></p>
-            <p>{ticket.description}</p>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+              dangerouslySetInnerHTML={{
+                __html: (ticket.description || '')
+                  .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0" />')
+                  .trim()
+              }}
+            />
 
             <div className="ticket-details">
               <div>
