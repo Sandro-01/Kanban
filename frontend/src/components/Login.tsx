@@ -21,7 +21,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const response = await auth.login(email, password);
       onLogin(response.data.token, response.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante il login');
+      if (err.response) {
+        // Server ha risposto con un errore
+        setError(err.response.data?.error || 'Errore durante il login');
+      } else if (err.request) {
+        // Nessuna risposta dal server
+        setError('Impossibile contattare il server. Verifica che il backend sia in esecuzione.');
+      } else {
+        setError('Errore durante il login');
+      }
     } finally {
       setLoading(false);
     }

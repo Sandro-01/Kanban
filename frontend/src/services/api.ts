@@ -15,6 +15,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Gestione automatica errori 401 (token scaduto/invalido)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
+      // Token scaduto o invalido - esegui logout automatico
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+      if (!isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth
 export const auth = {
   login: (email: string, password: string) =>

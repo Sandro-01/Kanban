@@ -10,7 +10,7 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@europoligrafico.it' },
-    update: {},
+    update: { password: adminPassword, status: 'ACTIVE' },
     create: {
       email: 'admin@europoligrafico.it',
       password: adminPassword,
@@ -26,7 +26,7 @@ async function main() {
   const riccardoPassword = await bcrypt.hash('user123', 10);
   const riccardo = await prisma.user.upsert({
     where: { email: 'riccardo@europoligrafico.it' },
-    update: {},
+    update: { password: riccardoPassword, status: 'ACTIVE' },
     create: {
       email: 'riccardo@europoligrafico.it',
       password: riccardoPassword,
@@ -41,7 +41,7 @@ async function main() {
   const elisabettaPassword = await bcrypt.hash('user123', 10);
   const elisabetta = await prisma.user.upsert({
     where: { email: 'elisabetta@europoligrafico.it' },
-    update: {},
+    update: { password: elisabettaPassword, status: 'ACTIVE' },
     create: {
       email: 'elisabetta@europoligrafico.it',
       password: elisabettaPassword,
@@ -57,7 +57,7 @@ async function main() {
   const silviaPassword = await bcrypt.hash('user123', 10);
   const silvia = await prisma.user.upsert({
     where: { email: 'silvia@europoligrafico.it' },
-    update: {},
+    update: { password: silviaPassword, status: 'ACTIVE' },
     create: {
       email: 'silvia@europoligrafico.it',
       password: silviaPassword,
@@ -72,7 +72,7 @@ async function main() {
   const serenaPassword = await bcrypt.hash('user123', 10);
   const serena = await prisma.user.upsert({
     where: { email: 'serena@europoligrafico.it' },
-    update: {},
+    update: { password: serenaPassword, status: 'ACTIVE' },
     create: {
       email: 'serena@europoligrafico.it',
       password: serenaPassword,
@@ -87,7 +87,7 @@ async function main() {
   const sandraPassword = await bcrypt.hash('user123', 10);
   const sandra = await prisma.user.upsert({
     where: { email: 'sandra@europoligrafico.it' },
-    update: {},
+    update: { password: sandraPassword, status: 'ACTIVE' },
     create: {
       email: 'sandra@europoligrafico.it',
       password: sandraPassword,
@@ -102,7 +102,7 @@ async function main() {
   const patriziaPassword = await bcrypt.hash('user123', 10);
   const patrizia = await prisma.user.upsert({
     where: { email: 'patrizia@europoligrafico.it' },
-    update: {},
+    update: { password: patriziaPassword, status: 'ACTIVE' },
     create: {
       email: 'patrizia@europoligrafico.it',
       password: patriziaPassword,
@@ -118,7 +118,7 @@ async function main() {
   const marcoPassword = await bcrypt.hash('user123', 10);
   const marco = await prisma.user.upsert({
     where: { email: 'marco@europoligrafico.it' },
-    update: {},
+    update: { password: marcoPassword, status: 'ACTIVE' },
     create: {
       email: 'marco@europoligrafico.it',
       password: marcoPassword,
