@@ -82,18 +82,22 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
       }
     });
 
-    // Invia email notifica
-    await sendEmail(
-      user.email,
-      'Processo di Offboarding avviato',
-      `
-        <h2>Gentile ${user.firstName},</h2>
-        <p>È stato avviato il processo di offboarding.</p>
-        <p><strong>Responsabile:</strong> ${offboarding.manager.firstName} ${offboarding.manager.lastName}</p>
-        <p><strong>Data prevista completamento:</strong> ${expectedEndDate.toLocaleDateString('it-IT')}</p>
-        <p>Sarai contattato per completare le procedure necessarie.</p>
-      `
-    );
+    // Invia email notifica (opzionale - non blocca se fallisce)
+    try {
+      await sendEmail(
+        user.email,
+        'Processo di Offboarding avviato',
+        `
+          <h2>Gentile ${user.firstName},</h2>
+          <p>È stato avviato il processo di offboarding.</p>
+          <p><strong>Responsabile:</strong> ${offboarding.manager.firstName} ${offboarding.manager.lastName}</p>
+          <p><strong>Data prevista completamento:</strong> ${expectedEndDate.toLocaleDateString('it-IT')}</p>
+          <p>Sarai contattato per completare le procedure necessarie.</p>
+        `
+      );
+    } catch (emailError: any) {
+      console.warn('⚠️ Impossibile inviare email di offboarding:', emailError.message);
+    }
 
     res.json(offboarding);
   } catch (error: any) {
@@ -142,15 +146,19 @@ router.put('/:id/tasks/:taskId', authenticate, authorizeDepartment('HR', 'IT', '
           data: { status: 'INACTIVE' }
         });
 
-        await sendEmail(
-          offboarding.user.email,
-          'Offboarding Completato',
-          `
-            <h2>Gentile ${offboarding.user.firstName},</h2>
-            <p>Il processo di offboarding è stato completato.</p>
-            <p>Ti auguriamo il meglio per il futuro.</p>
-          `
-        );
+        try {
+          await sendEmail(
+            offboarding.user.email,
+            'Offboarding Completato',
+            `
+              <h2>Gentile ${offboarding.user.firstName},</h2>
+              <p>Il processo di offboarding è stato completato.</p>
+              <p>Ti auguriamo il meglio per il futuro.</p>
+            `
+          );
+        } catch (emailError: any) {
+          console.warn('⚠️ Impossibile inviare email di completamento offboarding:', emailError.message);
+        }
       }
     }
 
