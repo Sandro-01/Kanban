@@ -52,24 +52,25 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       // 2. Assigned to specific users → ONLY those users can see (even if department is also assigned)
       // 3. Assigned to department WITHOUT user assignment → all users in that department can see
       where.OR = [
-        // Rule 1: Tickets with NO assignments (visible to all, any status)
+        // Rule 1: OPEN tickets with NO assignments (visible to all - "bacheca pubblica")
         {
           AND: [
+            { status: 'OPEN' },
             { assignedDepartments: { isEmpty: true } },
             { assignments: { none: {} } },
             { assignedToId: null }
           ]
         },
-        // Rule 2: Multi-assigned to me (has priority - if users are assigned, only they see it)
+        // Rule 2: Multi-assigned to me
         { assignments: { some: { userId: currentUser.id } } },
-        // Rule 3: Assigned to my department BUT no user assignments (department only)
+        // Rule 3: Assigned to my department (only if no user assignments)
         currentUser.department ? {
           AND: [
             { assignedDepartments: { has: currentUser.department } },
-            { assignments: { none: {} } } // Only if no user assignments
+            { assignments: { none: {} } }
           ]
         } : {},
-        // Rule 4: Assigned directly to me (old single assignment - kept for compatibility)
+        // Rule 4: Assigned directly to me (legacy single assignment)
         { assignedToId: currentUser.id },
         // Rule 5: Tickets I created (creator always sees their own tickets)
         { createdById: currentUser.id }
@@ -241,6 +242,30 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       return res.status(404).json({ error: 'Ticket non trovato' });
     }
 
+    // Auto-assegnazione: se lo status cambia da OPEN e il ticket non ha assegnazioni,
+    // assegna automaticamente all'utente che lo sta spostando ("presa in carico")
+    if (
+      updates.status &&
+      updates.status !== 'OPEN' &&
+      oldTicket.status === 'OPEN' &&
+      !oldTicket.assignedToId
+    ) {
+      const hasAssignments = await prisma.ticketAssignment.count({ where: { ticketId: id } });
+      const hasDepartments = oldTicket.assignedDepartments.length > 0;
+
+      if (hasAssignments === 0 && !hasDepartments) {
+        // Nessuna assegnazione: auto-assegna a chi trascina il ticket
+        await prisma.ticketAssignment.create({
+          data: {
+            ticketId: id,
+            userId: req.user!.id,
+            assignedBy: req.user!.id
+          }
+        });
+        console.log(`👤 Auto-assegnazione: ticket ${id} preso in carico da ${req.user!.email}`);
+      }
+    }
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: updates,
@@ -248,6 +273,13 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
         createdBy: true,
         assignedTo: true,
         column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
         attachments: { where: { isDeleted: false } },
         comments: { where: { isDeleted: false } }
       }
