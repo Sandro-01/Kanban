@@ -62,7 +62,7 @@ model Onboarding {
   manager         User     @relation("OnboardingManager", fields: [managerId], references: [id])
   status          OnboardingStatus @default(PENDING_EQUIPMENT)
   startDate       DateTime @default(now())
-  expectedEndDate DateTime
+  expectedEndDate DateTime?
   actualEndDate   DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

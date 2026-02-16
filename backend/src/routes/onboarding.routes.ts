@@ -77,13 +77,13 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
       return res.status(400).json({ error: 'Nome, cognome ed email del dipendente sono obbligatori' });
     }
 
-    // Calcola data fine se non fornita
-    let finalExpectedEndDate: Date;
+    // Calcola data fine se non fornita (null = contratto indeterminato)
+    let finalExpectedEndDate: Date | null = null;
     if (expectedEndDate) {
       finalExpectedEndDate = new Date(expectedEndDate);
-    } else {
+    } else if (expectedDays) {
       finalExpectedEndDate = new Date();
-      finalExpectedEndDate.setDate(finalExpectedEndDate.getDate() + (expectedDays || 7));
+      finalExpectedEndDate.setDate(finalExpectedEndDate.getDate() + expectedDays);
     }
 
     // Usa managerId dal body se fornito, altrimenti usa l'utente corrente
@@ -159,7 +159,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
           ${department ? `<p><strong>Reparto:</strong> ${department}</p>` : ''}
           ${role ? `<p><strong>Ruolo:</strong> ${role}</p>` : ''}
           <p><strong>Data inizio:</strong> ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}</p>
-          <p><strong>Data prevista completamento:</strong> ${finalExpectedEndDate.toLocaleDateString('it-IT')}</p>
+          ${finalExpectedEndDate ? `<p><strong>Data prevista completamento:</strong> ${finalExpectedEndDate.toLocaleDateString('it-IT')}</p>` : '<p><strong>Contratto:</strong> Indeterminato</p>'}
           ${equipmentSummary}
           ${softwareSummary}
           ${additionalNotes ? `<p><strong>Note:</strong> ${additionalNotes}</p>` : ''}
@@ -191,7 +191,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
         if (department) managerTicketDescription += `**Reparto:** ${department}\n`;
         if (role) managerTicketDescription += `**Ruolo:** ${role}\n`;
         managerTicketDescription += `**Data Inizio:** ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}\n`;
-        managerTicketDescription += `**Scadenza:** ${finalExpectedEndDate.toLocaleDateString('it-IT')}\n\n`;
+        managerTicketDescription += finalExpectedEndDate ? `**Scadenza:** ${finalExpectedEndDate.toLocaleDateString('it-IT')}\n\n` : `**Contratto:** Indeterminato\n\n`;
         managerTicketDescription += `---\n`;
         managerTicketDescription += `Apri questo ticket e compila la sezione dotazioni (hardware, software, accessi).\n`;
         managerTicketDescription += `Una volta salvate, IT riceverà automaticamente un ticket con tutti i dettagli.\n\n`;
@@ -208,7 +208,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
             priority: 'HIGH',
             category: 'Onboarding - Dotazioni',
             slaHours: 48,
-            dueDate: finalExpectedEndDate
+            dueDate: finalExpectedEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           }
         });
 
@@ -455,6 +455,60 @@ router.put('/:id/tasks/:taskId', authenticate, auditLog('COMPLETE_ONBOARDING_TAS
     }
 
     res.json(task);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Aggiorna informazioni di base onboarding (HR e ADMIN)
+router.put('/:id/info', authenticate, auditLog('UPDATE_ONBOARDING_INFO', 'Onboarding'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      employeeFirstName,
+      employeeLastName,
+      employeeEmail,
+      managerId,
+      startDate,
+      expectedEndDate,
+      sede,
+      department,
+      role
+    } = req.body;
+
+    // Solo HR e ADMIN possono modificare le info di base
+    const isAdmin = req.user!.role === 'ADMIN';
+    const isHR = req.user!.department === 'HR';
+    if (!isAdmin && !isHR) {
+      return res.status(403).json({ error: 'Solo HR e ADMIN possono modificare le informazioni di base' });
+    }
+
+    const onboarding = await prisma.onboarding.findUnique({ where: { id } });
+    if (!onboarding) {
+      return res.status(404).json({ error: 'Onboarding non trovato' });
+    }
+
+    const updateData: any = {};
+    if (employeeFirstName !== undefined) updateData.employeeFirstName = employeeFirstName;
+    if (employeeLastName !== undefined) updateData.employeeLastName = employeeLastName;
+    if (employeeEmail !== undefined) updateData.employeeEmail = employeeEmail;
+    if (managerId !== undefined) updateData.managerId = managerId;
+    if (startDate !== undefined) updateData.startDate = new Date(startDate);
+    if (expectedEndDate !== undefined) updateData.expectedEndDate = expectedEndDate ? new Date(expectedEndDate) : null;
+    if (sede !== undefined) updateData.sede = sede;
+    if (department !== undefined) updateData.department = department;
+    if (role !== undefined) updateData.role = role;
+
+    const updated = await prisma.onboarding.update({
+      where: { id },
+      data: updateData,
+      include: {
+        manager: true,
+        tasks: { orderBy: { order: 'asc' } }
+      }
+    });
+
+    res.json(updated);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

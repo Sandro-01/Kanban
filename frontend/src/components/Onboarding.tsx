@@ -39,23 +39,36 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
     }
   };
 
-  const handleToggleTask = async (onboardingId: string, taskId: string, completed: boolean) => {
-    try {
-      await onboardingApi.updateTask(onboardingId, taskId, completed);
-      loadOnboardings();
-      if (selectedOnboarding) {
-        const updated = await onboardingApi.get(selectedOnboarding.id);
-        setSelectedOnboarding(updated.data);
-      }
-    } catch (error) {
-      console.error('Errore aggiornamento task:', error);
-    }
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>({});
+
+  const canEditInfo = user.role === 'ADMIN' || user.department === 'HR';
+
+  const startEditingInfo = (onb: any) => {
+    setEditFormData({
+      employeeFirstName: onb.employeeFirstName,
+      employeeLastName: onb.employeeLastName,
+      employeeEmail: onb.employeeEmail,
+      managerId: onb.managerId,
+      startDate: onb.startDate ? new Date(onb.startDate).toISOString().split('T')[0] : '',
+      expectedEndDate: onb.expectedEndDate ? new Date(onb.expectedEndDate).toISOString().split('T')[0] : '',
+      sede: onb.sede || '',
+      department: onb.department || '',
+      role: onb.role || ''
+    });
+    setEditingInfo(true);
   };
 
-  const getProgress = (onb: any) => {
-    const total = onb.tasks.length;
-    const completed = onb.tasks.filter((t: any) => t.completed).length;
-    return (completed / total) * 100;
+  const handleSaveInfo = async () => {
+    try {
+      const response = await onboardingApi.updateInfo(selectedOnboarding.id, editFormData);
+      setSelectedOnboarding(response.data);
+      setEditingInfo(false);
+      loadOnboardings();
+    } catch (error: any) {
+      console.error('Errore aggiornamento info:', error);
+      alert(error.response?.data?.error || 'Errore durante l\'aggiornamento');
+    }
   };
 
   if (loading) {
@@ -111,27 +124,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                 <span>📅 Inizio:</span>
                 <span>{new Date(onb.startDate).toLocaleDateString('it-IT')}</span>
               </div>
-              <div className="info-row">
-                <span>⏰ Scadenza:</span>
-                <span>{new Date(onb.expectedEndDate).toLocaleDateString('it-IT')}</span>
-              </div>
-            </div>
-
-            <div className="progress-section">
-              <div className="progress-header">
-                <span>Progresso</span>
-                <span>{Math.round(getProgress(onb))}%</span>
-              </div>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${getProgress(onb)}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="task-summary">
-              {onb.tasks.filter((t: any) => t.completed).length} / {onb.tasks.length} task completati
+              {onb.expectedEndDate && (
+                <div className="info-row">
+                  <span>⏰ Scadenza:</span>
+                  <span>{new Date(onb.expectedEndDate).toLocaleDateString('it-IT')}</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -212,44 +210,121 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
               <div className="process-details">
                 <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
-                    📋 Informazioni di Base
-                  </h4>
-                  <div className="detail-item">
-                    <strong>Email:</strong> {selectedOnboarding.employeeEmail}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a202c', margin: 0 }}>
+                      Informazioni di Base
+                    </h4>
+                    {canEditInfo && !editingInfo && (
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => startEditingInfo(selectedOnboarding)}
+                        style={{ fontSize: '12px', padding: '4px 10px' }}
+                      >
+                        Modifica
+                      </button>
+                    )}
                   </div>
-                  <div className="detail-item">
-                    <strong>Manager:</strong> {selectedOnboarding.manager.firstName}{' '}
-                    {selectedOnboarding.manager.lastName}
-                  </div>
-                  {selectedOnboarding.sede && (
-                    <div className="detail-item">
-                      <strong>Sede:</strong> {selectedOnboarding.sede}
+
+                  {editingInfo ? (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div className="form-group">
+                          <label className="label">Nome *</label>
+                          <input type="text" className="input" value={editFormData.employeeFirstName} onChange={(e) => setEditFormData({ ...editFormData, employeeFirstName: e.target.value })} required />
+                        </div>
+                        <div className="form-group">
+                          <label className="label">Cognome *</label>
+                          <input type="text" className="input" value={editFormData.employeeLastName} onChange={(e) => setEditFormData({ ...editFormData, employeeLastName: e.target.value })} required />
+                        </div>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: '10px' }}>
+                        <label className="label">Email *</label>
+                        <input type="email" className="input" value={editFormData.employeeEmail} onChange={(e) => setEditFormData({ ...editFormData, employeeEmail: e.target.value })} required />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: '10px' }}>
+                        <label className="label">Manager Responsabile</label>
+                        <select className="input" value={editFormData.managerId} onChange={(e) => setEditFormData({ ...editFormData, managerId: e.target.value })}>
+                          {allUsers.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.firstName} {u.lastName} {u.department && `(${u.department})`}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div className="form-group">
+                          <label className="label">Data Inizio</label>
+                          <input type="date" className="input" value={editFormData.startDate} onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                          <label className="label">Data Prevista Fine</label>
+                          <input type="date" className="input" value={editFormData.expectedEndDate} onChange={(e) => setEditFormData({ ...editFormData, expectedEndDate: e.target.value })} />
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>Lascia vuoto per contratto indeterminato</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div className="form-group">
+                          <label className="label">Sede</label>
+                          <input type="text" className="input" value={editFormData.sede} onChange={(e) => setEditFormData({ ...editFormData, sede: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                          <label className="label">Reparto</label>
+                          <input type="text" className="input" value={editFormData.department} onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                          <label className="label">Ruolo/Mansione</label>
+                          <input type="text" className="input" value={editFormData.role} onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button className="btn btn-secondary" onClick={() => setEditingInfo(false)}>Annulla</button>
+                        <button className="btn btn-primary" onClick={handleSaveInfo}>Salva Modifiche</button>
+                      </div>
                     </div>
-                  )}
-                  {selectedOnboarding.department && (
-                    <div className="detail-item">
-                      <strong>Reparto:</strong> {selectedOnboarding.department}
-                    </div>
-                  )}
-                  {selectedOnboarding.role && (
-                    <div className="detail-item">
-                      <strong>Ruolo/Mansione:</strong> {selectedOnboarding.role}
-                    </div>
-                  )}
-                  <div className="detail-item">
-                    <strong>Data Inizio:</strong>{' '}
-                    {new Date(selectedOnboarding.startDate).toLocaleDateString('it-IT')}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Data Prevista Fine:</strong>{' '}
-                    {new Date(selectedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}
-                  </div>
-                  {selectedOnboarding.actualEndDate && (
-                    <div className="detail-item">
-                      <strong>Data Effettiva Fine:</strong>{' '}
-                      {new Date(selectedOnboarding.actualEndDate).toLocaleDateString('it-IT')}
-                    </div>
+                  ) : (
+                    <>
+                      <div className="detail-item">
+                        <strong>Email:</strong> {selectedOnboarding.employeeEmail}
+                      </div>
+                      <div className="detail-item">
+                        <strong>Manager:</strong> {selectedOnboarding.manager.firstName}{' '}
+                        {selectedOnboarding.manager.lastName}
+                      </div>
+                      {selectedOnboarding.sede && (
+                        <div className="detail-item">
+                          <strong>Sede:</strong> {selectedOnboarding.sede}
+                        </div>
+                      )}
+                      {selectedOnboarding.department && (
+                        <div className="detail-item">
+                          <strong>Reparto:</strong> {selectedOnboarding.department}
+                        </div>
+                      )}
+                      {selectedOnboarding.role && (
+                        <div className="detail-item">
+                          <strong>Ruolo/Mansione:</strong> {selectedOnboarding.role}
+                        </div>
+                      )}
+                      <div className="detail-item">
+                        <strong>Data Inizio:</strong>{' '}
+                        {new Date(selectedOnboarding.startDate).toLocaleDateString('it-IT')}
+                      </div>
+                      {selectedOnboarding.expectedEndDate && (
+                        <div className="detail-item">
+                          <strong>Data Prevista Fine:</strong>{' '}
+                          {new Date(selectedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}
+                        </div>
+                      )}
+                      {!selectedOnboarding.expectedEndDate && (
+                        <div className="detail-item">
+                          <strong>Contratto:</strong> Indeterminato
+                        </div>
+                      )}
+                      {selectedOnboarding.actualEndDate && (
+                        <div className="detail-item">
+                          <strong>Data Effettiva Fine:</strong>{' '}
+                          {new Date(selectedOnboarding.actualEndDate).toLocaleDateString('it-IT')}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -316,42 +391,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                 )}
               </div>
 
-              <div className="tasks-section">
-                <h3>Checklist Onboarding</h3>
-                {selectedOnboarding.tasks
-                  .sort((a: any, b: any) => a.order - b.order)
-                  .map((task: any) => (
-                    <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                      <div className="task-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={(e) =>
-                            handleToggleTask(
-                              selectedOnboarding.id,
-                              task.id,
-                              e.target.checked
-                            )
-                          }
-                          disabled={selectedOnboarding.status === 'COMPLETED'}
-                        />
-                      </div>
-                      <div className="task-content">
-                        <div className="task-title">
-                          {task.title}
-                          {task.mandatory && <span className="mandatory-badge">Obbligatorio</span>}
-                        </div>
-                        <div className="task-description">{task.description}</div>
-                        {task.completed && task.completedAt && (
-                          <div className="task-completed-date">
-                            ✓ Completato il{' '}
-                            {new Date(task.completedAt).toLocaleDateString('it-IT')}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
             </div>
           </div>
         </div>
@@ -492,14 +531,14 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               </div>
 
               <div className="form-group">
-                <label className="label">Data Prevista Completamento *</label>
+                <label className="label">Data Prevista Completamento</label>
                 <input
                   type="date"
                   className="input"
                   value={formData.expectedEndDate}
                   onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
-                  required
                 />
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Lascia vuoto per contratto indeterminato</span>
               </div>
             </div>
 
