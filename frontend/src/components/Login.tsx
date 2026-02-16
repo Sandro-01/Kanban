@@ -76,9 +76,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <h3>Credenziali di demo:</h3>
             <ul>
               <li><strong>Admin:</strong> admin@europoligrafico.it / admin123</li>
-              <li><strong>Manager:</strong> manager@europoligrafico.it / manager123</li>
-              <li><strong>User:</strong> user@europoligrafico.it / user123</li>
-              <li><strong>Auditor:</strong> auditor@europoligrafico.it / auditor123</li>
+              <li><strong>Riccardo (HR):</strong> riccardo@europoligrafico.it / user123</li>
+              <li><strong>Marco (IT):</strong> marco@europoligrafico.it / user123</li>
             </ul>
           </div>
         </div>
