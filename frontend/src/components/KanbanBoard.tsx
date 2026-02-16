@@ -157,6 +157,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                               {(() => {
                                 const clean = (ticket.description || '')
                                   .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                                  .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
                                   .replace(/\*\*/g, '')
                                   .replace(/^---$/gm, '')
                                   .trim();
@@ -547,6 +548,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               dangerouslySetInnerHTML={{
                 __html: (ticket.description || '')
                   .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                  .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
                   .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                   .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0" />')
                   .trim()
