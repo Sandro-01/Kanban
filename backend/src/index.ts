@@ -66,14 +66,18 @@ app.get('/api/compliance', (req: Request, res: Response) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Email listener starting...`);
 
-  // Start email listener for incoming tickets
-  startEmailListener().catch(console.error);
-
-  // Start email polling for external communications
-  // Controlla inbox ogni 2 minuti per risposte da fornitori/clienti
-  startEmailPolling(2);
+  // Email integration (solo se configurata con password reale)
+  const emailPassword = process.env.EMAIL_PASSWORD;
+  if (emailPassword && emailPassword !== 'your-email-password') {
+    console.log(`📧 Email listener starting...`);
+    startEmailListener().catch((err) => {
+      console.warn('⚠️  Email listener non avviato:', err.message);
+    });
+    startEmailPolling(2);
+  } else {
+    console.log('📧 Email integration disabilitata (configurare EMAIL_PASSWORD in .env)');
+  }
 });
 
 export default app;
