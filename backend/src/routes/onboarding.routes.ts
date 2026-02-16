@@ -197,7 +197,7 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
         managerTicketDescription += `Una volta salvate, IT riceverà automaticamente un ticket con tutti i dettagli.\n\n`;
         managerTicketDescription += `[ONBOARDING_ID:${onboarding.id}]`;
 
-        await prisma.ticket.create({
+        const managerTicket = await prisma.ticket.create({
           data: {
             title: `📋 Onboarding ${employeeFirstName} ${employeeLastName} - Compila Dotazioni`,
             description: managerTicketDescription,
@@ -209,6 +209,16 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
             category: 'Onboarding - Dotazioni',
             slaHours: 48,
             dueDate: finalExpectedEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          }
+        });
+
+        // Registra history come i ticket standard
+        await prisma.ticketHistory.create({
+          data: {
+            ticketId: managerTicket.id,
+            field: 'created',
+            newValue: 'Ticket creato',
+            changedBy: req.user!.id
           }
         });
 
@@ -348,6 +358,16 @@ router.put('/:id/equipment', authenticate, auditLog('ADD_EQUIPMENT_ONBOARDING', 
           category: 'Richiesta Onboarding',
           slaHours: 24,
           dueDate: updatedOnboarding.expectedEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+      });
+
+      // Registra history come i ticket standard
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: ticket.id,
+          field: 'created',
+          newValue: 'Ticket creato',
+          changedBy: req.user!.id
         }
       });
 
