@@ -375,6 +375,25 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
   }
 });
 
+// DELETE ticket (solo admin)
+router.delete('/:id', authenticate, authorize('ADMIN'), auditLog('DELETE_TICKET', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket non trovato' });
+    }
+
+    // Cascade delete rimuove automaticamente: comments, attachments, assignments, history
+    await prisma.ticket.delete({ where: { id } });
+
+    res.json({ message: 'Ticket eliminato con successo' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // SOFT DELETE commento (dati rimangono per ISO compliance)
 router.delete('/:ticketId/comments/:commentId', authenticate, auditLog('DELETE_COMMENT', 'Comment'), async (req: AuthRequest, res: Response) => {
   try {
