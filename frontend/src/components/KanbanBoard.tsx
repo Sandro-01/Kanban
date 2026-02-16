@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { tickets as ticketsApi, users as usersApi } from '../services/api';
+import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi } from '../services/api';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -229,6 +229,38 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
+
+  // Onboarding equipment form state
+  const [showEquipmentForm, setShowEquipmentForm] = useState(false);
+  const [equipmentData, setEquipmentData] = useState({
+    computerType: '',
+    phoneType: '',
+    needsHeadset: false,
+    needsWebcam: false,
+    additionalMonitor: false,
+    needsMicrosoft365: false,
+    softwareNeeded: '',
+    systemAccess: '',
+    additionalNotes: ''
+  });
+
+  // Check if this is an onboarding equipment ticket
+  const onboardingIdMatch = ticket.description?.match(/\[ONBOARDING_ID:([^\]]+)\]/);
+  const onboardingId = onboardingIdMatch ? onboardingIdMatch[1] : null;
+  const isOnboardingTicket = ticket.category === 'Onboarding - Dotazioni' && onboardingId;
+
+  const handleEquipmentSubmit = async () => {
+    if (!onboardingId) return;
+    try {
+      await onboardingApi.updateEquipment(onboardingId, equipmentData);
+      alert('Dotazioni salvate con successo! Il ticket IT è stato creato automaticamente.');
+      onUpdate();
+      onClose();
+    } catch (error: any) {
+      console.error('Errore salvataggio dotazioni:', error);
+      alert(error.response?.data?.error || 'Errore durante il salvataggio delle dotazioni');
+    }
+  };
 
   // Load all users for assignment
   useEffect(() => {
@@ -501,6 +533,101 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               </div>
             </div>
           </div>
+
+          {/* Form Dotazioni Onboarding - visibile solo per ticket onboarding */}
+          {isOnboardingTicket && ticket.status !== 'RESOLVED' && (
+            <div style={{ margin: '15px 0', padding: '15px', backgroundColor: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '8px' }}>
+              {!showEquipmentForm ? (
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ marginBottom: '10px', fontWeight: '600' }}>
+                    Questo ticket richiede la compilazione delle dotazioni per il nuovo dipendente.
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowEquipmentForm(true)}
+                    style={{ fontSize: '15px', padding: '10px 25px' }}
+                  >
+                    Compila Dotazioni
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h3 style={{ marginBottom: '15px', borderBottom: '2px solid #f59e0b', paddingBottom: '8px' }}>
+                    Dotazioni per il Nuovo Dipendente
+                  </h3>
+
+                  {/* Hardware */}
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '4px' }}>
+                    Dotazioni Hardware
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+                    <div className="form-group">
+                      <label className="label">Computer</label>
+                      <select className="input" value={equipmentData.computerType} onChange={(e) => setEquipmentData({ ...equipmentData, computerType: e.target.value })}>
+                        <option value="">Seleziona...</option>
+                        <option value="Portatile">Portatile</option>
+                        <option value="Desktop">Desktop</option>
+                        <option value="Non necessario">Non necessario</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="label">Telefono Aziendale</label>
+                      <select className="input" value={equipmentData.phoneType} onChange={(e) => setEquipmentData({ ...equipmentData, phoneType: e.target.value })}>
+                        <option value="">Seleziona...</option>
+                        <option value="Fisso">Telefono Fisso</option>
+                        <option value="Android">Smartphone Android</option>
+                        <option value="Non necessario">Non necessario</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsHeadset ? '#dbeafe' : 'transparent' }}>
+                      <input type="checkbox" checked={equipmentData.needsHeadset} onChange={(e) => setEquipmentData({ ...equipmentData, needsHeadset: e.target.checked })} style={{ marginRight: '8px' }} />
+                      Cuffie
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsWebcam ? '#dbeafe' : 'transparent' }}>
+                      <input type="checkbox" checked={equipmentData.needsWebcam} onChange={(e) => setEquipmentData({ ...equipmentData, needsWebcam: e.target.checked })} style={{ marginRight: '8px' }} />
+                      Webcam
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.additionalMonitor ? '#dbeafe' : 'transparent' }}>
+                      <input type="checkbox" checked={equipmentData.additionalMonitor} onChange={(e) => setEquipmentData({ ...equipmentData, additionalMonitor: e.target.checked })} style={{ marginRight: '8px' }} />
+                      Schermo aggiuntivo
+                    </label>
+                  </div>
+
+                  {/* Software e Accessi */}
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
+                    Software e Accessi
+                  </h4>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsMicrosoft365 ? '#dbeafe' : 'transparent', marginBottom: '10px' }}>
+                    <input type="checkbox" checked={equipmentData.needsMicrosoft365} onChange={(e) => setEquipmentData({ ...equipmentData, needsMicrosoft365: e.target.checked })} style={{ marginRight: '10px' }} />
+                    <span style={{ fontWeight: '500' }}>Pacchetto Microsoft 365</span>
+                  </label>
+                  <div className="form-group">
+                    <label className="label">Software Specifici</label>
+                    <textarea className="input" placeholder="es. PackWay, HubSpot, ArtiosCAD..." value={equipmentData.softwareNeeded} onChange={(e) => setEquipmentData({ ...equipmentData, softwareNeeded: e.target.value })} rows={2} />
+                  </div>
+                  <div className="form-group">
+                    <label className="label">Accessi Sistemi</label>
+                    <textarea className="input" placeholder="es. VPN, cartelle condivise, ERP, CRM..." value={equipmentData.systemAccess} onChange={(e) => setEquipmentData({ ...equipmentData, systemAccess: e.target.value })} rows={2} />
+                  </div>
+
+                  {/* Note */}
+                  <div className="form-group">
+                    <label className="label">Note Aggiuntive</label>
+                    <textarea className="input" placeholder="Altre richieste..." value={equipmentData.additionalNotes} onChange={(e) => setEquipmentData({ ...equipmentData, additionalNotes: e.target.value })} rows={2} />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                    <button className="btn btn-secondary" onClick={() => setShowEquipmentForm(false)}>Annulla</button>
+                    <button className="btn btn-primary" onClick={handleEquipmentSubmit}>
+                      Salva Dotazioni e Crea Ticket IT
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sposta ticket */}
           <div className="move-section">

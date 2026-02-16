@@ -174,6 +174,50 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
     // NOTA: Il ticket IT verrà creato solo quando il responsabile aggiungerà le dotazioni
     // (workflow 2 step: HR crea → Responsabile aggiunge dotazioni → IT riceve ticket)
 
+    // CREA TICKET KANBAN PER IL MANAGER per compilare le dotazioni
+    try {
+      const board = await prisma.board.findFirst({
+        where: { name: 'Main Board' },
+        include: { columns: true }
+      });
+
+      if (board) {
+        const todoColumn = board.columns.find(col => col.name === 'To Do') || board.columns[0];
+
+        let managerTicketDescription = `**ONBOARDING: Compila le dotazioni per il nuovo dipendente**\n\n`;
+        managerTicketDescription += `**Dipendente:** ${employeeFirstName} ${employeeLastName}\n`;
+        managerTicketDescription += `**Email:** ${employeeEmail}\n`;
+        if (sede) managerTicketDescription += `**Sede:** ${sede}\n`;
+        if (department) managerTicketDescription += `**Reparto:** ${department}\n`;
+        if (role) managerTicketDescription += `**Ruolo:** ${role}\n`;
+        managerTicketDescription += `**Data Inizio:** ${(startDate ? new Date(startDate) : new Date()).toLocaleDateString('it-IT')}\n`;
+        managerTicketDescription += `**Scadenza:** ${finalExpectedEndDate.toLocaleDateString('it-IT')}\n\n`;
+        managerTicketDescription += `---\n`;
+        managerTicketDescription += `Apri questo ticket e compila la sezione dotazioni (hardware, software, accessi).\n`;
+        managerTicketDescription += `Una volta salvate, IT riceverà automaticamente un ticket con tutti i dettagli.\n\n`;
+        managerTicketDescription += `[ONBOARDING_ID:${onboarding.id}]`;
+
+        await prisma.ticket.create({
+          data: {
+            title: `📋 Onboarding ${employeeFirstName} ${employeeLastName} - Compila Dotazioni`,
+            description: managerTicketDescription,
+            boardId: board.id,
+            columnId: todoColumn.id,
+            createdById: req.user!.id,
+            assignedToId: finalManagerId,
+            priority: 'HIGH',
+            category: 'Onboarding - Dotazioni',
+            slaHours: 48,
+            dueDate: finalExpectedEndDate
+          }
+        });
+
+        console.log(`✅ Ticket per manager creato per onboarding ${onboarding.id}`);
+      }
+    } catch (ticketError: any) {
+      console.warn('⚠️ Impossibile creare ticket per manager:', ticketError.message);
+    }
+
     res.json(onboarding);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -181,7 +225,8 @@ router.post('/', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'
 });
 
 // Aggiungi dotazioni onboarding (Responsabile - STEP 2)
-router.put('/:id/equipment', authenticate, authorizeDepartment('HR', 'IT', 'Amministrazione'), auditLog('ADD_EQUIPMENT_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
+// Il Manager assegnato, HR, IT, Amministrazione e ADMIN possono compilare le dotazioni
+router.put('/:id/equipment', authenticate, auditLog('ADD_EQUIPMENT_ONBOARDING', 'Onboarding'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -204,6 +249,15 @@ router.put('/:id/equipment', authenticate, authorizeDepartment('HR', 'IT', 'Ammi
 
     if (!onboarding) {
       return res.status(404).json({ error: 'Onboarding non trovato' });
+    }
+
+    // Verifica permessi: ADMIN, Manager assegnato, o reparti HR/IT/Amministrazione
+    const isAdmin = req.user!.role === 'ADMIN';
+    const isAssignedManager = req.user!.id === onboarding.managerId;
+    const isAuthorizedDept = req.user!.department && ['HR', 'IT', 'Amministrazione'].includes(req.user!.department);
+
+    if (!isAdmin && !isAssignedManager && !isAuthorizedDept) {
+      return res.status(403).json({ error: 'Accesso negato - solo il Manager assegnato o reparti autorizzati possono compilare le dotazioni' });
     }
 
     // Verifica che sia in stato PENDING_EQUIPMENT
@@ -296,6 +350,37 @@ router.put('/:id/equipment', authenticate, authorizeDepartment('HR', 'IT', 'Ammi
       });
 
       console.log(`✅ Ticket automatico creato per onboarding ${updatedOnboarding.id}: ${ticket.id}`);
+    }
+
+    // Chiudi automaticamente il ticket del manager (dotazioni compilate)
+    try {
+      const managerTickets = await prisma.ticket.findMany({
+        where: {
+          category: 'Onboarding - Dotazioni',
+          description: { contains: `[ONBOARDING_ID:${id}]` }
+        }
+      });
+
+      for (const mt of managerTickets) {
+        // Trova la colonna "Done" o l'ultima colonna
+        const ticketBoard = await prisma.board.findUnique({
+          where: { id: mt.boardId },
+          include: { columns: { orderBy: { order: 'asc' } } }
+        });
+        const doneColumn = ticketBoard?.columns.find(c => c.name === 'Done') || ticketBoard?.columns[ticketBoard.columns.length - 1];
+
+        await prisma.ticket.update({
+          where: { id: mt.id },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: new Date(),
+            columnId: doneColumn?.id || mt.columnId
+          }
+        });
+        console.log(`✅ Ticket manager ${mt.id} risolto automaticamente`);
+      }
+    } catch (resolveError: any) {
+      console.warn('⚠️ Impossibile risolvere ticket manager:', resolveError.message);
     }
 
     res.json(updatedOnboarding);
