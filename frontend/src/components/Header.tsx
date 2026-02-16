@@ -18,15 +18,19 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             <Link to="/board" className="nav-link">Board</Link>
             <Link to="/sla" className="nav-link">SLA</Link>
 
-            {/* Onboarding - visible to ADMIN and HR department */}
-            {(user.role === 'ADMIN' || user.department === 'Risorse Umane') && (
+            {/* Onboarding - visible to ADMIN, HR, IT, Amministrazione */}
+            {(user.role === 'ADMIN' ||
+              user.department === 'HR' ||
+              user.department === 'IT' ||
+              user.department === 'Amministrazione') && (
               <Link to="/onboarding" className="nav-link">Onboarding</Link>
             )}
 
-            {/* Offboarding - visible to ADMIN, HR and IT departments */}
+            {/* Offboarding - visible to ADMIN, HR, IT, Amministrazione */}
             {(user.role === 'ADMIN' ||
-              user.department === 'Risorse Umane' ||
-              user.department === 'IT/Sistemi') && (
+              user.department === 'HR' ||
+              user.department === 'IT' ||
+              user.department === 'Amministrazione') && (
               <Link to="/offboarding" className="nav-link">Offboarding</Link>
             )}
 

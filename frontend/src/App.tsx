@@ -82,28 +82,28 @@ function App() {
           <Route path="/board" element={<KanbanBoard user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
 
-          {/* Onboarding - only ADMIN and HR */}
+          {/* Onboarding - ADMIN, HR, IT, Amministrazione */}
           <Route
             path="/onboarding"
             element={
               <ProtectedRoute
                 user={user}
                 allowedRoles={['ADMIN']}
-                allowedDepartments={['Risorse Umane']}
+                allowedDepartments={['HR', 'IT', 'Amministrazione']}
               >
                 <Onboarding user={user} />
               </ProtectedRoute>
             }
           />
 
-          {/* Offboarding - only ADMIN, HR, and IT */}
+          {/* Offboarding - ADMIN, HR, IT, Amministrazione */}
           <Route
             path="/offboarding"
             element={
               <ProtectedRoute
                 user={user}
                 allowedRoles={['ADMIN']}
-                allowedDepartments={['Risorse Umane', 'IT/Sistemi']}
+                allowedDepartments={['HR', 'IT', 'Amministrazione']}
               >
                 <Offboarding user={user} />
               </ProtectedRoute>

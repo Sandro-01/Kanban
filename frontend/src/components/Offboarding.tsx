@@ -66,13 +66,16 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
       <div className="page-header">
         <h1>Offboarding</h1>
         <p>Gestisci i processi di offboarding e revoca accessi</p>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowNewForm(true)}
-          style={{ marginLeft: 'auto' }}
-        >
-          + Nuovo Offboarding
-        </button>
+        {/* Solo HR e ADMIN possono creare nuovi offboarding */}
+        {(user.role === 'ADMIN' || user.department === 'HR') && (
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewForm(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            + Nuovo Offboarding
+          </button>
+        )}
       </div>
 
       <div className="alert alert-warning">

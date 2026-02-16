@@ -67,13 +67,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       <div className="page-header">
         <h1>Onboarding</h1>
         <p>Gestisci i processi di onboarding per nuovi dipendenti</p>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowNewForm(true)}
-          style={{ marginLeft: 'auto' }}
-        >
-          + Nuovo Onboarding
-        </button>
+        {/* Solo HR e ADMIN possono creare nuovi onboarding */}
+        {(user.role === 'ADMIN' || user.department === 'HR') && (
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewForm(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            + Nuovo Onboarding
+          </button>
+        )}
       </div>
 
       <div className="alert alert-info">
@@ -155,7 +158,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     {selectedOnboarding.status}
                   </span>
                 </div>
-                {selectedOnboarding.status === 'PENDING_EQUIPMENT' && (
+                {/* Solo il Manager assegnato, HR e ADMIN possono aggiungere dotazioni */}
+                {selectedOnboarding.status === 'PENDING_EQUIPMENT' &&
+                  (user.role === 'ADMIN' ||
+                    user.department === 'HR' ||
+                    user.id === selectedOnboarding.managerId) && (
                   <button
                     className="btn btn-primary"
                     onClick={() => {
