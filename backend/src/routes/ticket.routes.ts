@@ -266,6 +266,19 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       }
     }
 
+    // Rilascio: se il ticket torna a OPEN, rimuovi tutte le assegnazioni
+    // così torna visibile a tutti nella bacheca pubblica
+    if (
+      updates.status === 'OPEN' &&
+      oldTicket.status !== 'OPEN'
+    ) {
+      const removed = await prisma.ticketAssignment.deleteMany({ where: { ticketId: id } });
+      // Rimuovi anche l'assegnazione diretta legacy
+      updates.assignedToId = null;
+      updates.assignedDepartments = [];
+      console.log(`🔓 Rilascio: ticket ${id} tornato in To Do, rimosse ${removed.count} assegnazioni`);
+    }
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: updates,
