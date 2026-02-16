@@ -509,8 +509,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 padding: '4px 8px',
                 fontSize: '12px',
                 fontWeight: '600',
-                appearance: 'auto',
-                WebkitAppearance: 'auto'
+                appearance: 'auto' as any
               }}
             >
               <option value="LOW">LOW</option>
