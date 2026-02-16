@@ -52,12 +52,12 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       // 2. Assigned to specific users → ONLY those users can see (even if department is also assigned)
       // 3. Assigned to department WITHOUT user assignment → all users in that department can see
       where.OR = [
-        // Rule 1: OPEN tickets with NO assignments (visible to all)
+        // Rule 1: Tickets with NO assignments (visible to all, any status)
         {
           AND: [
-            { status: 'OPEN' },
             { assignedDepartments: { isEmpty: true } },
-            { assignments: { none: {} } }
+            { assignments: { none: {} } },
+            { assignedToId: null }
           ]
         },
         // Rule 2: Multi-assigned to me (has priority - if users are assigned, only they see it)
@@ -70,7 +70,9 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           ]
         } : {},
         // Rule 4: Assigned directly to me (old single assignment - kept for compatibility)
-        { assignedToId: currentUser.id }
+        { assignedToId: currentUser.id },
+        // Rule 5: Tickets I created (creator always sees their own tickets)
+        { createdById: currentUser.id }
       ];
     }
     // If ADMIN, no OR filter is added, so they see all tickets
