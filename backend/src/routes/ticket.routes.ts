@@ -72,8 +72,14 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
         } : {},
         // Rule 4: Assigned directly to me (legacy single assignment)
         { assignedToId: currentUser.id },
-        // Rule 5: Tickets I created (creator always sees their own tickets)
-        { createdById: currentUser.id }
+        // Rule 5: Tickets I created, ma solo se ancora in OPEN (bacheca pubblica)
+        // Una volta preso in carico da qualcuno, solo l'assegnatario lo vede
+        {
+          AND: [
+            { createdById: currentUser.id },
+            { status: 'OPEN' }
+          ]
+        }
       ];
     }
     // If ADMIN, no OR filter is added, so they see all tickets
