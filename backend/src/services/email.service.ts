@@ -77,7 +77,8 @@ export async function createTicketFromEmail(
   from: string,
   subject: string,
   body: string,
-  attachments: any[]
+  attachments: any[],
+  emailMessageId?: string
 ) {
   // Trova o crea utente
   let user = await prisma.user.findUnique({ where: { email: from } });
@@ -147,6 +148,7 @@ export async function createTicketFromEmail(
       slaHours,
       dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
       emailThreadId,
+      emailMessageId: emailMessageId || null,
       externalContacts: [from],
     }
   });

@@ -97,11 +97,13 @@ async function graphRequest(endpoint: string, method: string = 'GET', body?: any
 }
 
 /**
- * Legge le email non lette dalla casella condivisa
+ * Legge le email recenti dalla casella condivisa (ultime 4 ore, non solo non lette)
+ * Questo evita il problema delle email marcate come lette da Outlook aperto
  */
-async function getUnreadEmails(): Promise<any[]> {
+async function getRecentEmails(): Promise<any[]> {
   const mailbox = GRAPH_CONFIG.sharedMailbox;
-  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=isRead eq false&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId&$orderby=receivedDateTime asc`;
+  const hoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=receivedDateTime ge ${hoursAgo}&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId&$orderby=receivedDateTime asc`;
 
   const data = await graphRequest(endpoint);
   return data.value || [];
@@ -245,8 +247,8 @@ async function processGraphEmail(message: any): Promise<void> {
 
       const cleanBody = cleanEmailContent(body);
       const cleanSubject = cleanEmailSubject(subject);
-      const ticket = await createTicketFromEmail(from, cleanSubject, cleanBody, emailAttachments);
-      console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
+      const ticket = await createTicketFromEmail(from, cleanSubject, cleanBody, emailAttachments, messageId);
+      console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${cleanSubject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);
     }
@@ -386,20 +388,49 @@ function cleanEmailSubject(subject: string): string {
 }
 
 /**
+ * Verifica se un'email è già stata elaborata (controlla sia ticket che commenti)
+ */
+async function isEmailAlreadyProcessed(messageId: string): Promise<boolean> {
+  if (!messageId) return false;
+
+  const existingTicket = await prisma.ticket.findFirst({
+    where: { emailMessageId: messageId },
+    select: { id: true },
+  });
+  if (existingTicket) return true;
+
+  const existingComment = await prisma.comment.findFirst({
+    where: { emailMessageId: messageId },
+    select: { id: true },
+  });
+  if (existingComment) return true;
+
+  return false;
+}
+
+/**
  * Controlla la casella condivisa per nuove email (polling via Graph API)
  */
 export async function checkInboxViaGraph(): Promise<void> {
   try {
-    const emails = await getUnreadEmails();
+    const emails = await getRecentEmails();
 
     if (emails.length === 0) {
       console.log('📬 Nessuna nuova email');
       return;
     }
 
-    console.log(`📧 Trovate ${emails.length} nuove email via Graph API`);
-
+    // Filtra email già elaborate
+    let newCount = 0;
     for (const email of emails) {
+      const messageId = email.internetMessageId || email.id;
+      const alreadyProcessed = await isEmailAlreadyProcessed(messageId);
+
+      if (alreadyProcessed) {
+        continue;
+      }
+
+      newCount++;
       try {
         await processGraphEmail(email);
         await markAsRead(email.id);
@@ -408,7 +439,11 @@ export async function checkInboxViaGraph(): Promise<void> {
       }
     }
 
-    console.log('✅ Elaborazione email completata');
+    if (newCount === 0) {
+      console.log('📬 Nessuna nuova email');
+    } else {
+      console.log(`✅ Elaborate ${newCount} nuove email`);
+    }
   } catch (error: any) {
     console.error('❌ Errore polling Graph API:', error.message);
   }
