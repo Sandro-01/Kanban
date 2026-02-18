@@ -35,13 +35,64 @@ const upload = multer({
 // Lista tickets
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { status, priority, boardId } = req.query;
+    const { status, priority, boardId, search, assignedUserId, department, dateFrom, dateTo } = req.query;
     const currentUser = req.user!;
 
     const where: any = {};
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (boardId) where.boardId = boardId;
+
+    // Text search on title, description, or ticket ID
+    if (search && typeof search === 'string' && search.trim()) {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { title: { contains: search.trim(), mode: 'insensitive' } },
+            { description: { contains: search.trim(), mode: 'insensitive' } },
+            { id: { contains: search.trim(), mode: 'insensitive' } },
+          ]
+        }
+      ];
+    }
+
+    // Filter by assigned user
+    if (assignedUserId && typeof assignedUserId === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { assignments: { some: { userId: assignedUserId } } },
+            { assignedToId: assignedUserId }
+          ]
+        }
+      ];
+    }
+
+    // Filter by assigned department
+    if (department && typeof department === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        { assignedDepartments: { has: department } }
+      ];
+    }
+
+    // Date range filter
+    if (dateFrom && typeof dateFrom === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        { createdAt: { gte: new Date(dateFrom) } }
+      ];
+    }
+    if (dateTo && typeof dateTo === 'string') {
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      where.AND = [
+        ...(where.AND || []),
+        { createdAt: { lte: endDate } }
+      ];
+    }
 
     // Visibility rules:
     // ADMIN can see EVERYTHING

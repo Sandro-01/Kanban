@@ -1,0 +1,426 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { tickets as ticketsApi, users as usersApi } from '../services/api';
+import './TicketArchive.css';
+
+interface TicketArchiveProps {
+  user: any;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Aperto',
+  IN_PROGRESS: 'In Lavorazione',
+  WAITING: 'In Attesa',
+  RESOLVED: 'Risolto',
+  CLOSED: 'Chiuso',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  OPEN: '#3b82f6',
+  IN_PROGRESS: '#f59e0b',
+  WAITING: '#8b5cf6',
+  RESOLVED: '#10b981',
+  CLOSED: '#6b7280',
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  CRITICAL: 'Critica',
+  HIGH: 'Alta',
+  MEDIUM: 'Media',
+  LOW: 'Bassa',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  CRITICAL: '#dc2626',
+  HIGH: '#f97316',
+  MEDIUM: '#eab308',
+  LOW: '#22c55e',
+};
+
+const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
+  const [allTickets, setAllTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [assignedUserFilter, setAssignedUserFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [operators, setOperators] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [ticketHistory, setTicketHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Load operators for the filter dropdown
+  useEffect(() => {
+    const loadOperators = async () => {
+      try {
+        const res = await usersApi.getAll();
+        const ops = res.data.filter((u: any) => u.department);
+        setOperators(ops);
+        const depts = Array.from(new Set(ops.map((u: any) => u.department))) as string[];
+        setDepartments(depts);
+      } catch (e) {
+        console.error('Error loading operators:', e);
+      }
+    };
+    loadOperators();
+  }, []);
+
+  const loadTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter) params.status = statusFilter;
+      if (priorityFilter) params.priority = priorityFilter;
+      if (departmentFilter) params.department = departmentFilter;
+      if (assignedUserFilter) params.assignedUserId = assignedUserFilter;
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo) params.dateTo = dateTo;
+
+      const res = await ticketsApi.getAll(params);
+      setAllTickets(res.data);
+    } catch (e) {
+      console.error('Error loading tickets:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter, priorityFilter, departmentFilter, assignedUserFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadTickets();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [loadTickets]);
+
+  const openDetail = async (ticket: any) => {
+    setSelectedTicket(ticket);
+    setLoadingHistory(true);
+    try {
+      const res = await ticketsApi.getHistory(ticket.id);
+      setTicketHistory(res.data);
+    } catch (e) {
+      console.error('Error loading history:', e);
+      setTicketHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setPriorityFilter('');
+    setDepartmentFilter('');
+    setAssignedUserFilter('');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasFilters = search || statusFilter || priorityFilter || departmentFilter || assignedUserFilter || dateFrom || dateTo;
+
+  const getAssignees = (ticket: any) => {
+    const names: string[] = [];
+    if (ticket.assignments?.length > 0) {
+      ticket.assignments.forEach((a: any) => {
+        names.push(`${a.user.firstName} ${a.user.lastName}`);
+      });
+    }
+    if (ticket.assignedDepartments?.length > 0) {
+      ticket.assignedDepartments.forEach((d: string) => names.push(d));
+    }
+    if (names.length === 0 && ticket.assignedTo) {
+      names.push(`${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`);
+    }
+    return names;
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('it-IT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    });
+  };
+
+  const formatDateTime = (date: string) => {
+    return new Date(date).toLocaleDateString('it-IT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="archive-page">
+      <div className="archive-header">
+        <div>
+          <h2>Archivio Ticket</h2>
+          <p className="archive-subtitle">Cerca e consulta tutti i ticket, attuali e passati</p>
+        </div>
+        <div className="archive-stats">
+          <span className="stat-pill">{allTickets.length} ticket trovati</span>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="archive-filters">
+        <div className="filter-search">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Cerca per titolo, descrizione o ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+        </div>
+
+        <div className="filter-row">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="filter-select">
+            <option value="">Tutti gli stati</option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="filter-select">
+            <option value="">Tutte le priorita</option>
+            {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+
+          <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="filter-select">
+            <option value="">Tutti i reparti</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+
+          <select value={assignedUserFilter} onChange={(e) => setAssignedUserFilter(e.target.value)} className="filter-select">
+            <option value="">Tutti gli operatori</option>
+            {operators.map((u: any) => (
+              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+            ))}
+          </select>
+
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="filter-date" title="Da data" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="filter-date" title="A data" />
+
+          {hasFilters && (
+            <button className="filter-clear" onClick={clearFilters}>Pulisci filtri</button>
+          )}
+        </div>
+      </div>
+
+      {/* Results table */}
+      <div className="archive-table-wrapper">
+        {loading ? (
+          <div className="archive-loading">Caricamento...</div>
+        ) : allTickets.length === 0 ? (
+          <div className="archive-empty">
+            <span className="empty-icon">📭</span>
+            <p>Nessun ticket trovato con i filtri selezionati</p>
+          </div>
+        ) : (
+          <table className="archive-table">
+            <thead>
+              <tr>
+                <th>Stato</th>
+                <th>Priorita</th>
+                <th>Titolo</th>
+                <th>Creato da</th>
+                <th>Assegnato a</th>
+                <th>Data</th>
+                <th>SLA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allTickets.map((ticket) => {
+                const assignees = getAssignees(ticket);
+                return (
+                  <tr key={ticket.id} onClick={() => openDetail(ticket)} className="archive-row">
+                    <td>
+                      <span className="status-badge" style={{ background: STATUS_COLORS[ticket.status] }}>
+                        {STATUS_LABELS[ticket.status] || ticket.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="priority-dot" style={{ background: PRIORITY_COLORS[ticket.priority] }} />
+                      {PRIORITY_LABELS[ticket.priority] || ticket.priority}
+                    </td>
+                    <td>
+                      <div className="cell-title">{ticket.title}</div>
+                      <div className="cell-id">{ticket.id.substring(0, 8)}...</div>
+                    </td>
+                    <td className="cell-user">
+                      {ticket.createdBy?.firstName} {ticket.createdBy?.lastName}
+                    </td>
+                    <td>
+                      {assignees.length > 0 ? (
+                        <div className="cell-assignees">
+                          {assignees.map((name, i) => (
+                            <span className="assignee-tag" key={i}>{name}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="no-assignee">Non assegnato</span>
+                      )}
+                    </td>
+                    <td className="cell-date">{formatDate(ticket.createdAt)}</td>
+                    <td>
+                      {ticket.slaViolated ? (
+                        <span className="sla-tag violated">Violato</span>
+                      ) : ticket.resolvedAt ? (
+                        <span className="sla-tag ok">OK</span>
+                      ) : (
+                        <span className="sla-tag pending">In corso</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Ticket detail side panel */}
+      {selectedTicket && (
+        <div className="archive-overlay" onClick={() => setSelectedTicket(null)}>
+          <div className="archive-detail" onClick={(e) => e.stopPropagation()}>
+            <div className="detail-header">
+              <div>
+                <h3>{selectedTicket.title}</h3>
+                <span className="detail-id">{selectedTicket.id}</span>
+              </div>
+              <button className="detail-close" onClick={() => setSelectedTicket(null)}>✕</button>
+            </div>
+
+            <div className="detail-body">
+              {/* Info grid */}
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <label>Stato</label>
+                  <span className="status-badge" style={{ background: STATUS_COLORS[selectedTicket.status] }}>
+                    {STATUS_LABELS[selectedTicket.status]}
+                  </span>
+                </div>
+                <div className="detail-field">
+                  <label>Priorita</label>
+                  <span>
+                    <span className="priority-dot" style={{ background: PRIORITY_COLORS[selectedTicket.priority] }} />
+                    {PRIORITY_LABELS[selectedTicket.priority]}
+                  </span>
+                </div>
+                <div className="detail-field">
+                  <label>Creato da</label>
+                  <span>{selectedTicket.createdBy?.firstName} {selectedTicket.createdBy?.lastName}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Data creazione</label>
+                  <span>{formatDateTime(selectedTicket.createdAt)}</span>
+                </div>
+                {selectedTicket.resolvedAt && (
+                  <div className="detail-field">
+                    <label>Risolto il</label>
+                    <span>{formatDateTime(selectedTicket.resolvedAt)}</span>
+                  </div>
+                )}
+                <div className="detail-field">
+                  <label>Scadenza SLA</label>
+                  <span>{formatDateTime(selectedTicket.dueDate)}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="detail-section">
+                <label>Descrizione</label>
+                <p className="detail-description">{selectedTicket.description}</p>
+              </div>
+
+              {/* Assignees */}
+              <div className="detail-section">
+                <label>Assegnato a</label>
+                <div className="detail-assignees">
+                  {getAssignees(selectedTicket).length > 0 ? (
+                    getAssignees(selectedTicket).map((name, i) => (
+                      <span className="assignee-tag" key={i}>{name}</span>
+                    ))
+                  ) : (
+                    <span className="no-assignee">Non assegnato</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Comments */}
+              {selectedTicket.comments?.length > 0 && (
+                <div className="detail-section">
+                  <label>Commenti ({selectedTicket.comments.length})</label>
+                  <div className="detail-comments">
+                    {selectedTicket.comments.map((c: any) => (
+                      <div className="detail-comment" key={c.id}>
+                        <div className="comment-meta">
+                          <strong>{c.user?.firstName} {c.user?.lastName}</strong>
+                          <span>{formatDateTime(c.createdAt)}</span>
+                        </div>
+                        <p>{c.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {selectedTicket.attachments?.length > 0 && (
+                <div className="detail-section">
+                  <label>Allegati ({selectedTicket.attachments.length})</label>
+                  <div className="detail-attachments">
+                    {selectedTicket.attachments.map((a: any) => (
+                      <a
+                        key={a.id}
+                        href={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${a.storedName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="attachment-link"
+                      >
+                        📎 {a.originalName}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* History */}
+              <div className="detail-section">
+                <label>Cronologia modifiche</label>
+                {loadingHistory ? (
+                  <p className="loading-text">Caricamento...</p>
+                ) : ticketHistory.length > 0 ? (
+                  <div className="detail-history">
+                    {ticketHistory.map((h: any, i: number) => (
+                      <div className="history-item" key={i}>
+                        <div className="history-dot" />
+                        <div className="history-content">
+                          <span className="history-action">{h.field}: {h.oldValue || '–'} → {h.newValue || '–'}</span>
+                          <span className="history-meta">
+                            {h.changedBy?.firstName} {h.changedBy?.lastName} — {formatDateTime(h.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-history">Nessuna modifica registrata</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TicketArchive;

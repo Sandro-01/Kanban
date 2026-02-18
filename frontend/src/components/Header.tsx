@@ -16,6 +16,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <nav className="nav">
             <Link to="/" className="nav-link">Dashboard</Link>
             <Link to="/board" className="nav-link">Board</Link>
+            <Link to="/archivio" className="nav-link">Archivio</Link>
             <Link to="/sla" className="nav-link">SLA</Link>
 
             {/* Onboarding - visible to ADMIN, HR, IT, Amministrazione */}

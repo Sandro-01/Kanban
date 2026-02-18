@@ -11,6 +11,7 @@ import Offboarding from './components/Offboarding';
 import SLAMetrics from './components/SLAMetrics';
 import AuditLogs from './components/AuditLogs';
 import UserManagement from './components/UserManagement';
+import TicketArchive from './components/TicketArchive';
 import Header from './components/Header';
 
 // Protected route component
@@ -80,6 +81,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/board" element={<KanbanBoard user={user} />} />
+          <Route path="/archivio" element={<TicketArchive user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
 
           {/* Onboarding - ADMIN, HR, IT, Amministrazione */}
