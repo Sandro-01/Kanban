@@ -350,7 +350,7 @@ function cleanEmailContent(content: string): string {
     .filter(line => !line.trim().startsWith('>'))
     .join('\n');
 
-  // Rimuovi firme comuni
+  // Rimuovi firme comuni (tronca da quel punto in poi)
   const signaturePatterns = [
     /^--\s*$/m,
     /Sent from my iPhone/i,
@@ -371,6 +371,51 @@ function cleanEmailContent(content: string): string {
     if (match && match.index !== undefined) {
       cleaned = cleaned.substring(0, match.index);
     }
+  }
+
+  // Rimuovi blocchi firma business (nome + titolo + telefono + indirizzo + sito)
+  // Detecta righe con numeri di telefono (M:, T:, Tel:, Cell:, +39, etc.)
+  const lines = cleaned.split('\n');
+  let signatureStartIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Riga con numero di telefono
+    if (/^(M|T|Tel|Cell|Phone|Fax|Mob)[\s.:]+\+?\d/i.test(line) || /^\+\d{2,3}\s?\d/.test(line)) {
+      // Cerca indietro per trovare l'inizio della firma (nome/titolo sopra il telefono)
+      signatureStartIndex = i;
+      for (let j = i - 1; j >= 0 && j >= i - 3; j--) {
+        const prevLine = lines[j].trim();
+        if (prevLine.length > 0 && prevLine.length < 60 && !/[.!?]$/.test(prevLine)) {
+          signatureStartIndex = j;
+        } else {
+          break;
+        }
+      }
+      break;
+    }
+    // Riga con URL del sito web
+    if (/^(www\.|http[s]?:\/\/)/i.test(line)) {
+      signatureStartIndex = i;
+      for (let j = i - 1; j >= 0 && j >= i - 4; j--) {
+        const prevLine = lines[j].trim();
+        if (prevLine.length > 0 && prevLine.length < 60 && !/[.!?]$/.test(prevLine)) {
+          signatureStartIndex = j;
+        } else {
+          break;
+        }
+      }
+      break;
+    }
+    // "Follow us" pattern
+    if (/^Follow us/i.test(line)) {
+      signatureStartIndex = i;
+      break;
+    }
+  }
+
+  if (signatureStartIndex > 0) {
+    cleaned = lines.slice(0, signatureStartIndex).join('\n');
   }
 
   // Rimuovi righe vuote multiple

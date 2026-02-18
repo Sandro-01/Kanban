@@ -443,6 +443,15 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
     });
 
     console.log('✅ File uploaded successfully:', attachment.id);
+
+    // Notifica il creatore del ticket del nuovo allegato
+    try {
+      await notifyTicketUpdate(id, 'Nuovo allegato', `File caricato: <strong>${req.file.originalname}</strong>`);
+      console.log('✅ Email notification sent for attachment');
+    } catch (emailError: any) {
+      console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+    }
+
     res.json(attachment);
   } catch (error: any) {
     console.error('❌ ERROR uploading file:', error);

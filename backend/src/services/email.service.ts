@@ -261,20 +261,41 @@ export async function notifyTicketUpdate(
 
   if (!ticket) return;
 
-  const recipients = [ticket.createdBy.email];
+  // Raccogli tutti i destinatari (senza duplicati)
+  const recipientSet = new Set<string>();
+  recipientSet.add(ticket.createdBy.email);
   if (ticket.assignedTo) {
-    recipients.push(ticket.assignedTo.email);
+    recipientSet.add(ticket.assignedTo.email);
+  }
+  // Includi contatti esterni (chi ha creato il ticket via email)
+  if (ticket.externalContacts && ticket.externalContacts.length > 0) {
+    ticket.externalContacts.forEach((email: string) => recipientSet.add(email));
   }
 
-  const subject = `Ticket #${ticket.id.substring(0, 8)} - ${updateType}`;
+  // Usa [Ticket #ID] nell'oggetto così le risposte vengono tracciate
+  const subject = `[Ticket #${ticket.id.substring(0, 8)}] ${ticket.title} - ${updateType}`;
   const html = `
-    <h2>Aggiornamento Ticket</h2>
-    <p><strong>Titolo:</strong> ${ticket.title}</p>
-    <p><strong>Aggiornamento:</strong> ${details}</p>
-    <p><a href="${process.env.APP_URL}/tickets/${ticket.id}">Visualizza ticket</a></p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #3b82f6; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0;">
+        <h2 style="margin: 0; font-size: 16px;">Ticket #${ticket.id.substring(0, 8)} — ${updateType}</h2>
+      </div>
+      <div style="padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <p style="margin: 0 0 10px;"><strong>Titolo:</strong> ${ticket.title}</p>
+        <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 10px 0;">
+          ${details}
+        </div>
+        <p style="font-size: 12px; color: #6b7280; margin-top: 15px;">
+          Rispondi a questa email per aggiungere un commento al ticket.
+        </p>
+      </div>
+    </div>
   `;
 
-  for (const email of recipients) {
-    await sendEmail(email, subject, html, ticketId);
+  for (const email of recipientSet) {
+    try {
+      await sendEmail(email, subject, html, ticketId);
+    } catch (err: any) {
+      console.error(`⚠️ Notifica non inviata a ${email}: ${err.message}`);
+    }
   }
 }
