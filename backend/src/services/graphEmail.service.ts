@@ -173,6 +173,13 @@ async function processGraphEmail(message: any): Promise<void> {
   console.log(`\n📨 Elaborazione email da: ${from}`);
   console.log(`   Oggetto: ${subject}`);
 
+  // Ignora le email inviate dal sistema stesso (notifiche proprie)
+  const ownMailbox = GRAPH_CONFIG.sharedMailbox.toLowerCase();
+  if (from.toLowerCase() === ownMailbox) {
+    console.log('⏭️ Email inviata dal sistema stesso, ignorata');
+    return;
+  }
+
   // Controlla se è una risposta a un ticket esistente
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
 
@@ -434,6 +441,23 @@ function cleanEmailContent(content: string): string {
     cleaned = lines.join('\n');
   }
 
+  // Taglia se appare il testo della notifica del sistema
+  const notificationPatterns = [
+    /Ticket #[a-f0-9]/i,
+    /Nuovo commento/i,
+    /Rispondi a questa email/i,
+    /Sistema Kanban/i,
+    /Europoligrafico.*Sistema Kanban/i,
+  ];
+  const cleanedLines = cleaned.split('\n');
+  for (let i = 0; i < cleanedLines.length; i++) {
+    const line = cleanedLines[i].trim();
+    if (notificationPatterns.some(p => p.test(line))) {
+      cleaned = cleanedLines.slice(0, i).join('\n');
+      break;
+    }
+  }
+
   // Rimuovi firme e disclaimer dal contenuto rimanente
   cleaned = removeSignature(cleaned);
 
@@ -481,9 +505,12 @@ function removeSignature(text: string): string {
     }
   }
 
-  // Rimuovi blocchi firma business (telefono, URL, "Follow us")
+  // Rimuovi blocchi firma business (telefono, URL, "Follow us", ruolo/titolo)
   const lines = cleaned.split('\n');
   let sigStart = -1;
+
+  // Pattern per titoli/ruoli lavorativi comuni
+  const jobTitlePattern = /^(IT|HR|Sales|Marketing|Account|Project|Product|Business|Chief|Senior|Junior|Lead|Head|Director|Manager|Specialist|Consultant|Engineer|Developer|Analyst|Coordinator|Assistant|Administrator|Responsabile|Direttore|Tecnico|Commerciale|Amministratore|Addetto)\b/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -509,6 +536,19 @@ function removeSignature(text: string): string {
       break;
     }
     if (/^Follow us/i.test(line)) {
+      sigStart = i;
+      break;
+    }
+    // Rileva riga con titolo lavorativo (es. "IT Specialist", "Sales Manager")
+    if (jobTitlePattern.test(line) && line.length < 50) {
+      // Se la riga precedente sembra un nome (2-3 parole, tutte con maiuscola iniziale)
+      if (i > 0) {
+        const prevLine = lines[i - 1].trim();
+        if (prevLine.length > 0 && prevLine.length < 50 && /^[A-Z][a-zà-ú]+(\s+[A-Z][a-zà-ú]+){0,3}$/.test(prevLine)) {
+          sigStart = i - 1;
+          break;
+        }
+      }
       sigStart = i;
       break;
     }

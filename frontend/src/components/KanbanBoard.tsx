@@ -446,6 +446,40 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
+  // Pulisci contenuto email per la visualizzazione (gestisce anche dati legacy in DB)
+  const cleanEmailReplyContent = (content: string): string => {
+    let cleaned = content;
+    // Rimuovi prefisso legacy "📧 **Risposta da email@...:**"
+    cleaned = cleaned.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '');
+    // Rimuovi testo notifica sistema che potrebbe essere incluso
+    const notifPatterns = [
+      /Ticket #[a-f0-9][\s\S]*/i,
+      /Rispondi a questa email[\s\S]*/i,
+      /Sistema Kanban[\s\S]*/i,
+      /Europoligrafico.*Sistema Kanban[\s\S]*/i,
+      /Nuovo commento[\s\S]*/i,
+    ];
+    for (const pattern of notifPatterns) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+    // Rimuovi firme nome + titolo (es. "Sandro Sellaro\nIT Specialist")
+    const lines = cleaned.trim().split('\n');
+    const jobTitlePattern = /^(IT|HR|Sales|Marketing|Account|Project|Product|Business|Chief|Senior|Junior|Lead|Head|Director|Manager|Specialist|Consultant|Engineer|Developer|Analyst|Coordinator|Assistant|Administrator|Responsabile|Direttore|Tecnico|Commerciale|Amministratore|Addetto)\b/i;
+    for (let i = lines.length - 1; i >= 1; i--) {
+      const line = lines[i].trim();
+      if (jobTitlePattern.test(line) && line.length < 50) {
+        const prevLine = lines[i - 1].trim();
+        if (prevLine.length > 0 && prevLine.length < 50 && /^[A-Z][a-zà-ú]+(\s+[A-Z][a-zà-ú]+){0,3}$/.test(prevLine)) {
+          lines.splice(i - 1, 2);
+          break;
+        }
+        lines.splice(i, 1);
+        break;
+      }
+    }
+    return lines.join('\n').trim();
+  };
+
   // Create unified timeline with both comments and files
   const getTimeline = () => {
     const items: any[] = [];
@@ -935,7 +969,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           </div>
                           <p className="timeline-text">
                             {item.isEmailReply
-                              ? item.content.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '').trim()
+                              ? cleanEmailReplyContent(item.content)
                               : item.content}
                           </p>
                           {/* Show attachments linked to this comment */}

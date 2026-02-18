@@ -242,6 +242,13 @@ async function processIncomingEmail(parsed: any) {
     console.log(`   📎 Allegati: ${attachments.length}`);
   }
 
+  // Ignora le email inviate dal sistema stesso (notifiche proprie)
+  const ownMailbox = (process.env.EMAIL_FROM || process.env.EMAIL_USER || EMAIL_CONFIG.auth.user).toLowerCase();
+  if (from.toLowerCase() === ownMailbox) {
+    console.log('⏭️ Email inviata dal sistema stesso, ignorata');
+    return;
+  }
+
   // Estrai ticket ID dall'oggetto
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
   if (!ticketIdMatch) {
@@ -446,6 +453,23 @@ function cleanEmailContent(content: string): string {
     cleaned = lines.join('\n');
   }
 
+  // Taglia se appare il testo della notifica del sistema
+  const notificationPatterns = [
+    /Ticket #[a-f0-9]/i,
+    /Nuovo commento/i,
+    /Rispondi a questa email/i,
+    /Sistema Kanban/i,
+    /Europoligrafico.*Sistema Kanban/i,
+  ];
+  const cleanedLines2 = cleaned.split('\n');
+  for (let i = 0; i < cleanedLines2.length; i++) {
+    const line = cleanedLines2[i].trim();
+    if (notificationPatterns.some(p => p.test(line))) {
+      cleaned = cleanedLines2.slice(0, i).join('\n');
+      break;
+    }
+  }
+
   // Rimuovi firme comuni
   const signaturePatterns = [
     /^--\s*$/m,
@@ -461,6 +485,24 @@ function cleanEmailContent(content: string): string {
       cleaned = cleaned.substring(0, match.index);
     }
   });
+
+  // Rileva firma nome + titolo lavorativo alla fine
+  const jobTitlePattern = /^(IT|HR|Sales|Marketing|Account|Project|Product|Business|Chief|Senior|Junior|Lead|Head|Director|Manager|Specialist|Consultant|Engineer|Developer|Analyst|Coordinator|Assistant|Administrator|Responsabile|Direttore|Tecnico|Commerciale|Amministratore|Addetto)\b/i;
+  const sigLines = cleaned.split('\n');
+  for (let i = 0; i < sigLines.length; i++) {
+    const line = sigLines[i].trim();
+    if (jobTitlePattern.test(line) && line.length < 50) {
+      if (i > 0) {
+        const prevLine = sigLines[i - 1].trim();
+        if (prevLine.length > 0 && prevLine.length < 50 && /^[A-Z][a-zà-ú]+(\s+[A-Z][a-zà-ú]+){0,3}$/.test(prevLine)) {
+          cleaned = sigLines.slice(0, i - 1).join('\n');
+          break;
+        }
+      }
+      cleaned = sigLines.slice(0, i).join('\n');
+      break;
+    }
+  }
 
   // Rimuovi righe vuote multiple
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
