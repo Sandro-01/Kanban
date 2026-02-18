@@ -72,7 +72,7 @@ app.listen(PORT, () => {
   if (isGraphConfigured()) {
     // Microsoft Graph API (OAuth2 - raccomandato per M365)
     console.log('📧 Email integration via Microsoft Graph API');
-    startGraphEmailPolling(2);
+    startGraphEmailPolling(30);
   } else {
     // Fallback: IMAP con Basic Auth (solo se configurata password)
     const emailPassword = process.env.EMAIL_PASSWORD;

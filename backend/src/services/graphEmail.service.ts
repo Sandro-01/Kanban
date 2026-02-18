@@ -591,8 +591,8 @@ export async function checkInboxViaGraph(): Promise<void> {
 /**
  * Avvia il polling automatico via Microsoft Graph API
  */
-export function startGraphEmailPolling(intervalMinutes: number = 2): void {
-  console.log(`🚀 Polling email via Microsoft Graph avviato: ogni ${intervalMinutes} minuti`);
+export function startGraphEmailPolling(intervalSeconds: number = 30): void {
+  console.log(`🚀 Polling email via Microsoft Graph avviato: ogni ${intervalSeconds} secondi`);
   console.log(`   📬 Casella: ${GRAPH_CONFIG.sharedMailbox}`);
 
   // Controlla subito
@@ -605,7 +605,7 @@ export function startGraphEmailPolling(intervalMinutes: number = 2): void {
     checkInboxViaGraph().catch(err =>
       console.error('Errore polling email Graph:', err.message)
     );
-  }, intervalMinutes * 60 * 1000);
+  }, intervalSeconds * 1000);
 }
 
 /**
