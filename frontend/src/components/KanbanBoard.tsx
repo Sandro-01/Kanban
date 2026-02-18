@@ -235,6 +235,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [initialUsers, setInitialUsers] = useState<string[]>([]);
+  const [initialDepartments, setInitialDepartments] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
 
@@ -286,10 +288,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   // Initialize selected assignments from ticket
   useEffect(() => {
     if (ticket.assignments) {
-      setSelectedUsers(ticket.assignments.map((a: any) => a.userId));
+      const userIds = ticket.assignments.map((a: any) => a.userId);
+      setSelectedUsers(userIds);
+      setInitialUsers(userIds);
     }
     if (ticket.assignedDepartments) {
       setSelectedDepartments(ticket.assignedDepartments);
+      setInitialDepartments(ticket.assignedDepartments);
     }
   }, [ticket]);
 
@@ -344,7 +349,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     // Check if there's anything to submit
     const hasComment = comment.trim();
     const hasFiles = files.length > 0;
-    const hasAssignments = selectedUsers.length > 0 || selectedDepartments.length > 0;
+    const usersChanged = JSON.stringify([...selectedUsers].sort()) !== JSON.stringify([...initialUsers].sort());
+    const deptsChanged = JSON.stringify([...selectedDepartments].sort()) !== JSON.stringify([...initialDepartments].sort());
+    const hasAssignments = usersChanged || deptsChanged;
 
     if (!hasComment && !hasFiles && !hasAssignments) {
       return; // Nothing to submit
