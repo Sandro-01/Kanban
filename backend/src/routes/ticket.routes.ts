@@ -79,6 +79,14 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
             { createdById: currentUser.id },
             { status: 'OPEN' }
           ]
+        },
+        // Rule 6: Ticket onboarding creati da me → visibili in QUALSIASI stato
+        // L'HR deve poter seguire l'avanzamento della nuova assunzione
+        {
+          AND: [
+            { createdById: currentUser.id },
+            { category: { in: ['Richiesta Onboarding', 'Onboarding - Dotazioni'] } }
+          ]
         }
       ];
     }
