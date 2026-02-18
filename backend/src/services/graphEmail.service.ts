@@ -304,13 +304,18 @@ async function saveGraphAttachments(
 
 /**
  * Pulisce il contenuto HTML dell'email rimuovendo rumore (firme, header inoltro, quote)
+ * Struttura email inoltrata Outlook:
+ *   [Firma mittente]  ← RIMUOVERE
+ *   Da: ... / Inviato: ... / A: ... / Oggetto: ...  ← SALTARE
+ *   [Corpo email originale]  ← TENERE
+ *   [Firma autore originale + disclaimer]  ← RIMUOVERE
  */
 function cleanEmailContent(content: string): string {
-  // Rimuovi blocchi di stile e script prima dei tag HTML
+  // Rimuovi blocchi di stile e script
   let cleaned = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
   cleaned = cleaned.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
 
-  // Rimuovi tag HTML
+  // Converti tag HTML in newline
   cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
   cleaned = cleaned.replace(/<\/p>/gi, '\n');
   cleaned = cleaned.replace(/<\/div>/gi, '\n');
@@ -324,104 +329,140 @@ function cleanEmailContent(content: string): string {
   cleaned = cleaned.replace(/&quot;/g, '"');
   cleaned = cleaned.replace(/&#\d+;/g, '');
 
-  // Tronca al primo header di inoltro/risposta (IT e EN)
-  const forwardPatterns = [
-    /^-{2,}\s*Messaggio inoltrato\s*-{2,}/mi,
-    /^-{2,}\s*Forwarded message\s*-{2,}/mi,
-    /^-{2,}\s*Original Message\s*-{2,}/mi,
-    /^-{2,}\s*Messaggio originale\s*-{2,}/mi,
-    /^Da:\s+.+/mi,
-    /^From:\s+.+/mi,
-    /^Inviato:\s+.+/mi,
-    /^Sent:\s+.+/mi,
-  ];
-
-  for (const pattern of forwardPatterns) {
-    const match = cleaned.match(pattern);
-    if (match && match.index !== undefined && match.index > 10) {
-      cleaned = cleaned.substring(0, match.index);
-      break;
-    }
-  }
-
   // Rimuovi righe con > (quote)
   cleaned = cleaned
     .split('\n')
     .filter(line => !line.trim().startsWith('>'))
     .join('\n');
 
-  // Rimuovi firme comuni (tronca da quel punto in poi)
-  const signaturePatterns = [
-    /^--\s*$/m,
-    /Sent from my iPhone/i,
-    /Sent from my iPad/i,
-    /Inviato da /i,
-    /Inviato dal mio /i,
-    /________________________________/,
-    /^Get Outlook for /im,
-    /^Ottieni Outlook per /im,
-    /^Cordiali saluti/im,
-    /^Distinti saluti/im,
-    /^Best regards/im,
-    /^Kind regards/im,
+  const lines = cleaned.split('\n');
+
+  // Cerca blocco header di inoltro (Da:/From:, Inviato:/Sent:, A:/To:, Oggetto:/Subject:)
+  // Se trovato: il contenuto utile è DOPO l'ultimo header, non prima
+  const headerLinePatterns = [
+    /^(Da|From):\s+/i,
+    /^(Inviato|Sent|Date):\s+/i,
+    /^(A|To):\s+/i,
+    /^(Cc|CC):\s+/i,
+    /^(Oggetto|Subject):\s+/i,
   ];
 
-  for (const pattern of signaturePatterns) {
+  let forwardHeaderStart = -1;
+  let forwardHeaderEnd = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Cerca separatore esplicito di inoltro
+    if (/^-{2,}\s*(Messaggio inoltrato|Forwarded message|Original Message|Messaggio originale)\s*-{2,}/i.test(line)) {
+      forwardHeaderStart = i;
+      continue;
+    }
+
+    // Cerca primo header "Da:" o "From:" con index > 0 (non all'inizio dell'email)
+    if (forwardHeaderStart === -1 && i > 0 && /^(Da|From):\s+.+/i.test(line)) {
+      forwardHeaderStart = i;
+    }
+
+    // Se siamo dentro il blocco header, cerca l'ultimo header (Oggetto/Subject)
+    if (forwardHeaderStart !== -1 && forwardHeaderEnd === -1) {
+      const isHeaderLine = headerLinePatterns.some(p => p.test(line));
+      if (isHeaderLine) {
+        forwardHeaderEnd = i;
+      }
+    }
+  }
+
+  if (forwardHeaderStart !== -1 && forwardHeaderEnd !== -1) {
+    // Prendi solo il contenuto DOPO il blocco header di inoltro
+    cleaned = lines.slice(forwardHeaderEnd + 1).join('\n');
+  }
+
+  // Rimuovi firme e disclaimer dal contenuto rimanente
+  cleaned = removeSignature(cleaned);
+
+  // Rimuovi righe vuote multiple
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  return cleaned.trim();
+}
+
+/**
+ * Rimuove firme email, disclaimer legali e business card dal testo
+ */
+function removeSignature(text: string): string {
+  let cleaned = text;
+
+  // Rimuovi firme testuali comuni (tronca da quel punto)
+  const signatureCutPatterns = [
+    /^--\s*$/m,
+    /Sent from my (iPhone|iPad)/i,
+    /Inviato da(l mio)? /i,
+    /_{10,}/,                         // ________________________________
+    /^Get Outlook for /im,
+    /^Ottieni Outlook per /im,
+    /^Diese E-Mail enthält/im,        // Disclaimer tedesco
+    /^This e-mail may contain/im,     // Disclaimer inglese
+    /^Handelsregister /im,            // Info aziendali tedesche
+  ];
+
+  for (const pattern of signatureCutPatterns) {
     const match = cleaned.match(pattern);
     if (match && match.index !== undefined) {
       cleaned = cleaned.substring(0, match.index);
     }
   }
 
-  // Rimuovi blocchi firma business (nome + titolo + telefono + indirizzo + sito)
-  // Detecta righe con numeri di telefono (M:, T:, Tel:, Cell:, +39, etc.)
+  // Rimuovi greetings finali + firma nome (es. "Grazie mille...\nStephan Fleschutz")
+  const greetingPatterns = [
+    /^(Grazie mille|Grazie|Saluti|Cordiali saluti|Distinti saluti|Best regards|Kind regards|Regards|Mit freundlichen Grüßen|Vielen Dank|Danke)[\s\S]*$/im,
+  ];
+
+  for (const pattern of greetingPatterns) {
+    const match = cleaned.match(pattern);
+    if (match && match.index !== undefined) {
+      cleaned = cleaned.substring(0, match.index);
+    }
+  }
+
+  // Rimuovi blocchi firma business (telefono, URL, "Follow us")
   const lines = cleaned.split('\n');
-  let signatureStartIndex = -1;
+  let sigStart = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    // Riga con numero di telefono
-    if (/^(M|T|Tel|Cell|Phone|Fax|Mob)[\s.:]+\+?\d/i.test(line) || /^\+\d{2,3}\s?\d/.test(line)) {
-      // Cerca indietro per trovare l'inizio della firma (nome/titolo sopra il telefono)
-      signatureStartIndex = i;
+
+    if (/^(M|T|Tel|Cell|Phone|Fax|Mob|Telefon)[\s.:]+\+?\d/i.test(line) || /^\+\d{2,3}\s?\d/.test(line)) {
+      sigStart = i;
       for (let j = i - 1; j >= 0 && j >= i - 3; j--) {
-        const prevLine = lines[j].trim();
-        if (prevLine.length > 0 && prevLine.length < 60 && !/[.!?]$/.test(prevLine)) {
-          signatureStartIndex = j;
-        } else {
-          break;
-        }
+        const prev = lines[j].trim();
+        if (prev.length > 0 && prev.length < 60 && !/[.!?]$/.test(prev)) {
+          sigStart = j;
+        } else break;
       }
       break;
     }
-    // Riga con URL del sito web
-    if (/^(www\.|http[s]?:\/\/)/i.test(line)) {
-      signatureStartIndex = i;
+    if (/^(www\.|http[s]?:\/\/|__www\.)/i.test(line)) {
+      sigStart = i;
       for (let j = i - 1; j >= 0 && j >= i - 4; j--) {
-        const prevLine = lines[j].trim();
-        if (prevLine.length > 0 && prevLine.length < 60 && !/[.!?]$/.test(prevLine)) {
-          signatureStartIndex = j;
-        } else {
-          break;
-        }
+        const prev = lines[j].trim();
+        if (prev.length > 0 && prev.length < 60 && !/[.!?]$/.test(prev)) {
+          sigStart = j;
+        } else break;
       }
       break;
     }
-    // "Follow us" pattern
     if (/^Follow us/i.test(line)) {
-      signatureStartIndex = i;
+      sigStart = i;
       break;
     }
   }
 
-  if (signatureStartIndex > 0) {
-    cleaned = lines.slice(0, signatureStartIndex).join('\n');
+  if (sigStart > 0) {
+    cleaned = lines.slice(0, sigStart).join('\n');
   }
 
-  // Rimuovi righe vuote multiple
-  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-
-  return cleaned.trim();
+  return cleaned;
 }
 
 /**
