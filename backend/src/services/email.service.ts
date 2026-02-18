@@ -176,7 +176,7 @@ export async function createTicketFromEmail(
             ticketId: ticket.id,
             uploadedById: user.id,
             fileName: attachment.filename,
-            filePath,
+            filePath: uniqueFileName,
             fileSize: attachment.size || attachment.content.length,
             mimeType: attachment.contentType || 'application/octet-stream',
           }

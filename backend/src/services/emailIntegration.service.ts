@@ -336,7 +336,7 @@ async function processIncomingEmail(parsed: any) {
             commentId: comment.id,
             uploadedById: ticket.createdById,
             fileName: fileName,
-            filePath: filePath,
+            filePath: uniqueFileName,
             fileSize: attachment.size || attachment.content.length,
             mimeType: attachment.contentType || 'application/octet-stream',
           },

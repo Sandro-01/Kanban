@@ -337,7 +337,7 @@ async function saveGraphAttachments(
           commentId,
           uploadedById,
           fileName,
-          filePath,
+          filePath: uniqueFileName,
           fileSize: att.size || buffer.length,
           mimeType: att.contentType || 'application/octet-stream',
         },

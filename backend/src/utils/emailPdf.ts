@@ -61,7 +61,7 @@ export async function generateEmailPdf(
   options: EmailPdfOptions,
   ticketId: string
 ): Promise<{ filePath: string; fileName: string; fileSize: number }> {
-  const uploadDir = path.join(__dirname, '../../../../uploads');
+  const uploadDir = path.join(__dirname, '../../../uploads');
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
