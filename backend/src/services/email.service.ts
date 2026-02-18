@@ -318,7 +318,8 @@ export async function notifyTicketUpdate(
   ticketId: string,
   updateType: string,
   details: string,
-  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[]
+  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[],
+  authorName?: string
 ) {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
@@ -380,6 +381,7 @@ export async function notifyTicketUpdate(
         <p style="margin: 0 0 6px; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Oggetto ticket</p>
         <p style="margin: 0 0 20px; font-size: 15px; color: #1e293b; font-weight: 600;">${ticket.title}</p>
         <div style="background: #f8fafc; padding: 16px 18px; border-radius: 8px; border-left: 4px solid ${accentColor}; margin-bottom: 16px;">
+          ${authorName ? `<p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #1e40af;">✍️ ${authorName}</p>` : ''}
           <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6; white-space: pre-wrap;">${details}</p>
         </div>
         ${attachmentsListHtml}

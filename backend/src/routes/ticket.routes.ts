@@ -384,7 +384,8 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
     // Se ci sono file in arrivo, la notifica verrà inviata dall'endpoint attachments
     if (!hasFile) {
       try {
-        await notifyTicketUpdate(id, 'Nuovo commento', content);
+        const authorName = `${req.user!.firstName} ${req.user!.lastName}`;
+        await notifyTicketUpdate(id, 'Nuovo commento', content, undefined, authorName);
         console.log('✅ Email notification sent');
       } catch (emailError: any) {
         console.error('⚠️ Email notification failed (non-critical):', emailError.message);
@@ -476,11 +477,13 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
           allFileAttachments = [{ fileName: req.file.originalname, filePath: req.file.filename, mimeType: req.file.mimetype }];
         }
 
+        const authorName = `${req.user!.firstName} ${req.user!.lastName}`;
         await notifyTicketUpdate(
           id,
           commentId ? 'Nuovo commento' : 'Nuovo allegato',
           emailDetails,
-          allFileAttachments
+          allFileAttachments,
+          authorName
         );
         console.log('✅ Email notification sent with', allFileAttachments.length, 'attachment(s)');
       } catch (emailError: any) {
