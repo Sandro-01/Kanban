@@ -213,6 +213,99 @@
   margin-bottom: 20px;
 }
 
+/* Email Description Styles */
+.email-description-container {
+  border: 1px solid #e0e7ef;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.email-description-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e8f0fe 100%);
+  border-bottom: 1px solid #e0e7ef;
+}
+
+.email-description-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #4f6ef7;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.email-description-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.email-description-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.email-description-sender {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email-description-body {
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1f2937;
+  max-height: 300px;
+  overflow-y: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.email-description-body p {
+  margin: 0 0 8px 0;
+}
+
+.email-description-body a {
+  color: #4f6ef7;
+  text-decoration: underline;
+}
+
+.email-description-body hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 12px 0;
+}
+
+.email-description-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.email-description-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.email-description-body td,
+.email-description-body th {
+  padding: 4px 8px;
+}
+
 .ticket-details {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -254,6 +254,54 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     additionalNotes: ''
   });
 
+  // Detect if ticket was created from email
+  const isEmailTicket = !!(ticket.emailThreadId || (ticket.externalContacts && ticket.externalContacts.length > 0));
+  const emailSender = ticket.externalContacts?.[0] || null;
+
+  // Clean email HTML for display
+  const cleanEmailDescription = (html: string): string => {
+    let cleaned = html;
+    // Remove full HTML document wrapper
+    cleaned = cleaned.replace(/<!DOCTYPE[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<html[^>]*>/gi, '').replace(/<\/html>/gi, '');
+    cleaned = cleaned.replace(/<head[\s\S]*?<\/head>/gi, '');
+    cleaned = cleaned.replace(/<body[^>]*>/gi, '').replace(/<\/body>/gi, '');
+    // Remove style tags and their content
+    cleaned = cleaned.replace(/<style[\s\S]*?<\/style>/gi, '');
+    // Remove script tags
+    cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
+    // Remove MS Office / Outlook conditional comments
+    cleaned = cleaned.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '');
+    cleaned = cleaned.replace(/<!--[\s\S]*?-->/gi, '');
+    // Remove meta, link, xml tags
+    cleaned = cleaned.replace(/<meta[^>]*\/?>/gi, '');
+    cleaned = cleaned.replace(/<link[^>]*\/?>/gi, '');
+    cleaned = cleaned.replace(/<\/?o:[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<\/?v:[^>]*>/gi, '');
+    // Remove inline style attributes (keep structure)
+    cleaned = cleaned.replace(/\s*style="[^"]*"/gi, '');
+    cleaned = cleaned.replace(/\s*class="[^"]*"/gi, '');
+    // Remove empty spans/divs/paragraphs
+    cleaned = cleaned.replace(/<span[^>]*>\s*<\/span>/gi, '');
+    cleaned = cleaned.replace(/<div[^>]*>\s*<\/div>/gi, '');
+    cleaned = cleaned.replace(/<p[^>]*>\s*(&nbsp;|\s)*<\/p>/gi, '');
+    // Remove base64 images (signatures)
+    cleaned = cleaned.replace(/<img[^>]*src="data:image[^"]*"[^>]*\/?>/gi, '');
+    // Convert common email separators to hr
+    cleaned = cleaned.replace(/_{10,}/g, '<hr/>');
+    cleaned = cleaned.replace(/-{10,}/g, '<hr/>');
+    // Remove excessive whitespace and &nbsp;
+    cleaned = cleaned.replace(/(&nbsp;\s*){3,}/gi, '<br/>');
+    cleaned = cleaned.replace(/(<br\s*\/?>[\s]*){3,}/gi, '<br/><br/>');
+    // Trim
+    cleaned = cleaned.trim();
+    // If content is very short after cleaning, it might be plain text
+    if (!cleaned.includes('<') && html.length > cleaned.length) {
+      cleaned = cleaned.replace(/\n/g, '<br/>');
+    }
+    return cleaned;
+  };
+
   // Check if this is an onboarding equipment ticket
   const onboardingIdMatch = ticket.description?.match(/\[ONBOARDING_ID:([^\]]+)\]/);
   const onboardingId = onboardingIdMatch ? onboardingIdMatch[1] : null;
@@ -629,17 +677,47 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
         <div className="ticket-modal-content">
           <div className="ticket-info">
-            <p><strong>Descrizione:</strong></p>
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}
-              dangerouslySetInnerHTML={{
-                __html: (ticket.description || '')
-                  .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
-                  .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
-                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0" />')
-                  .trim()
-              }}
-            />
+            {isEmailTicket ? (
+              <div className="email-description-container">
+                <div className="email-description-header">
+                  <div className="email-description-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                  </div>
+                  <div className="email-description-meta">
+                    <span className="email-description-label">Ricevuto via email</span>
+                    {emailSender && (
+                      <span className="email-description-sender">Da: {emailSender}</span>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className="email-description-body"
+                  dangerouslySetInnerHTML={{
+                    __html: cleanEmailDescription(
+                      (ticket.description || '')
+                        .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                        .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
+                    )
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                <p><strong>Descrizione:</strong></p>
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  dangerouslySetInnerHTML={{
+                    __html: (ticket.description || '')
+                      .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                      .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
+                      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0" />')
+                      .trim()
+                  }}
+                />
+              </>
+            )}
 
             <div className="ticket-details">
               <div>
