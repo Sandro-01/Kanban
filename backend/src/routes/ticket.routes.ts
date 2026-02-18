@@ -256,6 +256,14 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       return res.status(404).json({ error: 'Ticket non trovato' });
     }
 
+    // Ricalcolo SLA: se la priorità cambia, aggiorna slaHours e dueDate
+    if (updates.priority && updates.priority !== oldTicket.priority) {
+      const newSlaHours = getSLAHours(updates.priority);
+      updates.slaHours = newSlaHours;
+      updates.dueDate = new Date(oldTicket.createdAt.getTime() + newSlaHours * 60 * 60 * 1000);
+      console.log(`⏱️ SLA ricalcolato: ticket ${id} priorità ${oldTicket.priority} → ${updates.priority}, SLA ${oldTicket.slaHours}h → ${newSlaHours}h`);
+    }
+
     // Auto-assegnazione: se lo status cambia da OPEN e il ticket non ha assegnazioni,
     // assegna automaticamente all'utente che lo sta spostando ("presa in carico")
     if (
