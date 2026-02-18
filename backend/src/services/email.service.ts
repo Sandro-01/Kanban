@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
@@ -126,6 +128,7 @@ export async function createTicketFromEmail(
   }
 
   // Crea ticket
+  const emailThreadId = `ticket-${Date.now()}@europoligrafico.it`;
   const ticket = await prisma.ticket.create({
     data: {
       title: subject,
@@ -136,24 +139,76 @@ export async function createTicketFromEmail(
       priority,
       slaHours,
       dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
-      emailThreadId: from
+      emailThreadId,
+      externalContacts: [from],
     }
   });
 
-  // Invia conferma
+  // Salva allegati se presenti
+  if (attachments && attachments.length > 0) {
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    for (const attachment of attachments) {
+      try {
+        if (!attachment.filename || !attachment.content) continue;
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${attachment.filename}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        fs.writeFileSync(filePath, attachment.content);
+
+        await prisma.attachment.create({
+          data: {
+            ticketId: ticket.id,
+            uploadedById: user.id,
+            fileName: attachment.filename,
+            filePath,
+            fileSize: attachment.size || attachment.content.length,
+            mimeType: attachment.contentType || 'application/octet-stream',
+          }
+        });
+        console.log(`   ✅ Allegato salvato: ${attachment.filename}`);
+      } catch (err) {
+        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, err);
+      }
+    }
+  }
+
+  // Registra nella history
+  await prisma.ticketHistory.create({
+    data: {
+      ticketId: ticket.id,
+      field: 'created',
+      newValue: `Ticket creato da email di ${from}`,
+      changedBy: user.id
+    }
+  });
+
+  // Invia conferma con [Ticket #ID] per tracciamento risposte
   await sendEmail(
     from,
-    `Re: ${subject} - Ticket #${ticket.id.substring(0, 8)} creato`,
+    `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
     `
-      <h2>Ticket creato con successo</h2>
-      <p>Il tuo ticket è stato registrato nel sistema.</p>
-      <ul>
-        <li><strong>ID:</strong> ${ticket.id}</li>
-        <li><strong>Priorità:</strong> ${priority}</li>
-        <li><strong>SLA:</strong> ${slaHours} ore</li>
-        <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
-      </ul>
-      <p>Riceverai aggiornamenti via email.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="margin: 0;">Ticket #${ticket.id.substring(0, 8)} creato</h2>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb;">
+          <p>Il tuo ticket è stato registrato nel sistema.</p>
+          <ul>
+            <li><strong>ID:</strong> #${ticket.id.substring(0, 8)}</li>
+            <li><strong>Titolo:</strong> ${subject}</li>
+            <li><strong>Priorità:</strong> ${priority}</li>
+            <li><strong>SLA:</strong> ${slaHours} ore</li>
+            <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
+          </ul>
+          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
+            <p><strong>💬 Per rispondere:</strong> Rispondi direttamente a questa email. La tua risposta verrà aggiunta automaticamente al ticket.</p>
+            <p style="margin-top: 15px; font-size: 11px;">Questo messaggio è stato inviato dal sistema Kanban ISO di Europoligrafico.</p>
+          </div>
+        </div>
+      </div>
     `,
     ticket.id
   );

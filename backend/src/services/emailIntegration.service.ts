@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import Imap from 'node-imap';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
+import { createTicketFromEmail } from './email.service';
 
 // Configurazione email (da .env)
 const EMAIL_CONFIG = {
@@ -15,8 +16,9 @@ const EMAIL_CONFIG = {
 };
 
 // Configurazione IMAP per ricevere email
+// IMAP_USER: per caselle condivise M365 usare formato "utente\casella_condivisa"
 const IMAP_CONFIG = {
-  user: process.env.EMAIL_USER || 'assistenza@europoligrafico.it',
+  user: process.env.IMAP_USER || process.env.EMAIL_USER || 'assistenza@europoligrafico.it',
   password: process.env.EMAIL_PASSWORD || '',
   host: process.env.IMAP_HOST || 'imap.gmail.com',
   port: parseInt(process.env.IMAP_PORT || '993'),
@@ -241,7 +243,20 @@ async function processIncomingEmail(parsed: any) {
   // Estrai ticket ID dall'oggetto
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
   if (!ticketIdMatch) {
-    console.log('⚠️ Email ignorata: nessun ticket ID trovato nell\'oggetto');
+    // Nuova email senza riferimento a ticket esistente → crea nuovo ticket
+    console.log('🆕 Nuova email senza ticket ID → creazione nuovo ticket');
+    try {
+      const emailAttachments = attachments.map((att: any) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+        size: att.size,
+      }));
+      const ticket = await createTicketFromEmail(from, subject, text || html, emailAttachments);
+      console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
+    } catch (error) {
+      console.error('❌ Errore creazione ticket da email:', error);
+    }
     return;
   }
 
