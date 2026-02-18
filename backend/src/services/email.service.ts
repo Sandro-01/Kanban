@@ -174,11 +174,14 @@ export async function createTicketFromEmail(
     slaHours = 24;
   }
 
-  // Crea ticket
+  // Pulisci il corpo email per la descrizione
+  const cleanBody = cleanEmailBodyForDescription(body);
+
+  // Crea ticket con descrizione pulita (verrà aggiornata con link allegati)
   const emailThreadId = `ticket-${Date.now()}@europoligrafico.it`;
   const ticketData: any = {
     title: subject,
-    description: body,
+    description: cleanBody,
     boardId: board.id,
     columnId: column.id,
     createdById: user.id,
@@ -197,6 +200,7 @@ export async function createTicketFromEmail(
   const ticket = await prisma.ticket.create({ data: ticketData });
 
   // Salva allegati se presenti
+  const savedAttachments: { fileName: string; filePath: string; mimeType: string }[] = [];
   if (attachments && attachments.length > 0) {
     const uploadDir = path.join(__dirname, '../../../uploads');
     if (!fs.existsSync(uploadDir)) {
@@ -220,11 +224,34 @@ export async function createTicketFromEmail(
             mimeType: attachment.contentType || 'application/octet-stream',
           }
         });
+        savedAttachments.push({
+          fileName: attachment.filename,
+          filePath: uniqueFileName,
+          mimeType: attachment.contentType || 'application/octet-stream',
+        });
         console.log(`   ✅ Allegato salvato: ${attachment.filename}`);
       } catch (err) {
         console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, err);
       }
     }
+  }
+
+  // Aggiorna descrizione con link agli allegati
+  if (savedAttachments.length > 0) {
+    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+    const attachmentLines = savedAttachments.map(a => {
+      const url = `${baseUrl}/uploads/${a.filePath}`;
+      const isImage = a.mimeType.startsWith('image/');
+      return isImage
+        ? `![${a.fileName}](${url})`
+        : `[${a.fileName}](${url})`;
+    });
+    const updatedDescription = cleanBody
+      + '\n\n---\n**Allegati:**\n' + attachmentLines.join('\n');
+    await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { description: updatedDescription },
+    });
   }
 
   // Registra nella history
@@ -404,4 +431,131 @@ export async function notifyTicketUpdate(
       console.error(`⚠️ Notifica non inviata a ${email}: ${err.message}`);
     }
   }
+}
+
+/**
+ * Pulisce il corpo HTML dell'email per estrarre solo il testo leggibile.
+ * Rimuove firme, quote, header di risposta e HTML tags.
+ */
+function cleanEmailBodyForDescription(body: string): string {
+  let cleaned = body;
+
+  // Rimuovi style/script tags
+  cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+  // Converti <br> e block tags in newline
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<\/p>/gi, '\n');
+  cleaned = cleaned.replace(/<\/div>/gi, '\n');
+  cleaned = cleaned.replace(/<\/tr>/gi, '\n');
+  cleaned = cleaned.replace(/<\/li>/gi, '\n');
+
+  // Rimuovi tutti i tag HTML restanti
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+
+  // Decode HTML entities
+  cleaned = cleaned.replace(/&nbsp;/g, ' ');
+  cleaned = cleaned.replace(/&amp;/g, '&');
+  cleaned = cleaned.replace(/&lt;/g, '<');
+  cleaned = cleaned.replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"');
+  cleaned = cleaned.replace(/&#39;/g, "'");
+  cleaned = cleaned.replace(/&#\d+;/g, '');
+
+  // Rimuovi righe con > (quote)
+  cleaned = cleaned
+    .split('\n')
+    .filter(line => !line.trim().startsWith('>'))
+    .join('\n');
+
+  const lines = cleaned.split('\n');
+
+  // Taglia prima di header di risposta (Da:/From:/Inviato: etc.)
+  let cutIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Separatori espliciti di inoltro/risposta
+    if (/^-{2,}\s*(Messaggio inoltrato|Forwarded message|Original Message|Messaggio originale)\s*-{2,}/i.test(line)) {
+      cutIndex = i; break;
+    }
+    // Riga di underscore (Outlook)
+    if (/^_{10,}$/.test(line)) {
+      cutIndex = i; break;
+    }
+    // Pattern "Il gg/mm/aaaa, nome ha scritto:" o "On ... wrote:"
+    if (/^(Il\s+\d|On\s+.+wrote\s*:)/i.test(line)) {
+      cutIndex = i; break;
+    }
+    // Blocco header di risposta: "Da:" o "From:" seguito da altri header
+    if (i > 0 && /^(Da|From)\s*:\s+.+/i.test(line)) {
+      let hasMoreHeaders = false;
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        if (/^(Inviato|Sent|Date|A|To|Cc|CC|Oggetto|Subject)\s*:\s+/i.test(lines[j].trim())) {
+          hasMoreHeaders = true; break;
+        }
+      }
+      if (hasMoreHeaders) { cutIndex = i; break; }
+    }
+  }
+
+  if (cutIndex > 0) {
+    cleaned = lines.slice(0, cutIndex).join('\n');
+  } else {
+    cleaned = lines.join('\n');
+  }
+
+  // Rimuovi firme comuni
+  const signaturePatterns = [
+    /^--\s*$/m,
+    /Sent from my (iPhone|iPad)/i,
+    /Inviato da(l mio)? /i,
+    /^Get Outlook for /im,
+    /^Ottieni Outlook per /im,
+  ];
+  signaturePatterns.forEach(pattern => {
+    const match = cleaned.match(pattern);
+    if (match && match.index !== undefined) {
+      cleaned = cleaned.substring(0, match.index);
+    }
+  });
+
+  // Rileva firma: nome + titolo lavorativo + azienda + tel + email + indirizzo
+  const sigLines = cleaned.split('\n');
+  const contactPattern = /^(Tel\.?|Email|Phone|Fax|Mobile|Cell|Web|www\.|http|Registered|R\.I\.|R\.E\.A|C\.F\.|P\.\s*IVA|VAT)/i;
+  const jobTitlePattern = /^(IT|HR|Sales|Marketing|Account|Project|Product|Business|Chief|Senior|Junior|Lead|Head|Director|Manager|Specialist|Consultant|Engineer|Developer|Analyst|Coordinator|Assistant|Administrator|Responsabile|Direttore|Tecnico|Commerciale|Amministratore|Addetto|Technical|Service|Support)\b/i;
+
+  for (let i = 0; i < sigLines.length; i++) {
+    const line = sigLines[i].trim();
+    // Se troviamo un titolo lavorativo, tagliamo da nome (riga precedente) in poi
+    if (jobTitlePattern.test(line) && line.length < 60) {
+      if (i > 0) {
+        const prevLine = sigLines[i - 1].trim();
+        if (prevLine.length > 0 && prevLine.length < 50 && /^[A-Z][a-zà-ú]+(\s+[A-Z][a-zà-ú]+){0,3}$/.test(prevLine)) {
+          cleaned = sigLines.slice(0, i - 1).join('\n');
+          break;
+        }
+      }
+      cleaned = sigLines.slice(0, i).join('\n');
+      break;
+    }
+    // Se troviamo info di contatto (Tel, Email, www), tagliamo dalla riga prima
+    if (contactPattern.test(line)) {
+      // Cerca indietro fino al nome
+      let nameIdx = i;
+      for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+        const pl = sigLines[j].trim();
+        if (pl.length > 0 && pl.length < 60) { nameIdx = j; }
+        else break;
+      }
+      cleaned = sigLines.slice(0, nameIdx).join('\n');
+      break;
+    }
+  }
+
+  // Rimuovi righe vuote multiple
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  return cleaned.trim();
 }

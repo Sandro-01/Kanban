@@ -261,6 +261,21 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   // Check if description contains HTML (email body)
   const isHtmlDescription = (desc: string) => /<[a-z][\s\S]*>/i.test(desc);
 
+  // Convert markdown-style description to HTML for rendering
+  const renderDescriptionMarkdown = (text: string): string => {
+    return text
+      // Images: ![alt](url) → <img>
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" style="max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;display:block;margin:4px 0" /></a>')
+      // Links: [text](url) → <a>
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" download style="color:#4f6ef7">$1</a>')
+      // Bold: **text** → <strong>
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Horizontal rule: --- → <hr>
+      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0" />')
+      // Newlines → <br>
+      .replace(/\n/g, '<br/>');
+  };
+
   // Check if email description has meaningful content worth showing
   const hasSubstantialDescription = (desc: string): boolean => {
     if (!desc) return false;
@@ -723,23 +738,29 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                       title="Contenuto email"
                     />
                   ) : (
-                    <div style={{ padding: '12px 14px', fontSize: '14px', lineHeight: '1.6', color: '#374151', whiteSpace: 'pre-wrap', borderTop: '1px solid #e0e7ef' }}>
-                      {(ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').trim()}
-                    </div>
+                    <div
+                      className="email-description-text"
+                      dangerouslySetInnerHTML={{
+                        __html: renderDescriptionMarkdown(
+                          (ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').trim()
+                        )
+                      }}
+                    />
                   )
                 )}
               </div>
             ) : (
               <>
                 <p><strong>Descrizione:</strong></p>
-                <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                <div
+                  className="ticket-description-body"
                   dangerouslySetInnerHTML={{
-                    __html: (ticket.description || '')
-                      .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
-                      .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
-                      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0" />')
-                      .trim()
+                    __html: renderDescriptionMarkdown(
+                      (ticket.description || '')
+                        .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+                        .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
+                        .trim()
+                    )
                   }}
                 />
               </>
