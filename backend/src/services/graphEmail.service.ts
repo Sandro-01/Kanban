@@ -98,13 +98,12 @@ async function graphRequest(endpoint: string, method: string = 'GET', body?: any
 }
 
 /**
- * Legge le email recenti dalla casella condivisa (ultime 4 ore, non solo non lette)
- * Questo evita il problema delle email marcate come lette da Outlook aperto
+ * Legge le email NON LETTE dalla casella condivisa
+ * Filtra per isRead=false per evitare rielaborazione di email già processate
  */
 async function getRecentEmails(): Promise<any[]> {
   const mailbox = GRAPH_CONFIG.sharedMailbox;
-  const hoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=receivedDateTime ge ${hoursAgo}&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId,toRecipients,ccRecipients&$orderby=receivedDateTime asc`;
+  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=isRead eq false&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId,toRecipients,ccRecipients&$orderby=receivedDateTime asc`;
 
   const data = await graphRequest(endpoint);
   return data.value || [];

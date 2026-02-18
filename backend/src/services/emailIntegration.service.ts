@@ -254,7 +254,7 @@ async function processIncomingEmail(parsed: any) {
         contentType: att.contentType,
         size: att.size,
       }));
-      const ticket = await createTicketFromEmail(from, subject, text || html, emailAttachments);
+      const ticket = await createTicketFromEmail(from, subject, text || html, emailAttachments, messageId);
       console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);

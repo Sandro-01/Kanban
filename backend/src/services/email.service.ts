@@ -103,6 +103,22 @@ export async function createTicketFromEmail(
   attachments: any[],
   emailMessageId?: string
 ) {
+  // Deduplicazione: controlla se esiste già un ticket per questo messaggio email
+  if (emailMessageId) {
+    try {
+      const existing: any[] = await (prisma as any).$queryRawUnsafe(
+        `SELECT id FROM "Ticket" WHERE "emailMessageId" = $1 LIMIT 1`,
+        emailMessageId
+      );
+      if (existing.length > 0) {
+        console.log(`⚠️ Ticket già esistente per emailMessageId ${emailMessageId}, skip`);
+        return existing[0];
+      }
+    } catch {
+      // Campo emailMessageId non ancora presente nel DB
+    }
+  }
+
   // Trova o crea utente
   let user = await prisma.user.findUnique({ where: { email: from } });
 
