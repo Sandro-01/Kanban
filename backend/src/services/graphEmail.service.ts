@@ -202,7 +202,7 @@ async function processGraphEmail(message: any): Promise<void> {
       data: {
         ticketId: ticket.id,
         userId: ticket.createdById,
-        content: `📧 **Risposta da ${from}:**\n\n${cleanContent}`,
+        content: cleanContent,
         isEmailReply: true,
         fromEmail: from,
         emailMessageId: messageId,

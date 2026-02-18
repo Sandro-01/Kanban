@@ -459,7 +459,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
           date: new Date(c.createdAt),
           user: c.user,
           content: c.content,
-          attachments: c.attachments || [], // Include attachments linked to this comment
+          isEmailReply: c.isEmailReply || false,
+          fromEmail: c.fromEmail || null,
+          attachments: c.attachments || [],
         });
       });
     }
@@ -888,17 +890,26 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             <div className="timeline-list">
               {timeline.length > 0 ? (
                 timeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}`}>
+                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}`}>
                     {item.type === 'comment' ? (
                       <>
-                        <div className="timeline-icon">💬</div>
+                        <div className="timeline-icon">{item.isEmailReply ? '📧' : '💬'}</div>
                         <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
-                            <strong>
-                              {item.user.firstName} {item.user.lastName}
-                            </strong>
-                            {item.user.department && (
-                              <span className="user-department">({item.user.department})</span>
+                            {item.isEmailReply ? (
+                              <>
+                                <strong>{item.fromEmail}</strong>
+                                <span className="email-reply-badge">Risposta email</span>
+                              </>
+                            ) : (
+                              <>
+                                <strong>
+                                  {item.user.firstName} {item.user.lastName}
+                                </strong>
+                                {item.user.department && (
+                                  <span className="user-department">({item.user.department})</span>
+                                )}
+                              </>
                             )}
                             <span className="timeline-date">
                               {item.date.toLocaleString('it-IT')}
@@ -922,7 +933,11 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               </button>
                             )}
                           </div>
-                          <p className="timeline-text">{item.content}</p>
+                          <p className="timeline-text">
+                            {item.isEmailReply
+                              ? item.content.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '').trim()
+                              : item.content}
+                          </p>
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">

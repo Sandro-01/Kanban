@@ -300,7 +300,7 @@ async function processIncomingEmail(parsed: any) {
     data: {
       ticketId: ticket.id,
       userId: ticket.createdById, // Assegnato al creatore del ticket
-      content: `📧 **Risposta da ${from}:**\n\n${cleanContent}`,
+      content: cleanContent,
       isEmailReply: true,
       fromEmail: from,
       emailMessageId: messageId,

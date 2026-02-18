@@ -361,6 +361,27 @@
   border-left-color: #3b82f6;
 }
 
+.timeline-item.email-reply {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.timeline-item.email-reply:hover {
+  background: #fef3c7;
+}
+
+.email-reply-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .timeline-item.file {
   border-left-color: #10b981;
 }
