@@ -444,12 +444,22 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
 
     console.log('✅ File uploaded successfully:', attachment.id);
 
-    // Notifica il creatore del ticket del nuovo allegato
-    try {
-      await notifyTicketUpdate(id, 'Nuovo allegato', `File caricato: <strong>${req.file.originalname}</strong>`);
-      console.log('✅ Email notification sent for attachment');
-    } catch (emailError: any) {
-      console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+    // Notifica solo per allegati standalone (non collegati a un commento)
+    // Se collegato a un commento, la notifica è già partita dall'endpoint commento
+    if (!commentId) {
+      try {
+        await notifyTicketUpdate(
+          id,
+          'Nuovo allegato',
+          `File caricato: <strong>${req.file.originalname}</strong>`,
+          [{ fileName: req.file.originalname, filePath: req.file.filename, mimeType: req.file.mimetype }]
+        );
+        console.log('✅ Email notification sent for standalone attachment');
+      } catch (emailError: any) {
+        console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+      }
+    } else {
+      console.log('ℹ️ Skipping notification for attachment linked to comment:', commentId);
     }
 
     res.json(attachment);

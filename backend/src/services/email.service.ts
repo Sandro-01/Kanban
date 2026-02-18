@@ -23,19 +23,42 @@ export async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  ticketId?: string
+  ticketId?: string,
+  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[]
 ) {
   try {
     // Usa Graph API se Azure AD è configurato
     if (process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET) {
       const { sendEmailViaGraph } = await import('./graphEmail.service');
-      await sendEmailViaGraph([to], subject, html);
+      // Converti allegati in formato Graph API (base64)
+      let graphAttachments: { name: string; contentBytes: string; contentType: string }[] | undefined;
+      if (fileAttachments && fileAttachments.length > 0) {
+        const uploadDir = path.join(__dirname, '../../../uploads');
+        graphAttachments = fileAttachments.map(att => {
+          const fullPath = path.join(uploadDir, att.filePath);
+          const content = fs.readFileSync(fullPath);
+          return {
+            name: att.fileName,
+            contentBytes: content.toString('base64'),
+            contentType: att.mimeType,
+          };
+        });
+      }
+      await sendEmailViaGraph([to], subject, html, graphAttachments);
     } else {
+      // SMTP con allegati
+      const uploadDir = path.join(__dirname, '../../../uploads');
+      const nodemailerAttachments = fileAttachments?.map(att => ({
+        filename: att.fileName,
+        path: path.join(uploadDir, att.filePath),
+        contentType: att.mimeType,
+      }));
       await transporter.sendMail({
         from: process.env.EMAIL_FROM,
         to,
         subject,
-        html
+        html,
+        attachments: nodemailerAttachments,
       });
     }
 
@@ -253,7 +276,8 @@ export async function startEmailListener() {
 export async function notifyTicketUpdate(
   ticketId: string,
   updateType: string,
-  details: string
+  details: string,
+  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[]
 ) {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
@@ -297,7 +321,7 @@ export async function notifyTicketUpdate(
 
   for (const email of recipientSet) {
     try {
-      await sendEmail(email, subject, html, ticketId);
+      await sendEmail(email, subject, html, ticketId, fileAttachments);
     } catch (err: any) {
       console.error(`⚠️ Notifica non inviata a ${email}: ${err.message}`);
     }
