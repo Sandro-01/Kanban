@@ -380,12 +380,12 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                     {selectedTicket.attachments.map((a: any) => (
                       <a
                         key={a.id}
-                        href={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${a.storedName}`}
+                        href={`http://localhost:5000/uploads/${a.filePath}`}
                         target="_blank"
                         rel="noreferrer"
                         className="attachment-link"
                       >
-                        📎 {a.originalName}
+                        📎 {a.fileName}
                       </a>
                     ))}
                   </div>
