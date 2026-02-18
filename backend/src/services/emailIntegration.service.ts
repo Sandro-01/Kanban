@@ -81,31 +81,33 @@ export const sendTicketEmail = async (
     let attachmentsHtml = '';
     if (ticket.attachments && ticket.attachments.length > 0) {
       attachmentsHtml = `
-        <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 6px;">
-          <strong>📎 Allegati (${ticket.attachments.length}):</strong>
-          <ul style="margin: 10px 0; padding-left: 20px;">
-            ${ticket.attachments.map(att => `<li>${att.fileName}</li>`).join('')}
-          </ul>
+        <div style="margin-top: 16px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #475569;">📎 Allegati (${ticket.attachments.length}):</p>
+          ${ticket.attachments.map(att => `<p style="margin: 4px 0; font-size: 13px; color: #334155;">&bull; ${att.fileName}</p>`).join('')}
         </div>
       `;
     }
 
     // Corpo email con footer
     const emailBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-          <h2 style="margin: 0;">Ticket #${ticketId.slice(0, 8)}</h2>
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 28px;">
+          <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">Europoligrafico — Assistenza</p>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Ticket #${ticketId.slice(0, 8)}</h2>
         </div>
-        <div style="padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb;">
-          <div style="background: white; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
-            ${body}
+        <div style="padding: 28px; background: #ffffff;">
+          <div style="background: #f8fafc; padding: 16px 18px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 16px;">
+            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6; white-space: pre-wrap;">${body}</p>
           </div>
           ${attachmentsHtml}
-          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
-            <p><strong>💬 Per rispondere:</strong> Rispondi direttamente a questa email. La tua risposta verrà aggiunta automaticamente al ticket.</p>
-            <p><strong>🔖 Riferimento Ticket:</strong> #${ticketId.slice(0, 8)}</p>
-            <p style="margin-top: 15px; font-size: 11px;">Questo messaggio è stato inviato dal sistema Kanban ISO di Europoligrafico.</p>
+          <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-top: 20px;">
+            <p style="margin: 0; font-size: 13px; color: #1e40af;">
+              <strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.
+            </p>
           </div>
+        </div>
+        <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
+          <p style="margin: 0; font-size: 11px; color: #94a3b8;">Ref: #${ticketId.slice(0, 8)} — Europoligrafico — Sistema Kanban ISO</p>
         </div>
       </div>
     `;

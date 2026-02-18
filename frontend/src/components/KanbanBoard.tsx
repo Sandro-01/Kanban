@@ -142,6 +142,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             onClick={() => setSelectedTicket(ticket)}
                           >
                             <div className="ticket-header">
+                              <span className="ticket-id">#{ticket.id.substring(0, 8)}</span>
                               <span
                                 className="priority-indicator"
                                 style={{ background: getPriorityColor(ticket.priority) }}

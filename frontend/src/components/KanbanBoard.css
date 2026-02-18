@@ -125,9 +125,17 @@
 
 .ticket-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
+}
+
+.ticket-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+  margin-right: auto;
 }
 
 .priority-indicator {
