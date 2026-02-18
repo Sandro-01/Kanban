@@ -118,7 +118,7 @@ export const sendTicketEmail = async (
 
     // Invia email a tutti i destinatari con allegati
     const info = await transporter.sendMail({
-      from: `"Europoligrafico - Assistenza" <${EMAIL_CONFIG.auth.user}>`,
+      from: `"Europoligrafico - Assistenza" <${process.env.EMAIL_FROM || EMAIL_CONFIG.auth.user}>`,
       to: toEmails.join(', '),
       subject: emailSubject,
       html: emailBody,
