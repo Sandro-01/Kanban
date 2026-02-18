@@ -244,7 +244,8 @@ async function processGraphEmail(message: any): Promise<void> {
       }
 
       const cleanBody = cleanEmailContent(body);
-      const ticket = await createTicketFromEmail(from, subject, cleanBody, emailAttachments);
+      const cleanSubject = cleanEmailSubject(subject);
+      const ticket = await createTicketFromEmail(from, cleanSubject, cleanBody, emailAttachments);
       console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);
@@ -300,24 +301,88 @@ async function saveGraphAttachments(
 }
 
 /**
- * Pulisce il contenuto HTML dell'email
+ * Pulisce il contenuto HTML dell'email rimuovendo rumore (firme, header inoltro, quote)
  */
 function cleanEmailContent(content: string): string {
-  let cleaned = content.replace(/<[^>]*>/g, '');
+  // Rimuovi blocchi di stile e script prima dei tag HTML
+  let cleaned = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+  // Rimuovi tag HTML
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<\/p>/gi, '\n');
+  cleaned = cleaned.replace(/<\/div>/gi, '\n');
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+
+  // Decode HTML entities
+  cleaned = cleaned.replace(/&nbsp;/g, ' ');
+  cleaned = cleaned.replace(/&amp;/g, '&');
+  cleaned = cleaned.replace(/&lt;/g, '<');
+  cleaned = cleaned.replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"');
+  cleaned = cleaned.replace(/&#\d+;/g, '');
+
+  // Tronca al primo header di inoltro/risposta (IT e EN)
+  const forwardPatterns = [
+    /^-{2,}\s*Messaggio inoltrato\s*-{2,}/mi,
+    /^-{2,}\s*Forwarded message\s*-{2,}/mi,
+    /^-{2,}\s*Original Message\s*-{2,}/mi,
+    /^-{2,}\s*Messaggio originale\s*-{2,}/mi,
+    /^Da:\s+.+/mi,
+    /^From:\s+.+/mi,
+    /^Inviato:\s+.+/mi,
+    /^Sent:\s+.+/mi,
+  ];
+
+  for (const pattern of forwardPatterns) {
+    const match = cleaned.match(pattern);
+    if (match && match.index !== undefined && match.index > 10) {
+      cleaned = cleaned.substring(0, match.index);
+      break;
+    }
+  }
+
+  // Rimuovi righe con > (quote)
   cleaned = cleaned
     .split('\n')
     .filter(line => !line.trim().startsWith('>'))
     .join('\n');
 
-  const signaturePatterns = [/--\s*$/m, /Sent from my iPhone/i, /Inviato da /i, /________________________________/];
-  signaturePatterns.forEach(pattern => {
+  // Rimuovi firme comuni
+  const signaturePatterns = [
+    /^--\s*$/m,
+    /Sent from my iPhone/i,
+    /Sent from my iPad/i,
+    /Inviato da /i,
+    /Inviato dal mio /i,
+    /________________________________/,
+    /^Get Outlook for /im,
+    /^Ottieni Outlook per /im,
+    /^Cordiali saluti/im,
+    /^Distinti saluti/im,
+    /^Best regards/im,
+    /^Kind regards/im,
+  ];
+
+  for (const pattern of signaturePatterns) {
     const match = cleaned.match(pattern);
-    if (match) {
+    if (match && match.index !== undefined) {
       cleaned = cleaned.substring(0, match.index);
     }
-  });
+  }
+
+  // Rimuovi righe vuote multiple
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
   return cleaned.trim();
+}
+
+/**
+ * Pulisce l'oggetto email rimuovendo prefissi di inoltro/risposta
+ */
+function cleanEmailSubject(subject: string): string {
+  // Rimuovi prefissi ripetuti: I:, FW:, Fwd:, Re:, R:, RE:
+  return subject.replace(/^(I:|FW:|Fwd:|Re:|R:|RE:)\s*/gi, '').trim();
 }
 
 /**
