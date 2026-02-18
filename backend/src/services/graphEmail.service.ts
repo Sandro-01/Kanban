@@ -384,45 +384,54 @@ function cleanEmailContent(content: string): string {
 
   const lines = cleaned.split('\n');
 
-  // Cerca blocco header di inoltro (Da:/From:, Inviato:/Sent:, A:/To:, Oggetto:/Subject:)
-  // Se trovato: il contenuto utile è DOPO l'ultimo header, non prima
-  const headerLinePatterns = [
-    /^(Da|From):\s+/i,
-    /^(Inviato|Sent|Date):\s+/i,
-    /^(A|To):\s+/i,
-    /^(Cc|CC):\s+/i,
-    /^(Oggetto|Subject):\s+/i,
-  ];
-
-  let forwardHeaderStart = -1;
-  let forwardHeaderEnd = -1;
+  // Trova dove inizia il messaggio originale quotato e taglia PRIMA
+  // (la risposta dell'utente è in cima, il messaggio originale è in basso)
+  let cutIndex = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    // Cerca separatore esplicito di inoltro
+    // Separatori espliciti
     if (/^-{2,}\s*(Messaggio inoltrato|Forwarded message|Original Message|Messaggio originale)\s*-{2,}/i.test(line)) {
-      forwardHeaderStart = i;
-      continue;
+      cutIndex = i;
+      break;
     }
 
-    // Cerca primo header "Da:" o "From:" con index > 0 (non all'inizio dell'email)
-    if (forwardHeaderStart === -1 && i > 0 && /^(Da|From):\s+.+/i.test(line)) {
-      forwardHeaderStart = i;
+    // Riga di underscore (Outlook)
+    if (/^_{10,}$/.test(line)) {
+      cutIndex = i;
+      break;
     }
 
-    // Se siamo dentro il blocco header, cerca l'ultimo header (Oggetto/Subject)
-    if (forwardHeaderStart !== -1 && forwardHeaderEnd === -1) {
-      const isHeaderLine = headerLinePatterns.some(p => p.test(line));
-      if (isHeaderLine) {
-        forwardHeaderEnd = i;
+    // Pattern "Il gg/mm/aaaa, nome ha scritto:" o "On ... wrote:"
+    if (/^(Il\s+\d|On\s+.+wrote\s*:)/i.test(line)) {
+      cutIndex = i;
+      break;
+    }
+
+    // Blocco header di risposta: "Da:" o "From:" seguito da almeno un altro header
+    // (cerchiamo Da/From con posizione > 0 per non tagliare se è la prima riga)
+    if (i > 0 && /^(Da|From)\s*:\s+.+/i.test(line)) {
+      // Verifica che le righe successive contengano altri header tipici
+      let hasMoreHeaders = false;
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        if (/^(Inviato|Sent|Date|A|To|Cc|CC|Oggetto|Subject)\s*:\s+/i.test(lines[j].trim())) {
+          hasMoreHeaders = true;
+          break;
+        }
+      }
+      if (hasMoreHeaders) {
+        cutIndex = i;
+        break;
       }
     }
   }
 
-  if (forwardHeaderStart !== -1 && forwardHeaderEnd !== -1) {
-    // Prendi solo il contenuto DOPO il blocco header di inoltro
-    cleaned = lines.slice(forwardHeaderEnd + 1).join('\n');
+  if (cutIndex > 0) {
+    // Prendi solo il contenuto PRIMA del messaggio quotato (la risposta dell'utente)
+    cleaned = lines.slice(0, cutIndex).join('\n');
+  } else {
+    cleaned = lines.join('\n');
   }
 
   // Rimuovi firme e disclaimer dal contenuto rimanente

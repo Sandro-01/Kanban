@@ -377,28 +377,93 @@ async function processIncomingEmail(parsed: any) {
  */
 function cleanEmailContent(content: string): string {
   // Rimuovi HTML tags se presente
-  let cleaned = content.replace(/<[^>]*>/g, '');
+  let cleaned = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<\/p>/gi, '\n');
+  cleaned = cleaned.replace(/<\/div>/gi, '\n');
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
 
-  // Rimuovi righe che iniziano con > (quote)
+  // Decode HTML entities
+  cleaned = cleaned.replace(/&nbsp;/g, ' ');
+  cleaned = cleaned.replace(/&amp;/g, '&');
+  cleaned = cleaned.replace(/&lt;/g, '<');
+  cleaned = cleaned.replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"');
+  cleaned = cleaned.replace(/&#\d+;/g, '');
+
+  // Rimuovi righe con > (quote)
   cleaned = cleaned
     .split('\n')
     .filter((line) => !line.trim().startsWith('>'))
     .join('\n');
 
+  const lines = cleaned.split('\n');
+
+  // Trova dove inizia il messaggio originale quotato e taglia PRIMA
+  let cutIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Separatori espliciti
+    if (/^-{2,}\s*(Messaggio inoltrato|Forwarded message|Original Message|Messaggio originale)\s*-{2,}/i.test(line)) {
+      cutIndex = i;
+      break;
+    }
+
+    // Riga di underscore (Outlook)
+    if (/^_{10,}$/.test(line)) {
+      cutIndex = i;
+      break;
+    }
+
+    // Pattern "Il gg/mm/aaaa, nome ha scritto:" o "On ... wrote:"
+    if (/^(Il\s+\d|On\s+.+wrote\s*:)/i.test(line)) {
+      cutIndex = i;
+      break;
+    }
+
+    // Blocco header di risposta: "Da:" o "From:" seguito da altri header
+    if (i > 0 && /^(Da|From)\s*:\s+.+/i.test(line)) {
+      let hasMoreHeaders = false;
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        if (/^(Inviato|Sent|Date|A|To|Cc|CC|Oggetto|Subject)\s*:\s+/i.test(lines[j].trim())) {
+          hasMoreHeaders = true;
+          break;
+        }
+      }
+      if (hasMoreHeaders) {
+        cutIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (cutIndex > 0) {
+    cleaned = lines.slice(0, cutIndex).join('\n');
+  } else {
+    cleaned = lines.join('\n');
+  }
+
   // Rimuovi firme comuni
   const signaturePatterns = [
-    /--\s*$/m,
-    /Sent from my iPhone/i,
-    /Inviato da /i,
-    /________________________________/,
+    /^--\s*$/m,
+    /Sent from my (iPhone|iPad)/i,
+    /Inviato da(l mio)? /i,
+    /^Get Outlook for /im,
+    /^Ottieni Outlook per /im,
   ];
 
   signaturePatterns.forEach((pattern) => {
     const match = cleaned.match(pattern);
-    if (match) {
+    if (match && match.index !== undefined) {
       cleaned = cleaned.substring(0, match.index);
     }
   });
+
+  // Rimuovi righe vuote multiple
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
   return cleaned.trim();
 }
