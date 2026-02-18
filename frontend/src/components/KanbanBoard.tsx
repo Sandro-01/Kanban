@@ -447,7 +447,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   };
 
   // Pulisci contenuto email per la visualizzazione (gestisce anche dati legacy in DB)
-  const cleanEmailReplyContent = (content: string): string => {
+  const cleanEmailReplyContent = (content: string, fromEmail?: string): string => {
     let cleaned = content;
     // Rimuovi prefisso legacy "📧 **Risposta da email@...:**"
     cleaned = cleaned.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '');
@@ -475,6 +475,37 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         break;
       }
     }
+
+    // Rimuovi nome standalone alla fine (firma senza titolo)
+    // Controlla se le ultime righe sono solo un nome proprio (es. "Sandro Sellaro")
+    while (lines.length > 0) {
+      const lastLine = lines[lines.length - 1].trim();
+      if (!lastLine) {
+        lines.pop(); // rimuovi righe vuote finali
+        continue;
+      }
+      // Se l'ultima riga sembra un nome (2-3 parole con maiuscola iniziale, corta, senza punteggiatura)
+      if (/^[A-Z][a-zà-ú]+(\s+[A-Z][a-zà-ú]+){1,3}$/.test(lastLine) && lastLine.length < 40) {
+        // Se abbiamo l'email, verifica che corrisponda
+        if (fromEmail) {
+          const nameParts = lastLine.toLowerCase().split(/\s+/);
+          const emailLocal = fromEmail.split('@')[0].toLowerCase().replace(/[._-]/g, ' ');
+          const matchesEmail = nameParts.some(p => emailLocal.includes(p));
+          if (matchesEmail) {
+            lines.pop();
+            continue;
+          }
+        }
+        // Anche senza email, se è l'unico contenuto rimasto, è sicuramente una firma
+        const contentLines = lines.filter(l => l.trim().length > 0);
+        if (contentLines.length === 1) {
+          lines.pop();
+        }
+        break;
+      }
+      break;
+    }
+
     return lines.join('\n').trim();
   };
 
@@ -968,7 +999,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           </div>
                           <p className="timeline-text">
                             {item.isEmailReply
-                              ? cleanEmailReplyContent(item.content)
+                              ? cleanEmailReplyContent(item.content, item.fromEmail)
                               : item.content}
                           </p>
                           {/* Show attachments linked to this comment */}
