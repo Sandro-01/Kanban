@@ -272,12 +272,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
-  // Load all users for assignment
+  // Load all users for assignment (only operators/admins, not email users)
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const response = await usersApi.getAll();
-        setAllUsers(response.data);
+        const operators = response.data.filter((u: any) => u.role !== 'USER');
+        setAllUsers(operators);
       } catch (error) {
         console.error('Error loading users:', error);
       }
@@ -1251,12 +1252,13 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
   const [assignToUser, setAssignToUser] = useState('');
   const [assignToDepartment, setAssignToDepartment] = useState('');
 
-  // Load all users for assignment
+  // Load all users for assignment (only operators/admins, not email users)
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const response = await usersApi.getAll();
-        setAllUsers(response.data);
+        const operators = response.data.filter((u: any) => u.role !== 'USER');
+        setAllUsers(operators);
       } catch (error) {
         console.error('Error loading users:', error);
       }
