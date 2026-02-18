@@ -216,9 +216,12 @@ async function processGraphEmail(message: any): Promise<void> {
       },
     });
 
-    // Salva allegati
-    if (message.hasAttachments) {
+    // Salva allegati (incluse immagini inline/screenshot)
+    // hasAttachments potrebbe essere false per immagini solo inline, controlliamo sempre
+    try {
       await saveGraphAttachments(message.id, ticket.id, comment.id, ticket.createdById);
+    } catch (e) {
+      // Non fallire se non ci sono allegati
     }
 
     // Aggiorna ticket
@@ -240,16 +243,18 @@ async function processGraphEmail(message: any): Promise<void> {
     // NUOVA email → crea ticket
     console.log('🆕 Nuova email → creazione ticket');
     try {
-      // Scarica allegati
+      // Scarica allegati (incluse immagini inline/screenshot)
       let emailAttachments: any[] = [];
-      if (message.hasAttachments) {
+      try {
         const graphAttachments = await getEmailAttachments(message.id);
         emailAttachments = graphAttachments.map((att: any) => ({
-          filename: att.name,
+          filename: att.name || `screenshot-${Date.now()}.${(att.contentType || 'image/png').split('/')[1] || 'png'}`,
           content: Buffer.from(att.contentBytes, 'base64'),
           contentType: att.contentType,
           size: att.size,
         }));
+      } catch (e) {
+        // Nessun allegato
       }
 
       // Descrizione breve + pulita per il ticket
@@ -441,13 +446,14 @@ function cleanEmailContent(content: string): string {
     cleaned = lines.join('\n');
   }
 
-  // Taglia se appare il testo della notifica del sistema
+  // Taglia se appare il testo del template notifica del sistema
+  // Pattern specifici per evitare falsi positivi con testo utente
   const notificationPatterns = [
-    /Ticket #[a-f0-9]/i,
-    /Nuovo commento/i,
-    /Rispondi a questa email/i,
-    /Sistema Kanban/i,
-    /Europoligrafico.*Sistema Kanban/i,
+    /Ticket #[a-f0-9].*Nuovo commento/i,        // "Ticket #xxx 💬 Nuovo commento"
+    /Ticket #[a-f0-9].*Nuovo allegato/i,         // "Ticket #xxx 📎 Nuovo allegato"
+    /^Oggetto ticket$/i,                          // Intestazione template
+    /Rispondi a questa email per aggiungere/i,    // Footer template esatto
+    /Europoligrafico.*Sistema Kanban/i,           // Footer template
   ];
   const cleanedLines = cleaned.split('\n');
   for (let i = 0; i < cleanedLines.length; i++) {

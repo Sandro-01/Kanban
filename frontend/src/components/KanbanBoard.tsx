@@ -451,15 +451,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     let cleaned = content;
     // Rimuovi prefisso legacy "📧 **Risposta da email@...:**"
     cleaned = cleaned.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '');
-    // Rimuovi testo notifica sistema che potrebbe essere incluso
-    const notifPatterns = [
-      /Ticket #[a-f0-9][\s\S]*/i,
-      /Rispondi a questa email[\s\S]*/i,
-      /Sistema Kanban[\s\S]*/i,
+    // Rimuovi testo template notifica sistema (pattern specifici)
+    const notifCutPatterns = [
+      /Ticket #[a-f0-9].*(?:Nuovo commento|Nuovo allegato)[\s\S]*/i,
+      /Rispondi a questa email per aggiungere[\s\S]*/i,
       /Europoligrafico.*Sistema Kanban[\s\S]*/i,
-      /Nuovo commento[\s\S]*/i,
     ];
-    for (const pattern of notifPatterns) {
+    for (const pattern of notifCutPatterns) {
       cleaned = cleaned.replace(pattern, '');
     }
     // Rimuovi firme nome + titolo (es. "Sandro Sellaro\nIT Specialist")
@@ -513,6 +511,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             fileName: att.fileName,
             filePath: att.filePath,
             fileSize: att.fileSize,
+            mimeType: att.mimeType,
           });
         }
       });
@@ -975,40 +974,89 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">
-                              {item.attachments.map((att: any) => (
-                                <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <div>
+                              {/* Mostra immagini inline (screenshot, foto) */}
+                              {item.attachments
+                                .filter((att: any) => att.mimeType && att.mimeType.startsWith('image/'))
+                                .map((att: any) => (
+                                  <div key={att.id} style={{ marginBottom: '8px', position: 'relative' }}>
                                     <a
                                       href={`http://localhost:5000/uploads/${att.filePath}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      download
                                     >
-                                      📎 {att.fileName}
+                                      <img
+                                        src={`http://localhost:5000/uploads/${att.filePath}`}
+                                        alt={att.fileName}
+                                        style={{
+                                          maxWidth: '100%',
+                                          maxHeight: '400px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #e2e8f0',
+                                          cursor: 'pointer',
+                                        }}
+                                      />
                                     </a>
-                                    <span className="file-size">
-                                      ({(att.fileSize / 1024).toFixed(1)} KB)
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                        {att.fileName} ({(att.fileSize / 1024).toFixed(1)} KB)
+                                      </span>
+                                      {user.role === 'ADMIN' && (
+                                        <button
+                                          onClick={() => handleDeleteAttachment(att.id)}
+                                          style={{
+                                            padding: '2px 8px',
+                                            backgroundColor: '#ef4444',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '3px',
+                                            cursor: 'pointer',
+                                            fontSize: '11px'
+                                          }}
+                                          title="Elimina file (solo ADMIN)"
+                                        >
+                                          🗑️
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                  {user.role === 'ADMIN' && (
-                                    <button
-                                      onClick={() => handleDeleteAttachment(att.id)}
-                                      style={{
-                                        padding: '2px 8px',
-                                        backgroundColor: '#ef4444',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '3px',
-                                        cursor: 'pointer',
-                                        fontSize: '11px'
-                                      }}
-                                      title="Elimina file (solo ADMIN)"
-                                    >
-                                      🗑️
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
+                                ))}
+                              {/* Mostra altri allegati come link download */}
+                              {item.attachments
+                                .filter((att: any) => !att.mimeType || !att.mimeType.startsWith('image/'))
+                                .map((att: any) => (
+                                  <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div>
+                                      <a
+                                        href={`http://localhost:5000/uploads/${att.filePath}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        download
+                                      >
+                                        📎 {att.fileName}
+                                      </a>
+                                      <span className="file-size">
+                                        ({(att.fileSize / 1024).toFixed(1)} KB)
+                                      </span>
+                                    </div>
+                                    {user.role === 'ADMIN' && (
+                                      <button
+                                        onClick={() => handleDeleteAttachment(att.id)}
+                                        style={{
+                                          padding: '2px 8px',
+                                          backgroundColor: '#ef4444',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '3px',
+                                          cursor: 'pointer',
+                                          fontSize: '11px'
+                                        }}
+                                        title="Elimina file (solo ADMIN)"
+                                      >
+                                        🗑️
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
                             </div>
                           )}
                         </div>
@@ -1046,19 +1094,44 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               </button>
                             )}
                           </div>
-                          <div className="timeline-file">
-                            <a
-                              href={`http://localhost:5000/uploads/${item.filePath}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download
-                            >
-                              📎 {item.fileName}
-                            </a>
-                            <span className="file-size">
-                              ({(item.fileSize / 1024).toFixed(1)} KB)
-                            </span>
-                          </div>
+                          {item.mimeType && item.mimeType.startsWith('image/') ? (
+                            <div>
+                              <a
+                                href={`http://localhost:5000/uploads/${item.filePath}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={`http://localhost:5000/uploads/${item.filePath}`}
+                                  alt={item.fileName}
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '400px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #e2e8f0',
+                                    cursor: 'pointer',
+                                  }}
+                                />
+                              </a>
+                              <div style={{ marginTop: '4px', fontSize: '11px', color: '#94a3b8' }}>
+                                {item.fileName} ({(item.fileSize / 1024).toFixed(1)} KB)
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="timeline-file">
+                              <a
+                                href={`http://localhost:5000/uploads/${item.filePath}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                              >
+                                📎 {item.fileName}
+                              </a>
+                              <span className="file-size">
+                                ({(item.fileSize / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}

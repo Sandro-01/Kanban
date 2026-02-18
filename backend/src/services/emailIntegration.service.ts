@@ -326,12 +326,8 @@ async function processIncomingEmail(parsed: any) {
 
     for (const attachment of attachments) {
       try {
-        // Salta allegati inline (immagini embedded)
-        if (attachment.contentDisposition === 'inline') {
-          continue;
-        }
-
-        const fileName = attachment.filename || `attachment-${Date.now()}`;
+        // Genera nome file per allegati inline senza nome (screenshot)
+        const fileName = attachment.filename || `screenshot-${Date.now()}.${(attachment.contentType || 'image/png').split('/')[1] || 'png'}`;
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
         const filePath = path.join(uploadDir, uniqueFileName);
 
@@ -453,12 +449,12 @@ function cleanEmailContent(content: string): string {
     cleaned = lines.join('\n');
   }
 
-  // Taglia se appare il testo della notifica del sistema
+  // Taglia se appare il testo del template notifica del sistema
   const notificationPatterns = [
-    /Ticket #[a-f0-9]/i,
-    /Nuovo commento/i,
-    /Rispondi a questa email/i,
-    /Sistema Kanban/i,
+    /Ticket #[a-f0-9].*Nuovo commento/i,
+    /Ticket #[a-f0-9].*Nuovo allegato/i,
+    /^Oggetto ticket$/i,
+    /Rispondi a questa email per aggiungere/i,
     /Europoligrafico.*Sistema Kanban/i,
   ];
   const cleanedLines2 = cleaned.split('\n');
