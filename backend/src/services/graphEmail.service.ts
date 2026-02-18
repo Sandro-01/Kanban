@@ -438,12 +438,18 @@ function cleanEmailSubject(subject: string): string {
 async function isEmailAlreadyProcessed(messageId: string): Promise<boolean> {
   if (!messageId) return false;
 
-  const existingTicket = await prisma.ticket.findFirst({
-    where: { emailMessageId: messageId },
-    select: { id: true },
-  });
-  if (existingTicket) return true;
+  // Controlla duplicati nei ticket (usa raw query per compatibilità pre-migrazione)
+  try {
+    const existingTicket: any[] = await (prisma as any).$queryRawUnsafe(
+      `SELECT id FROM "Ticket" WHERE "emailMessageId" = $1 LIMIT 1`,
+      messageId
+    );
+    if (existingTicket.length > 0) return true;
+  } catch {
+    // Campo emailMessageId non ancora presente nel DB, skip check ticket
+  }
 
+  // Controlla duplicati nei commenti
   const existingComment = await prisma.comment.findFirst({
     where: { emailMessageId: messageId },
     select: { id: true },

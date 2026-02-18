@@ -137,21 +137,25 @@ export async function createTicketFromEmail(
 
   // Crea ticket
   const emailThreadId = `ticket-${Date.now()}@europoligrafico.it`;
-  const ticket = await prisma.ticket.create({
-    data: {
-      title: subject,
-      description: body,
-      boardId: board.id,
-      columnId: column.id,
-      createdById: user.id,
-      priority,
-      slaHours,
-      dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
-      emailThreadId,
-      emailMessageId: emailMessageId || null,
-      externalContacts: [from],
-    }
-  });
+  const ticketData: any = {
+    title: subject,
+    description: body,
+    boardId: board.id,
+    columnId: column.id,
+    createdById: user.id,
+    priority,
+    slaHours,
+    dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
+    emailThreadId,
+    externalContacts: [from],
+  };
+
+  // Aggiungi emailMessageId se presente (richiede migrazione DB)
+  if (emailMessageId) {
+    ticketData.emailMessageId = emailMessageId;
+  }
+
+  const ticket = await prisma.ticket.create({ data: ticketData });
 
   // Salva allegati se presenti
   if (attachments && attachments.length > 0) {
