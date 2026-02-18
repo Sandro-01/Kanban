@@ -17,6 +17,7 @@ import emailRoutes from './routes/email.routes';
 // Services
 import { startEmailListener } from './services/email.service';
 import { startEmailPolling } from './services/emailIntegration.service';
+import { startGraphEmailPolling, isGraphConfigured } from './services/graphEmail.service';
 
 dotenv.config();
 
@@ -67,16 +68,25 @@ app.get('/api/compliance', (req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 
-  // Email integration (solo se configurata con password reale)
-  const emailPassword = process.env.EMAIL_PASSWORD;
-  if (emailPassword && emailPassword !== 'your-email-password') {
-    console.log(`📧 Email listener starting...`);
-    startEmailListener().catch((err) => {
-      console.warn('⚠️  Email listener non avviato:', err.message);
-    });
-    startEmailPolling(2);
+  // Email integration
+  if (isGraphConfigured()) {
+    // Microsoft Graph API (OAuth2 - raccomandato per M365)
+    console.log('📧 Email integration via Microsoft Graph API');
+    startGraphEmailPolling(2);
   } else {
-    console.log('📧 Email integration disabilitata (configurare EMAIL_PASSWORD in .env)');
+    // Fallback: IMAP con Basic Auth (solo se configurata password)
+    const emailPassword = process.env.EMAIL_PASSWORD;
+    if (emailPassword && emailPassword !== 'your-email-password') {
+      console.log('📧 Email integration via IMAP (fallback)');
+      startEmailListener().catch((err) => {
+        console.warn('⚠️  Email listener non avviato:', err.message);
+      });
+      startEmailPolling(2);
+    } else {
+      console.log('📧 Email integration disabilitata');
+      console.log('   Configurare AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env');
+      console.log('   Oppure EMAIL_PASSWORD per fallback IMAP');
+    }
   }
 });
 
