@@ -327,6 +327,14 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     });
   };
 
+  // Helper: get initials for avatar
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase();
+  };
+
+  // Assignment panel tab state
+  const [assignTab, setAssignTab] = useState<'users' | 'departments'>('users');
+
   // Handle department selection - support multiple departments, clear users
   const handleDepartmentSelection = (department: string) => {
     setSelectedDepartments(prev => {
@@ -769,188 +777,177 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
           {/* Assegnazioni */}
           <div className="assignments-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>Assegnazioni:</strong>
+            <div className="assignments-header">
+              <div className="assignments-header-left">
+                <span className="icon">👥</span>
+                Assegnazioni
+              </div>
               <button
-                className="btn btn-secondary"
+                className="assignments-toggle"
                 onClick={() => setShowAssignments(!showAssignments)}
-                style={{ fontSize: '12px', padding: '5px 10px' }}
               >
-                {showAssignments ? 'Nascondi' : 'Gestisci'}
+                {showAssignments ? '▲ Chiudi' : '⚙ Gestisci'}
               </button>
             </div>
 
             {/* Current assignments display */}
-            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+            <div className="assignments-body">
               {ticket.assignments && ticket.assignments.length > 0 && (
-                <div>
-                  <strong>👤 Utenti assegnati:</strong>
-                  <div style={{ marginLeft: '10px' }}>
-                    {ticket.assignments.map((assignment: any) => (
-                      <div key={assignment.id}>
-                        • {assignment.user.firstName} {assignment.user.lastName}
-                        {assignment.user.department && ` (${assignment.user.department})`}
-                      </div>
-                    ))}
-                  </div>
+                <div className="assignments-chips">
+                  {ticket.assignments.map((assignment: any) => (
+                    <div className="assignment-chip" key={assignment.id}>
+                      <span className="avatar user-avatar">
+                        {getInitials(assignment.user.firstName, assignment.user.lastName)}
+                      </span>
+                      <span className="chip-info">
+                        <span className="chip-name">{assignment.user.firstName} {assignment.user.lastName}</span>
+                        {assignment.user.department && <span className="chip-dept">{assignment.user.department}</span>}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
               {ticket.assignedDepartments && ticket.assignedDepartments.length > 0 && (
-                <div style={{ marginTop: '5px' }}>
-                  <strong>🏢 Reparti assegnati:</strong>
-                  <div style={{ marginLeft: '10px' }}>
-                    {ticket.assignedDepartments.map((dept: string) => (
-                      <div key={dept}>• {dept}</div>
-                    ))}
-                  </div>
+                <div className="assignments-chips">
+                  {ticket.assignedDepartments.map((dept: string) => (
+                    <div className="assignment-chip" key={dept}>
+                      <span className="avatar dept-avatar">{dept[0]}</span>
+                      <span className="chip-info">
+                        <span className="chip-name">{dept}</span>
+                        <span className="chip-dept">Reparto</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
               {(!ticket.assignments || ticket.assignments.length === 0) &&
                (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) && (
-                <div style={{ color: '#999', fontStyle: 'italic' }}>
-                  Nessuna assegnazione - Visibile a tutti (status OPEN)
+                <div className="assignments-empty">
+                  <span>⚠️</span>
+                  Nessuna assegnazione — Visibile a tutti
                 </div>
               )}
             </div>
 
-            {/* Assignment management UI */}
+            {/* Assignment management panel */}
             {showAssignments && (
-              <div style={{ marginTop: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
-                <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#fffbcc', borderRadius: '5px', fontSize: '13px' }}>
-                  ⚠️ <strong>Nota:</strong> Puoi assegnare il ticket a più utenti O a più reparti, non entrambi.
-                  Le assegnazioni verranno salvate quando clicchi "Invia" in fondo alla pagina.
+              <div className="assignment-panel">
+                <div className="assignment-panel-note">
+                  <span>ℹ️</span>
+                  <span>Puoi assegnare a <strong>utenti</strong> o <strong>reparti</strong>, non entrambi. Le modifiche saranno salvate con "Invia".</span>
                 </div>
 
-                {/* User assignment with search */}
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Utenti:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="🔍 Cerca utente..."
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    disabled={selectedDepartments.length > 0}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      marginBottom: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      opacity: selectedDepartments.length > 0 ? 0.5 : 1
-                    }}
-                  />
-                  <div style={{
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    backgroundColor: 'white'
-                  }}>
-                    {allUsers
-                      .filter((u: any) => {
-                        const searchLower = userSearchTerm.toLowerCase();
-                        const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
-                        const dept = (u.department || '').toLowerCase();
-                        return fullName.includes(searchLower) || dept.includes(searchLower);
-                      })
-                      .map((u: any) => (
-                        <div
-                          key={u.id}
-                          onClick={() => !selectedDepartments.length && handleUserSelection(u.id)}
-                          style={{
-                            padding: '10px',
-                            cursor: selectedDepartments.length > 0 ? 'not-allowed' : 'pointer',
-                            backgroundColor: selectedUsers.includes(u.id) ? '#e0f2fe' : 'white',
-                            borderBottom: '1px solid #f0f0f0',
-                            opacity: selectedDepartments.length > 0 ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px'
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedUsers.includes(u.id)}
-                            onChange={() => {}}
-                            disabled={selectedDepartments.length > 0}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <span>
-                            {u.firstName} {u.lastName} {u.department && `(${u.department})`}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                  <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
-                    {selectedDepartments.length > 0
-                      ? '⚠️ Deseleziona i reparti per assegnare a utenti'
-                      : `${selectedUsers.length} utente/i selezionato/i`}
-                  </small>
+                {/* Tabs */}
+                <div className="assignment-panel-tabs">
+                  <button
+                    className={`assignment-tab ${assignTab === 'users' ? 'active' : ''} ${selectedDepartments.length > 0 ? 'disabled' : ''}`}
+                    onClick={() => !selectedDepartments.length && setAssignTab('users')}
+                  >
+                    👤 Utenti
+                  </button>
+                  <button
+                    className={`assignment-tab ${assignTab === 'departments' ? 'active' : ''} ${selectedUsers.length > 0 ? 'disabled' : ''}`}
+                    onClick={() => !selectedUsers.length && setAssignTab('departments')}
+                  >
+                    🏢 Reparti
+                  </button>
                 </div>
 
-                {/* Department assignment with search */}
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Assegna a Reparti:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="🔍 Cerca reparto..."
-                    value={deptSearchTerm}
-                    onChange={(e) => setDeptSearchTerm(e.target.value)}
-                    disabled={selectedUsers.length > 0}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      marginBottom: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      opacity: selectedUsers.length > 0 ? 0.5 : 1
-                    }}
-                  />
-                  <div style={{
-                    maxHeight: '150px',
-                    overflowY: 'auto',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    backgroundColor: 'white'
-                  }}>
-                    {allDepartments
-                      .filter((dept: string) => dept.toLowerCase().includes(deptSearchTerm.toLowerCase()))
-                      .map((dept: string) => (
-                        <div
-                          key={dept}
-                          onClick={() => !selectedUsers.length && handleDepartmentSelection(dept)}
-                          style={{
-                            padding: '10px',
-                            cursor: selectedUsers.length > 0 ? 'not-allowed' : 'pointer',
-                            backgroundColor: selectedDepartments.includes(dept) ? '#fef3c7' : 'white',
-                            borderBottom: '1px solid #f0f0f0',
-                            opacity: selectedUsers.length > 0 ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px'
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedDepartments.includes(dept)}
-                            onChange={() => {}}
-                            disabled={selectedUsers.length > 0}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <span>{dept}</span>
-                        </div>
-                      ))}
+                {/* Users tab */}
+                {assignTab === 'users' && (
+                  <div>
+                    <div className="assignment-search-wrapper">
+                      <span className="assignment-search-icon">🔍</span>
+                      <input
+                        type="text"
+                        className="assignment-search"
+                        placeholder="Cerca utente..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        disabled={selectedDepartments.length > 0}
+                      />
+                    </div>
+                    <div className="assignment-list">
+                      {allUsers
+                        .filter((u: any) => {
+                          const searchLower = userSearchTerm.toLowerCase();
+                          const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+                          const dept = (u.department || '').toLowerCase();
+                          return fullName.includes(searchLower) || dept.includes(searchLower);
+                        })
+                        .map((u: any) => {
+                          const isSelected = selectedUsers.includes(u.id);
+                          const isDisabled = selectedDepartments.length > 0;
+                          return (
+                            <div
+                              key={u.id}
+                              className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                              onClick={() => !isDisabled && handleUserSelection(u.id)}
+                            >
+                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#cbd5e1' }}>
+                                {getInitials(u.firstName, u.lastName)}
+                              </div>
+                              <div className="item-info">
+                                <div className="item-name">{u.firstName} {u.lastName}</div>
+                                {u.department && <div className="item-dept">{u.department}</div>}
+                              </div>
+                              <div className="check-icon">{isSelected ? '✓' : ''}</div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <div className="assignment-count">
+                      {selectedDepartments.length > 0
+                        ? '⚠️ Deseleziona i reparti per assegnare a utenti'
+                        : `${selectedUsers.length} utente/i selezionato/i`}
+                    </div>
                   </div>
-                  <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
-                    {selectedUsers.length > 0
-                      ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
-                      : `${selectedDepartments.length} reparto/i selezionato/i`}
-                  </small>
-                </div>
+                )}
+
+                {/* Departments tab */}
+                {assignTab === 'departments' && (
+                  <div>
+                    <div className="assignment-search-wrapper">
+                      <span className="assignment-search-icon">🔍</span>
+                      <input
+                        type="text"
+                        className="assignment-search"
+                        placeholder="Cerca reparto..."
+                        value={deptSearchTerm}
+                        onChange={(e) => setDeptSearchTerm(e.target.value)}
+                        disabled={selectedUsers.length > 0}
+                      />
+                    </div>
+                    <div className="assignment-list">
+                      {allDepartments
+                        .filter((dept: string) => dept.toLowerCase().includes(deptSearchTerm.toLowerCase()))
+                        .map((dept: string) => {
+                          const isSelected = selectedDepartments.includes(dept);
+                          const isDisabled = selectedUsers.length > 0;
+                          return (
+                            <div
+                              key={dept}
+                              className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                              onClick={() => !isDisabled && handleDepartmentSelection(dept)}
+                            >
+                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : '#cbd5e1' }}>
+                                {dept[0]}
+                              </div>
+                              <div className="item-info">
+                                <div className="item-name">{dept}</div>
+                              </div>
+                              <div className="check-icon">{isSelected ? '✓' : ''}</div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <div className="assignment-count">
+                      {selectedUsers.length > 0
+                        ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
+                        : `${selectedDepartments.length} reparto/i selezionato/i`}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
