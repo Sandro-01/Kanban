@@ -1,5 +1,6 @@
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
+import { generateEmailPdf } from '../utils/emailPdf';
 
 /**
  * Microsoft Graph API - Email Integration
@@ -103,7 +104,7 @@ async function graphRequest(endpoint: string, method: string = 'GET', body?: any
 async function getRecentEmails(): Promise<any[]> {
   const mailbox = GRAPH_CONFIG.sharedMailbox;
   const hoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=receivedDateTime ge ${hoursAgo}&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId&$orderby=receivedDateTime asc`;
+  const endpoint = `/users/${mailbox}/mailFolders/inbox/messages?$filter=receivedDateTime ge ${hoursAgo}&$top=50&$select=id,subject,from,body,receivedDateTime,hasAttachments,internetMessageId,toRecipients,ccRecipients&$orderby=receivedDateTime asc`;
 
   const data = await graphRequest(endpoint);
   return data.value || [];
@@ -245,9 +246,56 @@ async function processGraphEmail(message: any): Promise<void> {
         }));
       }
 
+      // Descrizione breve + pulita per il ticket
       const cleanBody = cleanEmailContent(body);
       const cleanSubject = cleanEmailSubject(subject);
-      const ticket = await createTicketFromEmail(from, cleanSubject, cleanBody, emailAttachments, messageId);
+
+      // Descrizione corta: solo il corpo pulito (max 500 char) + nota PDF
+      const shortDescription = cleanBody.length > 500
+        ? cleanBody.substring(0, 500) + '...'
+        : cleanBody;
+      const description = shortDescription
+        ? `${shortDescription}\n\n📎 Email originale completa in allegato (PDF)`
+        : `Email ricevuta da ${from}\n\n📎 Email originale completa in allegato (PDF)`;
+
+      const ticket = await createTicketFromEmail(from, cleanSubject, description, emailAttachments, messageId);
+
+      // Genera PDF con email completa e allegalo al ticket
+      try {
+        const receivedDate = message.receivedDateTime
+          ? new Date(message.receivedDateTime).toLocaleString('it-IT')
+          : undefined;
+
+        // Estrai destinatari per il PDF
+        const toRecipients = (message.toRecipients || [])
+          .map((r: any) => r.emailAddress?.address || '').filter(Boolean).join(', ');
+        const ccRecipients = (message.ccRecipients || [])
+          .map((r: any) => r.emailAddress?.address || '').filter(Boolean).join(', ');
+
+        const pdfResult = await generateEmailPdf({
+          from,
+          to: toRecipients || undefined,
+          cc: ccRecipients || undefined,
+          date: receivedDate,
+          subject: cleanSubject,
+          body,
+        }, ticket.id);
+
+        await prisma.attachment.create({
+          data: {
+            ticketId: ticket.id,
+            uploadedById: ticket.createdById,
+            fileName: pdfResult.fileName,
+            filePath: pdfResult.filePath,
+            fileSize: pdfResult.fileSize,
+            mimeType: 'application/pdf',
+          },
+        });
+        console.log(`   📄 PDF email originale allegato al ticket`);
+      } catch (pdfError: any) {
+        console.error(`   ⚠️ Errore generazione PDF (non bloccante): ${pdfError.message}`);
+      }
+
       console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${cleanSubject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);
