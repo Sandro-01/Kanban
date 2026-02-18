@@ -359,11 +359,12 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
 router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { content } = req.body;
+    const { content, hasFile } = req.body;
 
     console.log('📝 Adding comment to ticket:', id);
     console.log('📝 Content:', content);
     console.log('📝 User ID:', req.user!.id);
+    console.log('📝 Has file coming:', hasFile);
 
     const comment = await prisma.comment.create({
       data: {
@@ -380,12 +381,16 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 
     console.log('✅ Comment created successfully:', comment.id);
 
-    try {
-      await notifyTicketUpdate(id, 'Nuovo commento', content);
-      console.log('✅ Email notification sent');
-    } catch (emailError: any) {
-      console.error('⚠️ Email notification failed (non-critical):', emailError.message);
-      // Don't fail the request if email fails
+    // Se ci sono file in arrivo, la notifica verrà inviata dall'endpoint attachments
+    if (!hasFile) {
+      try {
+        await notifyTicketUpdate(id, 'Nuovo commento', content);
+        console.log('✅ Email notification sent');
+      } catch (emailError: any) {
+        console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+      }
+    } else {
+      console.log('ℹ️ Deferring email notification to attachment upload');
     }
 
     res.json(comment);
@@ -401,7 +406,7 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('UPLOAD_FILE', 'Attachment'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { commentId } = req.body; // Optional commentId to link file to comment
+    const { commentId, isLastFile } = req.body; // Optional commentId to link file to comment
 
     console.log('📎 Uploading file to ticket:', id);
     if (commentId) {
@@ -444,22 +449,45 @@ router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('U
 
     console.log('✅ File uploaded successfully:', attachment.id);
 
-    // Notifica solo per allegati standalone (non collegati a un commento)
-    // Se collegato a un commento, la notifica è già partita dall'endpoint commento
-    if (!commentId) {
+    // Invia notifica email:
+    // - Standalone (senza commento): notifica con file allegato
+    // - Con commento + isLastFile: notifica combinata (testo commento + tutti i file)
+    const shouldNotify = !commentId || (commentId && isLastFile === 'true');
+    if (shouldNotify) {
       try {
+        // Raccogli tutti gli allegati collegati al commento (o solo questo se standalone)
+        let allFileAttachments: { fileName: string; filePath: string; mimeType: string }[] = [];
+        let emailDetails = '';
+
+        if (commentId) {
+          // Recupera il commento e tutti i suoi allegati
+          const commentData = await prisma.comment.findUnique({
+            where: { id: commentId },
+            include: { attachments: true }
+          });
+          emailDetails = commentData?.content || '';
+          allFileAttachments = (commentData?.attachments || []).map((att: any) => ({
+            fileName: att.fileName,
+            filePath: att.filePath,
+            mimeType: att.mimeType || 'application/octet-stream',
+          }));
+        } else {
+          emailDetails = `File caricato: <strong>${req.file.originalname}</strong>`;
+          allFileAttachments = [{ fileName: req.file.originalname, filePath: req.file.filename, mimeType: req.file.mimetype }];
+        }
+
         await notifyTicketUpdate(
           id,
-          'Nuovo allegato',
-          `File caricato: <strong>${req.file.originalname}</strong>`,
-          [{ fileName: req.file.originalname, filePath: req.file.filename, mimeType: req.file.mimetype }]
+          commentId ? 'Nuovo commento' : 'Nuovo allegato',
+          emailDetails,
+          allFileAttachments
         );
-        console.log('✅ Email notification sent for standalone attachment');
+        console.log('✅ Email notification sent with', allFileAttachments.length, 'attachment(s)');
       } catch (emailError: any) {
         console.error('⚠️ Email notification failed (non-critical):', emailError.message);
       }
     } else {
-      console.log('ℹ️ Skipping notification for attachment linked to comment:', commentId);
+      console.log('ℹ️ Waiting for last file before sending notification');
     }
 
     res.json(attachment);

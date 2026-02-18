@@ -484,6 +484,39 @@
   border-color: var(--primary);
 }
 
+.selected-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.selected-file-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #3730a3;
+}
+
+.selected-file-tag .clear-file-btn {
+  margin-left: 2px;
+  padding: 2px 5px;
+  font-size: 10px;
+  border-radius: 50%;
+  background: #a5b4fc;
+  color: #312e81;
+}
+
+.selected-file-tag .clear-file-btn:hover {
+  background: var(--danger);
+  color: white;
+}
+
 .clear-file-btn {
   margin-left: 8px;
   padding: 6px 10px;

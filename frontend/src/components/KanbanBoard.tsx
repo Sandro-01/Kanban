@@ -227,7 +227,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 // Componente modale ticket
 const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUpdate, onMove }) => {
   const [comment, setComment] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [ticket, setTicket] = useState(initialTicket);
   const [refreshing, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
@@ -342,27 +342,30 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const handleSubmit = async () => {
     // Check if there's anything to submit
     const hasComment = comment.trim();
-    const hasFile = file !== null;
+    const hasFiles = files.length > 0;
     const hasAssignments = selectedUsers.length > 0 || selectedDepartments.length > 0;
 
-    if (!hasComment && !hasFile && !hasAssignments) {
+    if (!hasComment && !hasFiles && !hasAssignments) {
       return; // Nothing to submit
     }
 
     try {
       let createdCommentId = null;
 
-      // If both comment and file are present, create comment first
+      // If both comment and files are present, create comment first (defer email notification)
       if (hasComment) {
-        const commentResponse = await ticketsApi.addComment(ticket.id, comment);
+        const commentResponse = await ticketsApi.addComment(ticket.id, comment, hasFiles);
         createdCommentId = commentResponse.data.id;
         console.log('✅ Comment created:', createdCommentId);
       }
 
-      // Upload file, linking it to the comment if both were provided
-      if (hasFile) {
-        await ticketsApi.uploadFile(ticket.id, file, createdCommentId || undefined);
-        console.log('✅ File uploaded' + (createdCommentId ? ' and linked to comment' : ''));
+      // Upload files, linking them to the comment if both were provided
+      if (hasFiles) {
+        for (let i = 0; i < files.length; i++) {
+          const isLast = i === files.length - 1;
+          await ticketsApi.uploadFile(ticket.id, files[i], createdCommentId || undefined, isLast);
+          console.log(`✅ File ${i + 1}/${files.length} uploaded` + (createdCommentId ? ' and linked to comment' : ''));
+        }
       }
 
       // Handle assignments (users have priority)
@@ -380,7 +383,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
       // Reset form
       setComment('');
-      setFile(null);
+      setFiles([]);
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
@@ -1030,31 +1033,42 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 <input
                   type="file"
                   id="file-upload"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => {
+                    const selected = e.target.files ? Array.from(e.target.files) : [];
+                    setFiles(prev => [...prev, ...selected]);
+                  }}
                 />
                 <label htmlFor="file-upload" className="file-label">
-                  {file ? `📎 ${file.name}` : '📎 Allega file (opzionale)'}
+                  {files.length > 0
+                    ? `📎 ${files.length} file selezionati`
+                    : '📎 Allega file (opzionale)'}
                 </label>
-                {file && (
-                  <button
-                    className="clear-file-btn"
-                    onClick={() => {
-                      setFile(null);
-                      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-                      if (fileInput) fileInput.value = '';
-                    }}
-                    type="button"
-                  >
-                    ✕
-                  </button>
+                {files.length > 0 && (
+                  <div className="selected-files-list">
+                    {files.map((f, i) => (
+                      <span key={i} className="selected-file-tag">
+                        {f.name}
+                        <button
+                          className="clear-file-btn"
+                          onClick={() => {
+                            setFiles(prev => prev.filter((_, idx) => idx !== i));
+                          }}
+                          type="button"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
               <button
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={!comment.trim() && !file && selectedUsers.length === 0 && selectedDepartments.length === 0}
+                disabled={!comment.trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
                 style={{
-                  opacity: (!comment.trim() && !file && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
+                  opacity: (!comment.trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
                 }}
               >
                 Invia {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(con assegnazione)'}

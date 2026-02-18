@@ -47,15 +47,18 @@ export const tickets = {
   create: (data: any) => api.post('/tickets', data),
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
   delete: (id: string) => api.delete(`/tickets/${id}`),
-  addComment: (id: string, content: string) =>
-    api.post(`/tickets/${id}/comments`, { content }),
+  addComment: (id: string, content: string, hasFile?: boolean) =>
+    api.post(`/tickets/${id}/comments`, { content, hasFile }),
   deleteComment: (ticketId: string, commentId: string) =>
     api.delete(`/tickets/${ticketId}/comments/${commentId}`),
-  uploadFile: (id: string, file: File, commentId?: string) => {
+  uploadFile: (id: string, file: File, commentId?: string, isLastFile?: boolean) => {
     const formData = new FormData();
     formData.append('file', file);
     if (commentId) {
       formData.append('commentId', commentId);
+    }
+    if (isLastFile) {
+      formData.append('isLastFile', 'true');
     }
     return api.post(`/tickets/${id}/attachments`, formData);
   },
