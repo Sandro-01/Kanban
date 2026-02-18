@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Invia email
+ * Invia email (usa Graph API se configurato, altrimenti SMTP)
  */
 export async function sendEmail(
   to: string,
@@ -26,12 +26,18 @@ export async function sendEmail(
   ticketId?: string
 ) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to,
-      subject,
-      html
-    });
+    // Usa Graph API se Azure AD è configurato
+    if (process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET) {
+      const { sendEmailViaGraph } = await import('./graphEmail.service');
+      await sendEmailViaGraph([to], subject, html);
+    } else {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM,
+        to,
+        subject,
+        html
+      });
+    }
 
     await prisma.emailLog.create({
       data: {
@@ -45,8 +51,9 @@ export async function sendEmail(
       }
     });
 
-    return info;
+    console.log(`✅ Email inviata a: ${to}`);
   } catch (error: any) {
+    console.error(`❌ Errore invio email a ${to}:`, error.message);
     await prisma.emailLog.create({
       data: {
         ticketId,
@@ -185,33 +192,37 @@ export async function createTicketFromEmail(
     }
   });
 
-  // Invia conferma con [Ticket #ID] per tracciamento risposte
-  await sendEmail(
-    from,
-    `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
-    `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-          <h2 style="margin: 0;">Ticket #${ticket.id.substring(0, 8)} creato</h2>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb;">
-          <p>Il tuo ticket è stato registrato nel sistema.</p>
-          <ul>
-            <li><strong>ID:</strong> #${ticket.id.substring(0, 8)}</li>
-            <li><strong>Titolo:</strong> ${subject}</li>
-            <li><strong>Priorità:</strong> ${priority}</li>
-            <li><strong>SLA:</strong> ${slaHours} ore</li>
-            <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
-          </ul>
-          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
-            <p><strong>💬 Per rispondere:</strong> Rispondi direttamente a questa email. La tua risposta verrà aggiunta automaticamente al ticket.</p>
-            <p style="margin-top: 15px; font-size: 11px;">Questo messaggio è stato inviato dal sistema Kanban ISO di Europoligrafico.</p>
+  // Invia conferma con [Ticket #ID] per tracciamento risposte (non bloccante)
+  try {
+    await sendEmail(
+      from,
+      `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">Ticket #${ticket.id.substring(0, 8)} creato</h2>
+          </div>
+          <div style="padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb;">
+            <p>Il tuo ticket è stato registrato nel sistema.</p>
+            <ul>
+              <li><strong>ID:</strong> #${ticket.id.substring(0, 8)}</li>
+              <li><strong>Titolo:</strong> ${subject}</li>
+              <li><strong>Priorità:</strong> ${priority}</li>
+              <li><strong>SLA:</strong> ${slaHours} ore</li>
+              <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
+            </ul>
+            <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
+              <p><strong>💬 Per rispondere:</strong> Rispondi direttamente a questa email. La tua risposta verrà aggiunta automaticamente al ticket.</p>
+              <p style="margin-top: 15px; font-size: 11px;">Questo messaggio è stato inviato dal sistema Kanban ISO di Europoligrafico.</p>
+            </div>
           </div>
         </div>
-      </div>
-    `,
-    ticket.id
-  );
+      `,
+      ticket.id
+    );
+  } catch (err: any) {
+    console.warn(`⚠️ Email di conferma non inviata a ${from}: ${err.message}`);
+  }
 
   return ticket;
 }
