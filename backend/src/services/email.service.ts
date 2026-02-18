@@ -437,7 +437,7 @@ export async function notifyTicketUpdate(
  * Pulisce il corpo HTML dell'email per estrarre solo il testo leggibile.
  * Rimuove firme, quote, header di risposta e HTML tags.
  */
-function cleanEmailBodyForDescription(body: string): string {
+export function cleanEmailBodyForDescription(body: string): string {
   let cleaned = body;
 
   // Rimuovi style/script tags

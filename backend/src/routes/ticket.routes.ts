@@ -6,7 +6,7 @@ import fs from 'fs';
 import { authenticate, AuthRequest, authorize } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
-import { notifyTicketUpdate } from '../services/email.service';
+import { notifyTicketUpdate, cleanEmailBodyForDescription } from '../services/email.service';
 import { sendTicketEmail } from '../services/emailIntegration.service';
 
 const router = Router();
@@ -914,6 +914,62 @@ router.delete('/:id/external-contacts/:email', authenticate, auditLog('REMOVE_EX
     });
   } catch (error: any) {
     console.error('❌ Error removing external contact:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrazione: pulisci descrizioni ticket creati da email (one-time)
+router.post('/migrate/clean-email-descriptions', authenticate, authorize('ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    // Trova tutti i ticket con emailThreadId (creati da email)
+    const emailTickets = await prisma.ticket.findMany({
+      where: {
+        emailThreadId: { not: null },
+      },
+      include: {
+        attachments: {
+          where: { commentId: null, isDeleted: false },
+        },
+      },
+    });
+
+    let updated = 0;
+    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+
+    for (const ticket of emailTickets) {
+      // Pulisci la descrizione dal corpo email originale
+      const cleanBody = cleanEmailBodyForDescription(ticket.description || '');
+
+      // Aggiungi link allegati
+      let newDescription = cleanBody;
+      if (ticket.attachments.length > 0) {
+        const attachmentLines = ticket.attachments.map((a: any) => {
+          const url = `${baseUrl}/uploads/${a.filePath}`;
+          const isImage = a.mimeType?.startsWith('image/');
+          return isImage
+            ? `![${a.fileName}](${url})`
+            : `[${a.fileName}](${url})`;
+        });
+        newDescription += '\n\n---\n**Allegati:**\n' + attachmentLines.join('\n');
+      }
+
+      // Aggiorna solo se la descrizione è cambiata
+      if (newDescription !== ticket.description) {
+        await prisma.ticket.update({
+          where: { id: ticket.id },
+          data: { description: newDescription },
+        });
+        updated++;
+      }
+    }
+
+    res.json({
+      message: `Migrazione completata: ${updated}/${emailTickets.length} ticket aggiornati`,
+      total: emailTickets.length,
+      updated,
+    });
+  } catch (error: any) {
+    console.error('❌ Errore migrazione descrizioni email:', error);
     res.status(500).json({ error: error.message });
   }
 });
