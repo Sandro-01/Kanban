@@ -1041,7 +1041,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
           {/* Timeline unificata - Commenti e File */}
           <div className="timeline-section">
-            <strong>Attività (IMMUTABILI):</strong>
+            <strong>{isEmailTicket ? 'Conversazione:' : 'Storico attività:'}</strong>
             <div className="timeline-list">
               {timeline.length > 0 ? (
                 timeline.map((item) => (
