@@ -264,46 +264,12 @@
   white-space: nowrap;
 }
 
-.email-description-body {
-  padding: 14px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #1f2937;
-  max-height: 300px;
-  overflow-y: auto;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-.email-description-body p {
-  margin: 0 0 8px 0;
-}
-
-.email-description-body a {
-  color: #4f6ef7;
-  text-decoration: underline;
-}
-
-.email-description-body hr {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 12px 0;
-}
-
-.email-description-body img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-
-.email-description-body table {
-  border-collapse: collapse;
+.email-description-iframe {
   width: 100%;
-}
-
-.email-description-body td,
-.email-description-body th {
-  padding: 4px 8px;
+  min-height: 120px;
+  max-height: 600px;
+  border: none;
+  display: block;
 }
 
 .ticket-details {

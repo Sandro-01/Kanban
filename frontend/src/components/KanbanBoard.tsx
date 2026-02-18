@@ -258,48 +258,59 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const isEmailTicket = !!(ticket.emailThreadId || (ticket.externalContacts && ticket.externalContacts.length > 0));
   const emailSender = ticket.externalContacts?.[0] || null;
 
-  // Clean email HTML for display
-  const cleanEmailDescription = (html: string): string => {
-    let cleaned = html;
-    // Remove full HTML document wrapper
-    cleaned = cleaned.replace(/<!DOCTYPE[^>]*>/gi, '');
-    cleaned = cleaned.replace(/<html[^>]*>/gi, '').replace(/<\/html>/gi, '');
-    cleaned = cleaned.replace(/<head[\s\S]*?<\/head>/gi, '');
-    cleaned = cleaned.replace(/<body[^>]*>/gi, '').replace(/<\/body>/gi, '');
-    // Remove style tags and their content
-    cleaned = cleaned.replace(/<style[\s\S]*?<\/style>/gi, '');
-    // Remove script tags
-    cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
-    // Remove MS Office / Outlook conditional comments
-    cleaned = cleaned.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '');
-    cleaned = cleaned.replace(/<!--[\s\S]*?-->/gi, '');
-    // Remove meta, link, xml tags
-    cleaned = cleaned.replace(/<meta[^>]*\/?>/gi, '');
-    cleaned = cleaned.replace(/<link[^>]*\/?>/gi, '');
-    cleaned = cleaned.replace(/<\/?o:[^>]*>/gi, '');
-    cleaned = cleaned.replace(/<\/?v:[^>]*>/gi, '');
-    // Remove inline style attributes (keep structure)
-    cleaned = cleaned.replace(/\s*style="[^"]*"/gi, '');
-    cleaned = cleaned.replace(/\s*class="[^"]*"/gi, '');
-    // Remove empty spans/divs/paragraphs
-    cleaned = cleaned.replace(/<span[^>]*>\s*<\/span>/gi, '');
-    cleaned = cleaned.replace(/<div[^>]*>\s*<\/div>/gi, '');
-    cleaned = cleaned.replace(/<p[^>]*>\s*(&nbsp;|\s)*<\/p>/gi, '');
-    // Remove base64 images (signatures)
-    cleaned = cleaned.replace(/<img[^>]*src="data:image[^"]*"[^>]*\/?>/gi, '');
-    // Convert common email separators to hr
-    cleaned = cleaned.replace(/_{10,}/g, '<hr/>');
-    cleaned = cleaned.replace(/-{10,}/g, '<hr/>');
-    // Remove excessive whitespace and &nbsp;
-    cleaned = cleaned.replace(/(&nbsp;\s*){3,}/gi, '<br/>');
-    cleaned = cleaned.replace(/(<br\s*\/?>[\s]*){3,}/gi, '<br/><br/>');
-    // Trim
-    cleaned = cleaned.trim();
-    // If content is very short after cleaning, it might be plain text
-    if (!cleaned.includes('<') && html.length > cleaned.length) {
-      cleaned = cleaned.replace(/\n/g, '<br/>');
+  // Check if description contains HTML (email body)
+  const isHtmlDescription = (desc: string) => /<[a-z][\s\S]*>/i.test(desc);
+
+  // Auto-resize iframe to fit content
+  const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
+    const iframe = e.currentTarget;
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        // Wait for images to load then resize
+        const resize = () => {
+          const height = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+          iframe.style.height = Math.min(height + 20, 600) + 'px';
+        };
+        resize();
+        // Resize again after images load
+        const images = doc.querySelectorAll('img');
+        if (images.length > 0) {
+          let loaded = 0;
+          images.forEach(img => {
+            if (img.complete) { loaded++; }
+            else { img.onload = img.onerror = () => { loaded++; if (loaded >= images.length) resize(); }; }
+          });
+          if (loaded >= images.length) resize();
+        }
+      }
+    } catch {}
+  };
+
+  // Build srcdoc for iframe - preserves original email HTML fully
+  const buildEmailSrcdoc = (html: string): string => {
+    // If it's already a full HTML document, use it as-is with minor safety cleanup
+    let content = html
+      .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
+      .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '');
+    // Remove scripts for safety
+    content = content.replace(/<script[\s\S]*?<\/script>/gi, '');
+
+    // If it's a full HTML doc, inject base styles
+    if (/<html/i.test(content)) {
+      // Inject a base style for readability
+      const baseStyle = `<style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; }</style>`;
+      content = content.replace(/<head([^>]*)>/i, `<head$1>${baseStyle}`);
+      return content;
     }
-    return cleaned;
+
+    // If it's a fragment, wrap it
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; font-size: 14px; line-height: 1.6; color: #1f2937; }
+      img { max-width: 100%; height: auto; }
+      table { border-collapse: collapse; }
+      a { color: #4f6ef7; }
+    </style></head><body>${content}</body></html>`;
   };
 
   // Check if this is an onboarding equipment ticket
@@ -677,7 +688,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
         <div className="ticket-modal-content">
           <div className="ticket-info">
-            {isEmailTicket ? (
+            {isEmailTicket && isHtmlDescription(ticket.description || '') ? (
               <div className="email-description-container">
                 <div className="email-description-header">
                   <div className="email-description-icon">
@@ -692,15 +703,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     )}
                   </div>
                 </div>
-                <div
-                  className="email-description-body"
-                  dangerouslySetInnerHTML={{
-                    __html: cleanEmailDescription(
-                      (ticket.description || '')
-                        .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
-                        .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
-                    )
-                  }}
+                <iframe
+                  className="email-description-iframe"
+                  srcDoc={buildEmailSrcdoc(ticket.description || '')}
+                  sandbox="allow-same-origin"
+                  onLoad={handleIframeLoad}
+                  title="Contenuto email"
                 />
               </div>
             ) : (
