@@ -168,6 +168,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             <p className="ticket-description">
                               {(() => {
                                 const clean = (ticket.description || '')
+                                  .replace(/<[^>]*>/g, '')
                                   .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
                                   .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
                                   .replace(/\*\*/g, '')
