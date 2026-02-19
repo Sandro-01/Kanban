@@ -118,9 +118,20 @@ export const sendTicketEmail = async (
       path: att.filePath
     }));
 
+    // Recupera utente mittente per personalizzare il From
+    const fromUser = await prisma.user.findUnique({
+      where: { id: fromUserId },
+      select: { firstName: true, lastName: true, email: true },
+    });
+    const senderName = fromUser
+      ? `${fromUser.firstName} ${fromUser.lastName}`
+      : 'Europoligrafico';
+    const systemEmail = process.env.EMAIL_FROM || EMAIL_CONFIG.auth.user;
+
     // Invia email a tutti i destinatari con allegati
     const info = await transporter.sendMail({
-      from: `"Europoligrafico - Assistenza" <${process.env.EMAIL_FROM || EMAIL_CONFIG.auth.user}>`,
+      from: `"${senderName} - Europoligrafico" <${systemEmail}>`,
+      replyTo: fromUser?.email || systemEmail,
       to: toEmails.join(', '),
       subject: emailSubject,
       html: emailBody,
