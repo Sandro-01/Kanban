@@ -1,11 +1,6 @@
 import { prisma } from '../index';
 import { v4 as uuidv4 } from 'uuid';
 
-// Genera UUID senza dipendenza esterna
-function genId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}-${Math.random().toString(36).substring(2, 10)}`;
-}
-
 type NotificationType = 'COMMENT' | 'ASSIGNMENT' | 'STATUS_CHANGE' | 'SLA_ALERT' | 'EMAIL' | 'AI_SUGGESTION';
 
 /**
@@ -19,14 +14,14 @@ export async function createNotification(
   ticketId?: string
 ): Promise<void> {
   try {
-    const id = genId();
+    const id = uuidv4();
     await prisma.$executeRawUnsafe(
       `INSERT INTO "Notification" ("id", "userId", "type", "title", "message", "ticketId", "read", "createdAt")
        VALUES ($1, $2, $3, $4, $5, $6, false, NOW())`,
       id, userId, type, title, message, ticketId || null
     );
   } catch (err: any) {
-    console.warn('⚠️ Notification creation failed:', err.message);
+    console.error('❌ Notification creation failed for userId', userId, ':', err.message);
   }
 }
 

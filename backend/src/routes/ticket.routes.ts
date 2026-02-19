@@ -404,7 +404,7 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
     // In-app notification per cambio stato
     if (updates.status && updates.status !== oldTicket.status) {
       const changerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
-      notifyStatusChange(id, req.user!.id, changerName, oldTicket.status, updates.status).catch(() => {});
+      notifyStatusChange(id, req.user!.id, changerName, oldTicket.status, updates.status).catch((e: any) => console.error('❌ notifyStatusChange failed:', e.message));
     }
 
     res.json(ticket);
@@ -441,7 +441,7 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 
     // In-app notification
     const authorName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
-    notifyComment(id, req.user!.id, authorName, content).catch(() => {});
+    notifyComment(id, req.user!.id, authorName, content).catch((e: any) => console.error('❌ notifyComment failed:', e.message));
 
     // Se ci sono file in arrivo, la notifica email verrà inviata dall'endpoint attachments
     if (!hasFile) {
@@ -689,7 +689,7 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
 
     // In-app + email notifications
     const assignerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
-    notifyAssignment(id, userIds, assignerName).catch(() => {});
+    notifyAssignment(id, userIds, assignerName).catch((e: any) => console.error('❌ notifyAssignment failed:', e.message));
 
     for (const assignment of assignments) {
       try {

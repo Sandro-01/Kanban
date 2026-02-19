@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     try {
       const res = await notifApi.getCount();
       setUnreadCount(res.data.unreadCount);
-    } catch { /* silenzioso */ }
+    } catch (err) { console.error('Notifications count error:', err); }
   }, []);
 
   const loadNotifications = useCallback(async () => {
@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
       const res = await notifApi.getAll({ limit: 20 });
       setNotifList(res.data.notifications || []);
       setUnreadCount(res.data.unreadCount);
-    } catch { /* silenzioso */ }
+    } catch (err) { console.error('Notifications load error:', err); }
   }, []);
 
   // Polling conteggio ogni 15 secondi
