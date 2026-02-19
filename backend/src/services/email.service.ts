@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
-import { getSmtpConfig, getCompanyName } from './config.service';
+import { getSmtpConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
 import {
   buildEmailHtml, infoTable, messageBlock, attachmentsList,
   callToAction, priorityBadge,
@@ -279,6 +279,7 @@ export async function createTicketFromEmail(
   // Invia conferma con [Ticket #ID] per tracciamento risposte (non bloccante)
   try {
     const companyName = await getCompanyName();
+    const logoUrl = await getCompanyLogoUrl();
 
     const confirmBody = [
       `<p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.5;">La tua richiesta è stata presa in carico. Di seguito i dettagli:</p>`,
@@ -297,6 +298,7 @@ export async function createTicketFromEmail(
       `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
       buildEmailHtml({
         companyName,
+        logoUrl,
         heading: 'Richiesta ricevuta',
         subheading: `Ticket #${ticket.id.substring(0, 8)}`,
         body: confirmBody,
@@ -365,6 +367,7 @@ export async function notifyTicketUpdate(
   const accentColor = typeColors[updateType] || '#2563eb';
 
   const companyName = await getCompanyName();
+  const logoUrl = await getCompanyLogoUrl();
   const attachFileNames = fileAttachments?.map(a => a.fileName) || [];
 
   const notifBody = [
@@ -378,6 +381,7 @@ export async function notifyTicketUpdate(
   const subject = `[Ticket #${ticket.id.substring(0, 8)}] ${ticket.title} - ${updateType}`;
   const html = buildEmailHtml({
     companyName,
+    logoUrl,
     heading: updateType,
     subheading: `Ticket #${ticket.id.substring(0, 8)}`,
     accentColor,

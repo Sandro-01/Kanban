@@ -6,6 +6,8 @@
 export interface EmailTemplateOptions {
   /** Nome azienda (header + footer) */
   companyName: string;
+  /** URL logo aziendale (opzionale) */
+  logoUrl?: string | null;
   /** Titolo principale nell'header (es. "Richiesta ricevuta") */
   heading: string;
   /** Sottotitolo (es. "Ticket #abc12345") */
@@ -46,8 +48,12 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
     <td style="padding:28px 32px 20px 32px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td>
-            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>
+          ${opts.logoUrl ? `
+          <td style="width:120px;vertical-align:middle;padding-right:20px;">
+            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:120px;max-height:52px;width:auto;height:auto;display:block;border:0;" />
+          </td>` : ''}
+          <td style="vertical-align:middle;">
+            ${!opts.logoUrl ? `<p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>` : ''}
             <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(opts.heading)}</h1>
             ${opts.subheading ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${escapeHtml(opts.subheading)}</p>` : ''}
           </td>

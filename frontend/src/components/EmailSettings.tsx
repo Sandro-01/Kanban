@@ -17,6 +17,7 @@ interface EmailStatus {
 const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
   const [config, setConfig] = useState<Record<string, string>>({
     company_name: '',
+    company_logo_url: '',
     smtp_host: '',
     smtp_port: '587',
     smtp_secure: 'false',
@@ -143,10 +144,10 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Company Name */}
+      {/* Company Name + Logo */}
       <div className="config-section">
         <h3>Generale</h3>
-        <p className="section-desc">Nome azienda visualizzato nelle email e nelle notifiche.</p>
+        <p className="section-desc">Nome azienda e logo visualizzati nelle email e nelle notifiche.</p>
         <div className="config-grid">
           <div className="config-field">
             <label>Nome Azienda</label>
@@ -156,6 +157,25 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
               onChange={e => handleChange('company_name', e.target.value)}
               placeholder="es. Nome Azienda S.r.l."
             />
+          </div>
+          <div className="config-field">
+            <label>Logo URL <span style={{ fontWeight: 'normal', color: '#64748b' }}>(opzionale — sostituisce il nome nell'header email)</span></label>
+            <input
+              type="url"
+              value={config.company_logo_url}
+              onChange={e => handleChange('company_logo_url', e.target.value)}
+              placeholder="https://esempio.com/logo.png"
+            />
+            {config.company_logo_url && (
+              <div style={{ marginTop: '10px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}>
+                <img
+                  src={config.company_logo_url}
+                  alt="Anteprima logo"
+                  style={{ maxWidth: '180px', maxHeight: '60px', objectFit: 'contain', display: 'block' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

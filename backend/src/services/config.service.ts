@@ -112,6 +112,15 @@ export async function getCompanyName(): Promise<string> {
 }
 
 /**
+ * URL logo aziendale da usare nelle email.
+ * Legge da DB, poi env, poi null (nessun logo).
+ */
+export async function getCompanyLogoUrl(): Promise<string | null> {
+  const map = await getConfigRows(['company_logo_url']);
+  return map.get('company_logo_url') || process.env.COMPANY_LOGO_URL || null;
+}
+
+/**
  * Legge tutte le configurazioni email (SMTP + IMAP) — per UI admin.
  * Maschera la password.
  */
@@ -119,8 +128,10 @@ export async function getEmailConfigForAdmin(): Promise<Record<string, string>> 
   const smtp = await getSmtpConfig();
   const imap = await getImapConfig();
   const companyName = await getCompanyName();
+  const logoUrl = await getCompanyLogoUrl();
   return {
     company_name: companyName,
+    company_logo_url: logoUrl || '',
     smtp_host: smtp.host,
     smtp_port: String(smtp.port),
     smtp_secure: String(smtp.secure),
