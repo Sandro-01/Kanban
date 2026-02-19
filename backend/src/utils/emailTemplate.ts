@@ -46,19 +46,9 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
   <!-- HEADER -->
   <tr>
     <td style="padding:28px 32px 20px 32px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          ${opts.logoUrl ? `
-          <td style="width:120px;vertical-align:middle;padding-right:20px;">
-            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:120px;max-height:44px;width:auto;height:auto;display:block;border:0;" />
-          </td>` : ''}
-          <td style="vertical-align:middle;">
-            ${!opts.logoUrl ? `<p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>` : ''}
-            <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(opts.heading)}</h1>
-            ${opts.subheading ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${escapeHtml(opts.subheading)}</p>` : ''}
-          </td>
-        </tr>
-      </table>
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>
+      <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(opts.heading)}</h1>
+      ${opts.subheading ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${escapeHtml(opts.subheading)}</p>` : ''}
     </td>
   </tr>
 
@@ -78,9 +68,10 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
 
   <!-- FOOTER -->
   <tr>
-    <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
-      <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">${escapeHtml(opts.companyName)} &mdash; Assistenza IT</p>
-      ${opts.footerRef ? `<p style="margin:4px 0 0;font-size:11px;color:#cbd5e1;text-align:center;">${escapeHtml(opts.footerRef)}</p>` : ''}
+    <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+      ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:80px;max-height:28px;width:auto;height:auto;display:inline-block;border:0;margin-bottom:8px;" /><br>` : ''}
+      <p style="margin:0;font-size:12px;color:#94a3b8;">${escapeHtml(opts.companyName)} &mdash; Assistenza IT</p>
+      ${opts.footerRef ? `<p style="margin:4px 0 0;font-size:11px;color:#cbd5e1;">${escapeHtml(opts.footerRef)}</p>` : ''}
     </td>
   </tr>
 
