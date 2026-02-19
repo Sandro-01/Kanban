@@ -669,3 +669,21 @@ export function startGraphEmailPolling(intervalSeconds: number = 30): void {
 export function isGraphConfigured(): boolean {
   return !!(GRAPH_CONFIG.tenantId && GRAPH_CONFIG.clientId && GRAPH_CONFIG.clientSecret);
 }
+
+/**
+ * Testa la connessione a Microsoft Graph API
+ * Verifica le credenziali Azure AD e l'accesso alla casella condivisa
+ */
+export async function testGraphConnection(): Promise<{ mailbox: string }> {
+  const token = await getAccessToken();
+  const mailbox = GRAPH_CONFIG.sharedMailbox;
+  const url = `https://graph.microsoft.com/v1.0/users/${mailbox}/mailFolders/inbox`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Graph API error (${response.status}): ${error}`);
+  }
+  return { mailbox };
+}

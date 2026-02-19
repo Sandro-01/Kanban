@@ -4,6 +4,7 @@ import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
 import { getSmtpConfig, getImapConfig, getCompanyName } from './config.service';
+import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
 
 // Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
@@ -126,42 +127,65 @@ export const sendTicketEmail = async (
       </div>
     `;
 
-    // Prepara allegati per nodemailer
-    const emailAttachments = ticket.attachments.map(att => ({
-      filename: att.fileName,
-      path: att.filePath
-    }));
+    // Invia email: usa Graph API se configurato, altrimenti SMTP
+    let info: any;
+    if (isGraphConfigured()) {
+      // Via Microsoft Graph API
+      const fs = await import('fs');
+      const pathModule = await import('path');
+      const uploadDir = pathModule.join(__dirname, '../../../uploads');
 
-    // Recupera utente mittente per personalizzare il From
-    const fromUser = await prisma.user.findUnique({
-      where: { id: fromUserId },
-      select: { firstName: true, lastName: true, email: true },
-    });
-    const senderName = fromUser
-      ? `${fromUser.firstName} ${fromUser.lastName}`
-      : companyName;
-    const smtp = await getSmtpConfig();
-    const systemEmail = smtp.from;
-    const transport = await getTransporter();
+      let graphAttachments: { name: string; contentBytes: string; contentType: string }[] | undefined;
+      if (ticket.attachments && ticket.attachments.length > 0) {
+        graphAttachments = ticket.attachments.map(att => {
+          const fullPath = pathModule.join(uploadDir, att.filePath);
+          const content = fs.readFileSync(fullPath);
+          return {
+            name: att.fileName,
+            contentBytes: content.toString('base64'),
+            contentType: att.mimeType || 'application/octet-stream',
+          };
+        });
+      }
 
-    // Invia email a tutti i destinatari con allegati
-    const info = await transport.sendMail({
-      from: `"${senderName} - ${companyName}" <${systemEmail}>`,
-      replyTo: fromUser?.email || systemEmail,
-      to: toEmails.join(', '),
-      subject: emailSubject,
-      html: emailBody,
-      attachments: emailAttachments,
-      headers: {
-        'Message-ID': emailThreadId,
-        'In-Reply-To': emailThreadId,
-        References: emailThreadId,
-      },
-    });
+      await sendEmailViaGraph(toEmails, emailSubject, emailBody, graphAttachments);
+      info = { messageId: emailThreadId };
+    } else {
+      // Via SMTP
+      const emailAttachments = ticket.attachments.map(att => ({
+        filename: att.fileName,
+        path: att.filePath
+      }));
+
+      const fromUser = await prisma.user.findUnique({
+        where: { id: fromUserId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      const senderName = fromUser
+        ? `${fromUser.firstName} ${fromUser.lastName}`
+        : companyName;
+      const smtp = await getSmtpConfig();
+      const systemEmail = smtp.from;
+      const transport = await getTransporter();
+
+      info = await transport.sendMail({
+        from: `"${senderName} - ${companyName}" <${systemEmail}>`,
+        replyTo: fromUser?.email || systemEmail,
+        to: toEmails.join(', '),
+        subject: emailSubject,
+        html: emailBody,
+        attachments: emailAttachments,
+        headers: {
+          'Message-ID': emailThreadId,
+          'In-Reply-To': emailThreadId,
+          References: emailThreadId,
+        },
+      });
+    }
 
     console.log(`✅ Email inviata per ticket ${ticketId} a: ${toEmails.join(', ')}`);
-    if (emailAttachments.length > 0) {
-      console.log(`   📎 Allegati inclusi: ${emailAttachments.length}`);
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      console.log(`   📎 Allegati inclusi: ${ticket.attachments.length}`);
     }
     return info;
   } catch (error: any) {

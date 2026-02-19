@@ -87,28 +87,55 @@ router.put('/config', authenticate, authorize('ADMIN'), async (req: AuthRequest,
   }
 });
 
-// Test connessione SMTP
+// Test connessione email (Graph API o SMTP)
 router.post('/config/test', authenticate, authorize('ADMIN'), async (req: AuthRequest, res: Response) => {
   try {
-    const { getSmtpConfig } = await import('../services/config.service');
-    const nodemailer = await import('nodemailer');
-    const smtp = await getSmtpConfig();
+    const { isGraphConfigured, testGraphConnection } = await import('../services/graphEmail.service');
 
-    if (!smtp.host || !smtp.user) {
-      return res.status(400).json({ error: 'Configurazione SMTP incompleta' });
+    if (isGraphConfigured()) {
+      // Test Microsoft Graph API
+      const result = await testGraphConnection();
+      res.json({ success: true, message: `Connessione Microsoft Graph riuscita! Casella: ${result.mailbox}`, method: 'graph' });
+    } else {
+      // Test SMTP
+      const { getSmtpConfig } = await import('../services/config.service');
+      const nodemailer = await import('nodemailer');
+      const smtp = await getSmtpConfig();
+
+      if (!smtp.host || !smtp.user) {
+        return res.status(400).json({ error: 'Configurazione SMTP incompleta' });
+      }
+
+      const transporter = nodemailer.default.createTransport({
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.secure,
+        auth: { user: smtp.user, pass: smtp.password },
+      });
+
+      await transporter.verify();
+      res.json({ success: true, message: 'Connessione SMTP riuscita!', method: 'smtp' });
     }
-
-    const transporter = nodemailer.default.createTransport({
-      host: smtp.host,
-      port: smtp.port,
-      secure: smtp.secure,
-      auth: { user: smtp.user, pass: smtp.password },
-    });
-
-    await transporter.verify();
-    res.json({ success: true, message: 'Connessione SMTP riuscita!' });
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Stato del metodo email attivo
+router.get('/config/status', authenticate, authorize('ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { isGraphConfigured } = await import('../services/graphEmail.service');
+    if (isGraphConfigured()) {
+      const mailbox = process.env.GRAPH_SHARED_MAILBOX || process.env.EMAIL_FROM || '';
+      res.json({ method: 'graph', mailbox, configured: true });
+    } else {
+      const { getSmtpConfig } = await import('../services/config.service');
+      const smtp = await getSmtpConfig();
+      const configured = !!(smtp.host && smtp.user && smtp.password);
+      res.json({ method: 'smtp', host: smtp.host, user: smtp.user, configured });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

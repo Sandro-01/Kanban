@@ -121,6 +121,7 @@ export const emailConfig = {
   get: () => api.get('/email/config'),
   save: (data: Record<string, string>) => api.put('/email/config', data),
   test: () => api.post('/email/config/test'),
+  status: () => api.get('/email/config/status'),
 };
 
 // Audit
