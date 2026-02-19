@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, UPLOADS_URL } from '../services/api';
+import RichTextEditor from './RichTextEditor';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -458,8 +459,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
   // Unified handler for comment, file, and assignments
   const handleSubmit = async () => {
-    // Check if there's anything to submit
-    const hasComment = comment.trim();
+    // Check if there's anything to submit (strip HTML tags to detect empty editor)
+    const hasComment = comment.replace(/<[^>]*>/g, '').trim();
     const hasFiles = files.length > 0;
     const usersChanged = JSON.stringify([...selectedUsers].sort()) !== JSON.stringify([...initialUsers].sort());
     const deptsChanged = JSON.stringify([...selectedDepartments].sort()) !== JSON.stringify([...initialDepartments].sort());
@@ -1156,11 +1157,14 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               </button>
                             )}
                           </div>
-                          <p className="timeline-text">
-                            {item.isEmailReply
-                              ? cleanEmailReplyContent(item.content, item.fromEmail)
-                              : item.content}
-                          </p>
+                          <div
+                            className="timeline-text"
+                            dangerouslySetInnerHTML={{
+                              __html: item.isEmailReply
+                                ? cleanEmailReplyContent(item.content, item.fromEmail)
+                                : item.content
+                            }}
+                          />
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">
@@ -1315,12 +1319,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             {/* Form unificato per commento e file */}
             <div className="unified-form">
               <strong>Aggiungi Commento e/o File (non eliminabile dopo invio):</strong>
-              <textarea
-                className="input"
+              <RichTextEditor
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Scrivi un commento (opzionale)..."
-                rows={3}
+                onChange={setComment}
+                placeholder="Scrivi un commento (opzionale)... Puoi incollare screenshot con Ctrl+V"
+                minHeight={80}
+                onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
               />
               <div className="file-input-wrapper">
                 <input
@@ -1330,6 +1334,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   onChange={(e) => {
                     const selected = e.target.files ? Array.from(e.target.files) : [];
                     setFiles(prev => [...prev, ...selected]);
+                    e.target.value = '';
                   }}
                 />
                 <label htmlFor="file-upload" className="file-label">
@@ -1359,9 +1364,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               <button
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={!comment.trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
+                disabled={!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
                 style={{
-                  opacity: (!comment.trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
+                  opacity: (!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
                 }}
               >
                 Invia {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(con assegnazione)'}
@@ -1385,6 +1390,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [assignToUser, setAssignToUser] = useState('');
   const [assignToDepartment, setAssignToDepartment] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
 
   // Load all users for assignment (only users with a department = operators)
   useEffect(() => {
@@ -1420,6 +1426,10 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
     'Altro'
   ];
 
+  const handlePasteFiles = useCallback((pastedFiles: File[]) => {
+    setFiles(prev => [...prev, ...pastedFiles]);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1432,6 +1442,12 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
       });
 
       const ticketId = ticketResponse.data.id;
+
+      // Upload files if any
+      for (let i = 0; i < files.length; i++) {
+        const isLast = i === files.length - 1;
+        await ticketsApi.uploadFile(ticketId, files[i], undefined, isLast);
+      }
 
       // Then assign to user or department if selected
       if (assignToUser) {
@@ -1472,15 +1488,67 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
 
           <div className="form-group">
             <label className="label">Descrizione</label>
-            <textarea
-              className="input"
+            <RichTextEditor
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={4}
-              required
+              onChange={(html) => setFormData({ ...formData, description: html })}
+              placeholder="Descrivi il problema o la richiesta... (puoi incollare screenshot)"
+              minHeight={100}
+              onPasteFiles={handlePasteFiles}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Allegati (opzionale)</label>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                id="new-ticket-file-upload"
+                multiple
+                onChange={(e) => {
+                  const selected = e.target.files ? Array.from(e.target.files) : [];
+                  setFiles(prev => [...prev, ...selected]);
+                  e.target.value = '';
+                }}
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="new-ticket-file-upload" className="file-label" style={{
+                display: 'inline-block',
+                padding: '8px 16px',
+                background: '#f3f4f6',
+                border: '1px dashed #9ca3af',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#4b5563',
+                textAlign: 'center',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}>
+                {files.length > 0
+                  ? `📎 ${files.length} file selezionati — clicca per aggiungere`
+                  : '📎 Clicca per allegare file o incolla screenshot nell\'editor'}
+              </label>
+              {files.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                  {files.map((f, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '4px 10px', background: '#dbeafe', borderRadius: '12px',
+                      fontSize: '12px', color: '#1e40af',
+                    }}>
+                      {f.name}
+                      <button
+                        onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        type="button"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e40af', fontWeight: 'bold', padding: '0 2px' }}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group">
@@ -1589,6 +1657,11 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
   const [body, setBody] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handlePasteFiles = useCallback((pastedFiles: File[]) => {
+    setFiles(prev => [...prev, ...pastedFiles]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1611,14 +1684,22 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
       });
       const ticketId = ticketResponse.data.id;
 
-      // 2. Aggiungi contatto esterno al ticket
+      // 2. Upload allegati al ticket
+      const uploadedAttachmentIds: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const res = await ticketsApi.uploadFile(ticketId, files[i]);
+        if (res.data?.id) uploadedAttachmentIds.push(res.data.id);
+      }
+
+      // 3. Aggiungi contatto esterno al ticket
       await ticketsApi.addExternalContacts(ticketId, [toEmail.trim()]);
 
-      // 3. Invia email
+      // 4. Invia email con allegati
       await ticketsApi.sendEmail(ticketId, {
         subject,
         body,
         toEmails: [toEmail.trim()],
+        attachmentIds: uploadedAttachmentIds.length > 0 ? uploadedAttachmentIds : undefined,
       });
 
       alert('Email inviata e ticket creato con successo!');
@@ -1670,15 +1751,67 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
 
           <div className="form-group">
             <label className="label">Messaggio *</label>
-            <textarea
-              className="input"
-              placeholder="Scrivi il messaggio..."
+            <RichTextEditor
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={8}
-              style={{ resize: 'vertical' }}
-              required
+              onChange={setBody}
+              placeholder="Scrivi il messaggio... (puoi incollare screenshot)"
+              minHeight={150}
+              onPasteFiles={handlePasteFiles}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Allegati (opzionale)</label>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                id="send-email-file-upload"
+                multiple
+                onChange={(e) => {
+                  const selected = e.target.files ? Array.from(e.target.files) : [];
+                  setFiles(prev => [...prev, ...selected]);
+                  e.target.value = '';
+                }}
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="send-email-file-upload" style={{
+                display: 'inline-block',
+                padding: '8px 16px',
+                background: '#f3f4f6',
+                border: '1px dashed #9ca3af',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#4b5563',
+                textAlign: 'center',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}>
+                {files.length > 0
+                  ? `📎 ${files.length} file selezionati — clicca per aggiungere`
+                  : '📎 Clicca per allegare file'}
+              </label>
+              {files.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                  {files.map((f, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '4px 10px', background: '#dbeafe', borderRadius: '12px',
+                      fontSize: '12px', color: '#1e40af',
+                    }}>
+                      {f.name}
+                      <button
+                        onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        type="button"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e40af', fontWeight: 'bold', padding: '0 2px' }}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group">

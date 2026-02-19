@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { tickets as ticketsApi } from '../services/api';
+import RichTextEditor from './RichTextEditor';
 import './ProcessList.css';
 
 interface ExternalEmailModalProps {
@@ -19,7 +20,12 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
   const [emailBody, setEmailBody] = useState('');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const handlePasteFiles = useCallback((pastedFiles: File[]) => {
+    setNewFiles(prev => [...prev, ...pastedFiles]);
+  }, []);
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,15 +70,24 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
 
     try {
       setLoading(true);
+
+      // Upload nuovi file prima di inviare
+      const allAttachmentIds = [...selectedAttachments];
+      for (const file of newFiles) {
+        const res = await ticketsApi.uploadFile(ticket.id, file);
+        if (res.data?.id) allAttachmentIds.push(res.data.id);
+      }
+
       await ticketsApi.sendEmail(ticket.id, {
         subject: emailSubject,
         body: emailBody,
         toEmails: selectedEmails,
-        attachmentIds: selectedAttachments.length > 0 ? selectedAttachments : undefined,
+        attachmentIds: allAttachmentIds.length > 0 ? allAttachmentIds : undefined,
       });
 
-      const attachmentMsg = selectedAttachments.length > 0
-        ? ` con ${selectedAttachments.length} allegati`
+      const totalAttachments = allAttachmentIds.length;
+      const attachmentMsg = totalAttachments > 0
+        ? ` con ${totalAttachments} allegati`
         : '';
       alert(`Email inviata con successo${attachmentMsg}!`);
 
@@ -80,6 +95,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
       setEmailBody('');
       setSelectedEmails([]);
       setSelectedAttachments([]);
+      setNewFiles([]);
       setMode('manage');
       onSuccess();
     } catch (error: any) {
@@ -294,15 +310,68 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
               {/* Messaggio */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <label className="label">Messaggio *</label>
-                <textarea
-                  className="input"
-                  placeholder="Scrivi il tuo messaggio..."
+                <RichTextEditor
                   value={emailBody}
-                  onChange={(e) => setEmailBody(e.target.value)}
-                  rows={8}
-                  style={{ resize: 'vertical' }}
-                  required
+                  onChange={setEmailBody}
+                  placeholder="Scrivi il tuo messaggio... (puoi incollare screenshot)"
+                  minHeight={150}
+                  onPasteFiles={handlePasteFiles}
                 />
+              </div>
+
+              {/* Upload nuovi allegati */}
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="label">📎 Aggiungi Nuovi Allegati</label>
+                <div>
+                  <input
+                    type="file"
+                    id="ext-email-new-file-upload"
+                    multiple
+                    onChange={(e) => {
+                      const selected = e.target.files ? Array.from(e.target.files) : [];
+                      setNewFiles(prev => [...prev, ...selected]);
+                      e.target.value = '';
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="ext-email-new-file-upload" style={{
+                    display: 'inline-block',
+                    padding: '8px 16px',
+                    background: '#f3f4f6',
+                    border: '1px dashed #9ca3af',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    color: '#4b5563',
+                    textAlign: 'center',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}>
+                    {newFiles.length > 0
+                      ? `📎 ${newFiles.length} nuovi file — clicca per aggiungere`
+                      : '📎 Clicca per allegare nuovi file'}
+                  </label>
+                  {newFiles.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                      {newFiles.map((f, i) => (
+                        <span key={i} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '4px 10px', background: '#dbeafe', borderRadius: '12px',
+                          fontSize: '12px', color: '#1e40af',
+                        }}>
+                          {f.name}
+                          <button
+                            onClick={() => setNewFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            type="button"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e40af', fontWeight: 'bold', padding: '0 2px' }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Selezione Allegati */}
