@@ -1,28 +1,78 @@
 import { prisma } from '../index';
 
 /**
- * AI Service — Integrazione con Claude API per assistenza intelligente.
- * Usa ANTHROPIC_API_KEY da env o SystemConfig.
+ * AI Service — Supporta Groq (gratuito) e Anthropic Claude.
+ * Priorità: GROQ_API_KEY → ANTHROPIC_API_KEY (env o SystemConfig DB)
+ *
+ * Groq gratuito: https://console.groq.com  (14.400 req/giorno)
+ * Anthropic:     https://console.anthropic.com
  */
 
-const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+// ── Groq (OpenAI-compatible) ─────────────────────────────────────────────────
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL   = 'llama-3.3-70b-versatile';  // modello gratuito più capace
 
-async function getApiKey(): Promise<string | null> {
-  // Prima prova env
-  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-  // Poi prova DB
+// ── Anthropic ────────────────────────────────────────────────────────────────
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL   = 'claude-sonnet-4-5-20250929';
+
+// ── Helpers per leggere le chiavi (env → DB) ──────────────────────────────────
+async function getKeyFromDB(key: string): Promise<string | null> {
   try {
     const row: any[] = await prisma.$queryRawUnsafe(
-      `SELECT "value" FROM "SystemConfig" WHERE "key" = 'ANTHROPIC_API_KEY' LIMIT 1`
+      `SELECT "value" FROM "SystemConfig" WHERE "key" = $1 LIMIT 1`, key
     );
-    if (row.length > 0 && row[0].value) return row[0].value;
-  } catch { /* tabella non ancora pronta */ }
-  return null;
+    return row.length > 0 && row[0].value ? row[0].value : null;
+  } catch { return null; }
 }
 
-async function callClaude(systemPrompt: string, userMessage: string, maxTokens = 1024): Promise<string | null> {
-  const apiKey = await getApiKey();
+async function getGroqKey(): Promise<string | null> {
+  return process.env.GROQ_API_KEY || await getKeyFromDB('GROQ_API_KEY');
+}
+
+async function getAnthropicKey(): Promise<string | null> {
+  return process.env.ANTHROPIC_API_KEY || await getKeyFromDB('ANTHROPIC_API_KEY');
+}
+
+// ── Chiamata Groq ─────────────────────────────────────────────────────────────
+async function callGroq(systemPrompt: string, userMessage: string, maxTokens = 1024): Promise<string | null> {
+  const apiKey = await getGroqKey();
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMessage  },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`❌ Groq API error (${res.status}):`, err);
+      return null;
+    }
+
+    const data = await res.json() as any;
+    return data.choices?.[0]?.message?.content || null;
+  } catch (err: any) {
+    console.error('❌ Groq API call failed:', err.message);
+    return null;
+  }
+}
+
+// ── Chiamata Anthropic ────────────────────────────────────────────────────────
+async function callAnthropic(systemPrompt: string, userMessage: string, maxTokens = 1024): Promise<string | null> {
+  const apiKey = await getAnthropicKey();
   if (!apiKey) return null;
 
   try {
@@ -43,16 +93,26 @@ async function callClaude(systemPrompt: string, userMessage: string, maxTokens =
 
     if (!res.ok) {
       const err = await res.text();
-      console.error(`❌ Claude API error (${res.status}):`, err);
+      console.error(`❌ Anthropic API error (${res.status}):`, err);
       return null;
     }
 
     const data = await res.json() as any;
     return data.content?.[0]?.text || null;
   } catch (err: any) {
-    console.error('❌ Claude API call failed:', err.message);
+    console.error('❌ Anthropic API call failed:', err.message);
     return null;
   }
+}
+
+// ── Router principale: Groq → Anthropic ──────────────────────────────────────
+async function callAI(systemPrompt: string, userMessage: string, maxTokens = 1024): Promise<string | null> {
+  // Prova Groq (gratuito) per primo
+  const groqResult = await callGroq(systemPrompt, userMessage, maxTokens);
+  if (groqResult !== null) return groqResult;
+
+  // Fallback Anthropic
+  return callAnthropic(systemPrompt, userMessage, maxTokens);
 }
 
 /**
@@ -77,7 +137,7 @@ Priorità disponibili: LOW, MEDIUM, HIGH, CRITICAL
 Rispondi SOLO in formato JSON (nessun altro testo):
 {"category": "...", "priority": "...", "confidence": 0.0-1.0, "reasoning": "breve spiegazione in italiano"}`;
 
-  const result = await callClaude(systemPrompt, `Titolo: ${title}\nDescrizione: ${description}`, 256);
+  const result = await callAI(systemPrompt, `Titolo: ${title}\nDescrizione: ${description}`, 256);
   if (!result) return null;
 
   try {
@@ -122,7 +182,7 @@ ${commentsText ? `\nConversazione:\n${commentsText}` : ''}${kbContext}
 
 Scrivi una risposta appropriata:`;
 
-  return callClaude(systemPrompt, userMsg, 512);
+  return callAI(systemPrompt, userMsg, 512);
 }
 
 /**
@@ -132,7 +192,6 @@ export async function findDuplicates(
   title: string,
   description: string
 ): Promise<{ id: string; title: string; similarity: string }[]> {
-  // Cerca ticket recenti aperti
   const recentTickets: any[] = await prisma.$queryRawUnsafe(`
     SELECT "id", "title", "description", "status", "priority"
     FROM "Ticket"
@@ -156,7 +215,7 @@ Rispondi SOLO in formato JSON array (nessun altro testo):
 [{"id": "id-parziale", "similarity": "breve spiegazione"}]
 Se non ci sono duplicati, rispondi: []`;
 
-  const result = await callClaude(
+  const result = await callAI(
     systemPrompt,
     `NUOVO TICKET:\nTitolo: ${title}\nDescrizione: ${description}\n\nTICKET ESISTENTI:\n${ticketList}`,
     512
@@ -167,7 +226,6 @@ Se non ci sono duplicati, rispondi: []`;
     const parsed = JSON.parse(result);
     if (!Array.isArray(parsed)) return [];
 
-    // Mappa gli ID parziali ai ticket reali
     return parsed.slice(0, 5).map((d: any) => {
       const match = recentTickets.find(t => t.id.startsWith(d.id));
       return match
@@ -208,7 +266,7 @@ Rispondi SOLO in formato JSON array:
 [{"id": "id-parziale", "relevance": "breve spiegazione"}]
 Se nessun articolo è pertinente, rispondi: []`;
 
-  const result = await callClaude(
+  const result = await callAI(
     systemPrompt,
     `PROBLEMA:\nTitolo: ${title}\nDescrizione: ${description}\n\nARTICOLI KB:\n${articleList}`,
     512
@@ -231,9 +289,11 @@ Se nessun articolo è pertinente, rispondi: []`;
 }
 
 /**
- * Verifica se l'AI è configurata
+ * Verifica se l'AI è configurata (Groq o Anthropic)
  */
 export async function isAIConfigured(): Promise<boolean> {
-  const key = await getApiKey();
-  return !!key;
+  const groq = await getGroqKey();
+  if (groq) return true;
+  const anthropic = await getAnthropicKey();
+  return !!anthropic;
 }
