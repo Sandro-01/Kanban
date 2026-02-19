@@ -848,22 +848,16 @@ router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), a
     // Invia email con allegati
     await sendTicketEmail(id, toEmails, subject, body, currentUser.id, attachmentIds);
 
-    // Prepara testo commento con info allegati
-    let commentContent = `📤 **Email inviata a:** ${toEmails.join(', ')}\n\n**Oggetto:** ${subject}\n\n**Messaggio:**\n${body}`;
-    if (ticket.attachments && ticket.attachments.length > 0) {
-      commentContent += `\n\n**📎 Allegati inclusi (${ticket.attachments.length}):**\n`;
-      ticket.attachments.forEach(att => {
-        commentContent += `- ${att.fileName}\n`;
-      });
-    }
-
-    // Crea commento per tracciare l'invio email
+    // Crea commento per tracciare l'invio email (con flag isOutgoingEmail)
+    const attachmentNames = ticket.attachments?.map((a: any) => a.fileName) || [];
     await prisma.comment.create({
       data: {
         ticketId: id,
         userId: currentUser.id,
-        content: commentContent,
-      },
+        content: body,
+        isOutgoingEmail: true,
+        toEmails: toEmails,
+      } as any,
     });
 
     console.log(`✅ Email inviata per ticket ${id} a ${toEmails.join(', ')}`);

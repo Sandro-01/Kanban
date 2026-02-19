@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi } from '../services/api';
+import ExternalEmailModal from './ExternalEmailModal';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -239,6 +240,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [initialDepartments, setInitialDepartments] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   // Onboarding equipment form state
   const [showEquipmentForm, setShowEquipmentForm] = useState(false);
@@ -625,7 +627,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
           user: c.user,
           content: c.content,
           isEmailReply: c.isEmailReply || false,
+          isOutgoingEmail: c.isOutgoingEmail || false,
           fromEmail: c.fromEmail || null,
+          toEmails: c.toEmails || [],
           attachments: c.attachments || [],
         });
       });
@@ -655,6 +659,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const timeline = getTimeline();
 
   return (
+    <>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal ticket-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -690,6 +695,14 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </select>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowEmailModal(true)}
+              style={{ fontSize: '12px', padding: '5px 10px' }}
+              title="Invia email a contatto esterno"
+            >
+              ✉️ Email
+            </button>
             {user.role === 'ADMIN' && (
               <button
                 className="btn btn-secondary"
@@ -1084,13 +1097,23 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             <div className="timeline-list">
               {timeline.length > 0 ? (
                 timeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}`}>
+                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}${item.isOutgoingEmail ? ' email-outgoing' : ''}`}>
                     {item.type === 'comment' ? (
                       <>
-                        <div className="timeline-icon">{item.isEmailReply ? '📧' : '💬'}</div>
+                        <div className="timeline-icon">
+                          {item.isOutgoingEmail ? '📤' : item.isEmailReply ? '📧' : '💬'}
+                        </div>
                         <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
-                            {item.isEmailReply ? (
+                            {item.isOutgoingEmail ? (
+                              <>
+                                <strong>{item.user?.firstName} {item.user?.lastName}</strong>
+                                <span className="email-outgoing-badge">Email inviata</span>
+                                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  A: {item.toEmails?.join(', ')}
+                                </span>
+                              </>
+                            ) : item.isEmailReply ? (
                               <>
                                 <strong>{item.fromEmail}</strong>
                                 <span className="email-reply-badge">Risposta email</span>
@@ -1342,6 +1365,15 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         </div>
       </div>
     </div>
+
+    {showEmailModal && (
+      <ExternalEmailModal
+        ticket={ticket}
+        onClose={() => setShowEmailModal(false)}
+        onSuccess={() => { setShowEmailModal(false); refreshTicket(); onUpdate(); }}
+      />
+    )}
+    </>
   );
 };
 

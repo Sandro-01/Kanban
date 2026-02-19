@@ -282,7 +282,9 @@ model Comment {
 
   // Email integration
   isEmailReply    Boolean  @default(false) // True se questo commento viene da email esterna
+  isOutgoingEmail Boolean  @default(false) // True se è una email inviata a utente esterno
   fromEmail       String?  // Email del mittente esterno (se isEmailReply = true)
+  toEmails        String[] @default([])    // Destinatari (se isOutgoingEmail = true)
   emailMessageId  String?  // ID univoco del messaggio email per evitare duplicati
 
   // Relation to attachments (files can be attached to a comment)

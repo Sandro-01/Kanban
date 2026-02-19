@@ -775,6 +775,27 @@
   letter-spacing: 0.3px;
 }
 
+.timeline-item.email-outgoing {
+  border-left-color: #6366f1;
+  background: #eef2ff;
+}
+
+.timeline-item.email-outgoing:hover {
+  background: #e0e7ff;
+}
+
+.email-outgoing-badge {
+  display: inline-block;
+  background: #6366f1;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .timeline-item.file {
   border-left-color: #10b981;
 }
