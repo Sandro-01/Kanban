@@ -92,9 +92,12 @@ async function graphRequest(endpoint: string, method: string = 'GET', body?: any
     throw new Error(`Graph API error (${response.status}): ${error}`);
   }
 
-  // PATCH/DELETE may return 204 No Content
-  if (response.status === 204) return null;
-  return response.json();
+  // sendMail returns 202, PATCH/DELETE return 204 — all with empty body
+  if (response.status === 202 || response.status === 204) return null;
+
+  const text = await response.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 /**
