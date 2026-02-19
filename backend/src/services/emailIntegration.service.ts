@@ -3,31 +3,42 @@ import Imap from 'node-imap';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
+import { getSmtpConfig, getImapConfig } from './config.service';
 
-// Configurazione email (da .env)
+// Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.EMAIL_PORT || '587'),
   secure: process.env.EMAIL_SECURE === 'true',
   auth: {
-    user: process.env.EMAIL_USER || 'assistenza@europoligrafico.it',
+    user: process.env.EMAIL_USER || '',
     pass: process.env.EMAIL_PASSWORD || '',
   },
 };
 
-// Configurazione IMAP per ricevere email
-// IMAP_USER: per caselle condivise M365 usare formato "utente\casella_condivisa"
-const IMAP_CONFIG = {
-  user: process.env.IMAP_USER || process.env.EMAIL_USER || 'assistenza@europoligrafico.it',
-  password: process.env.EMAIL_PASSWORD || '',
-  host: process.env.IMAP_HOST || 'imap.gmail.com',
-  port: parseInt(process.env.IMAP_PORT || '993'),
-  tls: true,
-  tlsOptions: { rejectUnauthorized: false },
-};
+// Crea transporter SMTP dinamicamente dalla config DB
+async function getTransporter() {
+  const smtp = await getSmtpConfig();
+  return nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: { user: smtp.user, pass: smtp.password },
+  });
+}
 
-// Transporter per invio email
-const transporter = nodemailer.createTransport(EMAIL_CONFIG);
+// Crea config IMAP dinamicamente dalla config DB
+async function getImapConfigDynamic() {
+  const imap = await getImapConfig();
+  return {
+    user: imap.user,
+    password: imap.password,
+    host: imap.host,
+    port: imap.port,
+    tls: true,
+    tlsOptions: { rejectUnauthorized: false },
+  };
+}
 
 /**
  * Invia email a contatti esterni per un ticket
@@ -126,10 +137,12 @@ export const sendTicketEmail = async (
     const senderName = fromUser
       ? `${fromUser.firstName} ${fromUser.lastName}`
       : 'Europoligrafico';
-    const systemEmail = process.env.EMAIL_FROM || EMAIL_CONFIG.auth.user;
+    const smtp = await getSmtpConfig();
+    const systemEmail = smtp.from;
+    const transport = await getTransporter();
 
     // Invia email a tutti i destinatari con allegati
-    const info = await transporter.sendMail({
+    const info = await transport.sendMail({
       from: `"${senderName} - Europoligrafico" <${systemEmail}>`,
       replyTo: fromUser?.email || systemEmail,
       to: toEmails.join(', '),
@@ -159,8 +172,9 @@ export const sendTicketEmail = async (
  * Questa funzione viene chiamata periodicamente (polling)
  */
 export const checkInboxForReplies = async (): Promise<void> => {
+  const imapCfg = await getImapConfigDynamic();
   return new Promise((resolve, reject) => {
-    const imap = new Imap(IMAP_CONFIG);
+    const imap = new Imap(imapCfg);
 
     imap.once('ready', () => {
       imap.openBox('INBOX', false, (err: Error, box: any) => {
@@ -254,7 +268,8 @@ async function processIncomingEmail(parsed: any) {
   }
 
   // Ignora le email inviate dal sistema stesso (notifiche proprie)
-  const ownMailbox = (process.env.EMAIL_FROM || process.env.EMAIL_USER || EMAIL_CONFIG.auth.user).toLowerCase();
+  const smtpCfg = await getSmtpConfig();
+  const ownMailbox = smtpCfg.from.toLowerCase();
   if (from.toLowerCase() === ownMailbox) {
     console.log('⏭️ Email inviata dal sistema stesso, ignorata');
     return;

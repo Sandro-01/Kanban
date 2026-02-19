@@ -12,6 +12,7 @@ import SLAMetrics from './components/SLAMetrics';
 import AuditLogs from './components/AuditLogs';
 import UserManagement from './components/UserManagement';
 import TicketArchive from './components/TicketArchive';
+import EmailSettings from './components/EmailSettings';
 import Header from './components/Header';
 
 // Protected route component
@@ -128,6 +129,16 @@ function App() {
             element={
               <ProtectedRoute user={user} allowedRoles={['ADMIN']}>
                 <UserManagement user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Email Settings - only ADMIN */}
+          <Route
+            path="/settings/email"
+            element={
+              <ProtectedRoute user={user} allowedRoles={['ADMIN']}>
+                <EmailSettings user={user} />
               </ProtectedRoute>
             }
           />

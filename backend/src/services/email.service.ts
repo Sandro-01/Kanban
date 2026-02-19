@@ -2,19 +2,23 @@ import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
+import { getSmtpConfig } from './config.service';
 
 const prisma = new PrismaClient();
 
-// Configurazione transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Crea transporter SMTP dinamicamente dalla config DB (con fallback env)
+async function getTransporter() {
+  const smtp = await getSmtpConfig();
+  return nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: {
+      user: smtp.user,
+      pass: smtp.password,
+    },
+  });
+}
 
 /**
  * Invia email (usa Graph API se configurato, altrimenti SMTP)
@@ -53,8 +57,10 @@ export async function sendEmail(
         path: path.join(uploadDir, att.filePath),
         contentType: att.mimeType,
       }));
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+      const smtp = await getSmtpConfig();
+      const transport = await getTransporter();
+      await transport.sendMail({
+        from: smtp.from,
         to,
         subject,
         html,

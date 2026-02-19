@@ -114,6 +114,13 @@ export const users = {
   getAll: () => api.get('/users'),
 };
 
+// Email Config (Admin)
+export const emailConfig = {
+  get: () => api.get('/email/config'),
+  save: (data: Record<string, string>) => api.put('/email/config', data),
+  test: () => api.post('/email/config/test'),
+};
+
 // Audit
 export const audit = {
   getLogs: (params?: any) => api.get('/audit', { params }),

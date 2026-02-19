@@ -44,6 +44,11 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             {user.role === 'ADMIN' && (
               <Link to="/users" className="nav-link">Utenti</Link>
             )}
+
+            {/* Email Settings - only ADMIN */}
+            {user.role === 'ADMIN' && (
+              <Link to="/settings/email" className="nav-link">Email</Link>
+            )}
           </nav>
         </div>
         <div className="header-right">

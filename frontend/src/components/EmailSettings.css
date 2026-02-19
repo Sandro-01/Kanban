@@ -1,0 +1,138 @@
+.email-settings-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.email-settings-page h2 {
+  margin-bottom: 8px;
+  color: var(--dark);
+}
+
+.email-settings-page .page-subtitle {
+  color: var(--secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.config-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.config-section h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: var(--dark);
+}
+
+.config-section .section-desc {
+  color: var(--secondary);
+  font-size: 13px;
+  margin: 0 0 20px 0;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.config-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.config-field input,
+.config-field select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--dark);
+  transition: border-color 0.2s;
+}
+
+.config-field input:focus,
+.config-field select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.config-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-test {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.btn-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.test-result {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.test-result.test-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.test-result.test-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.env-fallback-note {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+}

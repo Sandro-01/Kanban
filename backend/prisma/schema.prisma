@@ -403,3 +403,11 @@ enum EmailStatus {
   SENT
   FAILED
 }
+
+// ============ SYSTEM CONFIGURATION ============
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
