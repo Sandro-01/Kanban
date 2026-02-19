@@ -64,9 +64,29 @@ app.get('/api/compliance', (req: Request, res: Response) => {
   });
 });
 
+// Auto-create SystemConfig table if not exists
+async function ensureSystemConfigTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SystemConfig" (
+        "key" TEXT NOT NULL,
+        "value" TEXT NOT NULL,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        CONSTRAINT "SystemConfig_pkey" PRIMARY KEY ("key")
+      )
+    `);
+    console.log('✅ SystemConfig table ready');
+  } catch (err: any) {
+    console.warn('⚠️  SystemConfig table check failed:', err.message);
+  }
+}
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
+  // Ensure SystemConfig table exists for email settings
+  await ensureSystemConfigTable();
 
   // Email integration
   if (isGraphConfigured()) {
@@ -74,18 +94,22 @@ app.listen(PORT, () => {
     console.log('📧 Email integration via Microsoft Graph API');
     startGraphEmailPolling(30);
   } else {
-    // Fallback: IMAP con Basic Auth (solo se configurata password)
-    const emailPassword = process.env.EMAIL_PASSWORD;
-    if (emailPassword && emailPassword !== 'your-email-password') {
-      console.log('📧 Email integration via IMAP (fallback)');
+    // Check SMTP config from DB or env
+    const { getSmtpConfig } = await import('./services/config.service');
+    const smtp = await getSmtpConfig();
+    if (smtp.host && smtp.user && smtp.password) {
+      console.log(`📧 Email integration via IMAP (host: ${smtp.host}, user: ${smtp.user})`);
       startEmailListener().catch((err) => {
         console.warn('⚠️  Email listener non avviato:', err.message);
       });
       startEmailPolling(2);
     } else {
       console.log('📧 Email integration disabilitata');
-      console.log('   Configurare AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env');
-      console.log('   Oppure EMAIL_PASSWORD per fallback IMAP');
+      console.log('   Configurare via Admin UI (/settings/email)');
+      console.log('   Oppure impostare AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET');
+      if (!smtp.password) {
+        console.log('   ⚠️  SMTP password mancante - controllare configurazione');
+      }
     }
   }
 });
