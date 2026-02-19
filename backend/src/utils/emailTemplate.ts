@@ -49,8 +49,8 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
           ${opts.logoUrl ? `
-          <td style="width:200px;vertical-align:middle;padding-right:24px;">
-            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:200px;max-height:72px;width:auto;height:auto;display:block;border:0;" />
+          <td style="width:120px;vertical-align:middle;padding-right:20px;">
+            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:120px;max-height:44px;width:auto;height:auto;display:block;border:0;" />
           </td>` : ''}
           <td style="vertical-align:middle;">
             ${!opts.logoUrl ? `<p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>` : ''}
@@ -110,12 +110,50 @@ export function infoTable(rows: { label: string; value: string; highlight?: bool
 
 /* ───── Helper: blocco messaggio / commento ───── */
 
-export function messageBlock(text: string, opts?: { author?: string; accentColor?: string }): string {
+export function messageBlock(html: string, opts?: { author?: string; accentColor?: string }): string {
   const accent = opts?.accentColor || '#2563eb';
   return `<div style="background:#f8fafc;padding:16px 18px;border-radius:8px;border-left:4px solid ${accent};margin-bottom:16px;">
     ${opts?.author ? `<p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${accent};">${escapeHtml(opts.author)}</p>` : ''}
-    <p style="margin:0;font-size:14px;color:#334155;line-height:1.6;white-space:pre-wrap;">${escapeHtml(text)}</p>
+    <div style="margin:0;font-size:14px;color:#334155;line-height:1.6;word-wrap:break-word;">${html}</div>
   </div>`;
+}
+
+/* ───── Helper: sanitizza HTML dell'editor per uso sicuro nelle email ───── */
+
+export function sanitizeHtmlForEmail(html: string): string {
+  let out = html;
+
+  // Rimuovi script/style completamente
+  out = out.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  out = out.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+
+  // Converti elementi block in <br>
+  out = out.replace(/<\/?(p|div|h[1-6]|blockquote|section|article|header|footer|main|aside)[^>]*>/gi, '<br>');
+  out = out.replace(/<br\s*\/?>/gi, '<br>');
+
+  // Permetti solo tag sicuri per la formattazione
+  const safeTags = ['b', 'strong', 'em', 'i', 'u', 's', 'strike', 'code', 'pre', 'ul', 'ol', 'li'];
+  out = out.replace(/<(\/?)([a-z][a-z0-9]*)([^>]*)>/gi, (match, slash, tag, attrs) => {
+    const t = tag.toLowerCase();
+    if (t === 'br') return '<br>';
+    if (safeTags.includes(t)) return `<${slash}${t}>`;
+    if (t === 'a') {
+      if (slash) return '</a>';
+      const hrefMatch = attrs.match(/href="([^"]+)"/i);
+      if (hrefMatch && /^https?:\/\//i.test(hrefMatch[1])) {
+        return `<a href="${hrefMatch[1]}" style="color:#2563eb;text-decoration:underline;">`;
+      }
+      return '';
+    }
+    return '';
+  });
+
+  // Elimina <br> multipli consecutivi (max 2)
+  out = out.replace(/(<br>\s*){3,}/gi, '<br><br>');
+  // Elimina <br> iniziali e finali
+  out = out.trim().replace(/^(<br>)+/, '').replace(/(<br>)+$/, '');
+
+  return out;
 }
 
 /* ───── Helper: blocco allegati ───── */

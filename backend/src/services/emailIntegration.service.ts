@@ -5,7 +5,7 @@ import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
 import { getSmtpConfig, getImapConfig, getCompanyName } from './config.service';
 import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
-import { buildEmailHtml, messageBlock, attachmentsList, callToAction } from '../utils/emailTemplate';
+import { buildEmailHtml, messageBlock, attachmentsList, callToAction, sanitizeHtmlForEmail } from '../utils/emailTemplate';
 
 // Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
@@ -97,7 +97,7 @@ export const sendTicketEmail = async (
     const attachFileNames = ticket.attachments?.map((a: any) => a.fileName) || [];
 
     const bodyHtml = [
-      messageBlock(body),
+      messageBlock(sanitizeHtmlForEmail(body)),
       attachmentsList(attachFileNames),
       callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.'),
     ].join('');

@@ -5,7 +5,7 @@ import fs from 'fs';
 import { getSmtpConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
 import {
   buildEmailHtml, infoTable, messageBlock, attachmentsList,
-  callToAction, priorityBadge,
+  callToAction, priorityBadge, sanitizeHtmlForEmail,
 } from '../utils/emailTemplate';
 
 const prisma = new PrismaClient();
@@ -373,7 +373,7 @@ export async function notifyTicketUpdate(
   const notifBody = [
     `<p style="margin:0 0 6px;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Oggetto ticket</p>`,
     `<p style="margin:0 0 20px;font-size:15px;color:#0f172a;font-weight:600;">${ticket.title}</p>`,
-    messageBlock(cleanEmailBodyForDescription(details), { author: authorName, accentColor }),
+    messageBlock(sanitizeHtmlForEmail(details), { author: authorName, accentColor }),
     attachmentsList(attachFileNames),
     callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.', accentColor),
   ].join('');
