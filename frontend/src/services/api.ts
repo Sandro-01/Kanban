@@ -132,4 +132,36 @@ export const audit = {
     api.get('/audit/export', { params, responseType: 'blob' }),
 };
 
+// Notifications
+export const notifications = {
+  getAll: (params?: any) => api.get('/notifications', { params }),
+  getCount: () => api.get('/notifications/count'),
+  markRead: (id: string) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+};
+
+// AI
+export const ai = {
+  status: () => api.get('/ai/status'),
+  suggestCategory: (title: string, description: string) =>
+    api.post('/ai/suggest-category', { title, description }),
+  suggestResponse: (ticketId: string) =>
+    api.post('/ai/suggest-response', { ticketId }),
+  findDuplicates: (title: string, description: string) =>
+    api.post('/ai/find-duplicates', { title, description }),
+  suggestKB: (title: string, description: string) =>
+    api.post('/ai/suggest-kb', { title, description }),
+  saveConfig: (apiKey: string) => api.post('/ai/config', { apiKey }),
+};
+
+// Knowledge Base
+export const kb = {
+  getAll: (params?: any) => api.get('/kb', { params }),
+  getById: (id: string) => api.get(`/kb/${id}`),
+  create: (data: any) => api.post('/kb', data),
+  update: (id: string, data: any) => api.put(`/kb/${id}`, data),
+  delete: (id: string) => api.delete(`/kb/${id}`),
+  markHelpful: (id: string) => api.post(`/kb/${id}/helpful`),
+};
+
 export default api;

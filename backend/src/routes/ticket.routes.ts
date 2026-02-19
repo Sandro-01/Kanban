@@ -8,6 +8,7 @@ import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
 import { notifyTicketUpdate, cleanEmailBodyForDescription } from '../services/email.service';
 import { sendTicketEmail } from '../services/emailIntegration.service';
+import { notifyComment, notifyAssignment, notifyStatusChange } from '../services/notification.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -400,6 +401,12 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       await notifyTicketUpdate(id, 'Assegnazione', 'Il ticket ti è stato assegnato');
     }
 
+    // In-app notification per cambio stato
+    if (updates.status && updates.status !== oldTicket.status) {
+      const changerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+      notifyStatusChange(id, req.user!.id, changerName, oldTicket.status, updates.status).catch(() => {});
+    }
+
     res.json(ticket);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -432,10 +439,13 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 
     console.log('✅ Comment created successfully:', comment.id);
 
-    // Se ci sono file in arrivo, la notifica verrà inviata dall'endpoint attachments
+    // In-app notification
+    const authorName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+    notifyComment(id, req.user!.id, authorName, content).catch(() => {});
+
+    // Se ci sono file in arrivo, la notifica email verrà inviata dall'endpoint attachments
     if (!hasFile) {
       try {
-        const authorName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || undefined;
         await notifyTicketUpdate(id, 'Nuovo commento', content, undefined, authorName);
         console.log('✅ Email notification sent');
       } catch (emailError: any) {
@@ -677,7 +687,10 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
       console.log('📊 Ticket moved to IN_PROGRESS');
     }
 
-    // Send email notifications to assigned users
+    // In-app + email notifications
+    const assignerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+    notifyAssignment(id, userIds, assignerName).catch(() => {});
+
     for (const assignment of assignments) {
       try {
         await notifyTicketUpdate(
@@ -688,7 +701,6 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
         console.log(`📧 Email sent to ${assignment.user.email}`);
       } catch (emailError: any) {
         console.error(`⚠️ Failed to send email to ${assignment.user.email}:`, emailError.message);
-        // Don't fail the request if email fails
       }
     }
 

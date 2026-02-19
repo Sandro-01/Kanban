@@ -13,6 +13,7 @@ import AuditLogs from './components/AuditLogs';
 import UserManagement from './components/UserManagement';
 import TicketArchive from './components/TicketArchive';
 import EmailSettings from './components/EmailSettings';
+import KnowledgeBase from './components/KnowledgeBase';
 import Header from './components/Header';
 
 // Protected route component
@@ -84,6 +85,7 @@ function App() {
           <Route path="/board" element={<KanbanBoard user={user} />} />
           <Route path="/archivio" element={<TicketArchive user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
+          <Route path="/kb" element={<KnowledgeBase user={user} />} />
 
           {/* Onboarding - ADMIN, HR, IT, Amministrazione */}
           <Route

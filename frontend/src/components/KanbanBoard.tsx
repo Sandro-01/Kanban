@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, UPLOADS_URL } from '../services/api';
+import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor from './RichTextEditor';
 import './KanbanBoard.css';
 
@@ -1318,7 +1318,26 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
             {/* Form unificato per commento e file */}
             <div className="unified-form">
-              <strong>Aggiungi Commento e/o File (non eliminabile dopo invio):</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong>Aggiungi Commento e/o File (non eliminabile dopo invio):</strong>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await aiApi.suggestResponse(ticket.id);
+                      if (res.data.response) setComment(res.data.response);
+                      else alert('AI non disponibile o non configurata');
+                    } catch { alert('Errore AI'); }
+                  }}
+                  style={{
+                    background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px',
+                    padding: '4px 10px', fontSize: '12px', cursor: 'pointer', color: '#166534',
+                  }}
+                  title="Genera risposta suggerita con AI"
+                >
+                  🤖 Suggerisci risposta
+                </button>
+              </div>
               <RichTextEditor
                 value={comment}
                 onChange={setComment}
@@ -1391,6 +1410,37 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
   const [assignToUser, setAssignToUser] = useState('');
   const [assignToDepartment, setAssignToDepartment] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDuplicates, setAiDuplicates] = useState<any[]>([]);
+  const [aiEnabled, setAiEnabled] = useState(false);
+
+  // Check if AI is available
+  useEffect(() => {
+    aiApi.status().then(res => setAiEnabled(res.data.configured)).catch(() => {});
+  }, []);
+
+  // AI suggestion when title is long enough (debounced)
+  useEffect(() => {
+    if (!aiEnabled || formData.title.length < 10) {
+      setAiSuggestion(null);
+      setAiDuplicates([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setAiLoading(true);
+      try {
+        const [catRes, dupRes] = await Promise.all([
+          aiApi.suggestCategory(formData.title, formData.description),
+          aiApi.findDuplicates(formData.title, formData.description),
+        ]);
+        if (catRes.data.suggestion) setAiSuggestion(catRes.data.suggestion);
+        if (dupRes.data.duplicates?.length > 0) setAiDuplicates(dupRes.data.duplicates);
+      } catch {}
+      setAiLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [aiEnabled, formData.title, formData.description]);
 
   // Load all users for assignment (only users with a department = operators)
   useEffect(() => {
@@ -1635,6 +1685,40 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           <div style={{ padding: '10px', backgroundColor: '#f0f9ff', borderRadius: '5px', marginBottom: '15px', fontSize: '13px' }}>
             ℹ️ <strong>Nota:</strong> Se non assegni il ticket, sarà visibile a tutti in "To Do"
           </div>
+
+          {/* AI Suggestions */}
+          {aiEnabled && (aiSuggestion || aiDuplicates.length > 0 || aiLoading) && (
+            <div style={{ marginBottom: '15px', padding: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#166534' }}>
+                {aiLoading ? '⏳ AI sta analizzando...' : '🤖 Suggerimenti AI'}
+              </div>
+              {aiSuggestion && !aiLoading && (
+                <div style={{ fontSize: '13px', color: '#15803d', marginBottom: '6px' }}>
+                  <span>Categoria suggerita: <strong>{aiSuggestion.category}</strong></span>
+                  {' | '}
+                  <span>Priorità: <strong>{aiSuggestion.priority}</strong></span>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, category: aiSuggestion.category, priority: aiSuggestion.priority }))}
+                    style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}
+                  >
+                    Applica
+                  </button>
+                </div>
+              )}
+              {aiDuplicates.length > 0 && !aiLoading && (
+                <div style={{ fontSize: '12px', color: '#b45309', marginTop: '6px', padding: '8px', background: '#fefce8', borderRadius: '4px', border: '1px solid #fde68a' }}>
+                  <strong>⚠️ Possibili duplicati:</strong>
+                  {aiDuplicates.map((d: any) => (
+                    <div key={d.id} style={{ marginTop: '4px' }}>
+                      #{d.id.substring(0, 8)} — {d.title} <span style={{ color: '#92400e' }}>({d.similarity})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
