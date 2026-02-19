@@ -49,8 +49,8 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
           ${opts.logoUrl ? `
-          <td style="width:120px;vertical-align:middle;padding-right:20px;">
-            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:120px;max-height:52px;width:auto;height:auto;display:block;border:0;" />
+          <td style="width:200px;vertical-align:middle;padding-right:24px;">
+            <img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:200px;max-height:72px;width:auto;height:auto;display:block;border:0;" />
           </td>` : ''}
           <td style="vertical-align:middle;">
             ${!opts.logoUrl ? `<p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>` : ''}
