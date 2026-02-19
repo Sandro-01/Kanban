@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi } from '../services/api';
-import ExternalEmailModal from './ExternalEmailModal';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -20,6 +19,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   const [tickets, setTickets] = useState<any[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -93,12 +93,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
     <div className="page kanban-page">
       <div className="page-header">
         <h1>Kanban Board</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowNewTicket(true)}
-        >
-          + Nuovo Ticket
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewTicket(true)}
+          >
+            + Nuovo Ticket
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowSendEmail(true)}
+            style={{ background: '#6366f1' }}
+          >
+            ✉️ Invia Email
+          </button>
+        </div>
       </div>
 
       <div className="alert alert-info" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -222,6 +231,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
           onCreate={loadTickets}
         />
       )}
+
+      {showSendEmail && (
+        <SendExternalEmailModal
+          user={user}
+          onClose={() => setShowSendEmail(false)}
+          onCreate={loadTickets}
+        />
+      )}
     </div>
   );
 };
@@ -240,8 +257,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [initialDepartments, setInitialDepartments] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
-  const [showEmailModal, setShowEmailModal] = useState(false);
-
   // Onboarding equipment form state
   const [showEquipmentForm, setShowEquipmentForm] = useState(false);
   const [equipmentData, setEquipmentData] = useState({
@@ -659,7 +674,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const timeline = getTimeline();
 
   return (
-    <>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal ticket-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -695,14 +709,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </select>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowEmailModal(true)}
-              style={{ fontSize: '12px', padding: '5px 10px' }}
-              title="Invia email a contatto esterno"
-            >
-              ✉️ Email
-            </button>
             {user.role === 'ADMIN' && (
               <button
                 className="btn btn-secondary"
@@ -1365,15 +1371,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         </div>
       </div>
     </div>
-
-    {showEmailModal && (
-      <ExternalEmailModal
-        ticket={ticket}
-        onClose={() => setShowEmailModal(false)}
-        onSuccess={() => { setShowEmailModal(false); refreshTicket(); onUpdate(); }}
-      />
-    )}
-    </>
   );
 };
 
@@ -1577,6 +1574,137 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
             </button>
             <button type="submit" className="btn btn-primary">
               Crea Ticket
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Modale per inviare email esterna (crea ticket + invia email)
+const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
+  const [toEmail, setToEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [priority, setPriority] = useState('MEDIUM');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!toEmail.trim() || !subject.trim() || !body.trim()) {
+      alert('Compila tutti i campi');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 1. Crea ticket
+      const ticketResponse = await ticketsApi.create({
+        title: subject,
+        description: body,
+        priority,
+        category: 'Comunicazione Esterna',
+        boardId: 'default-board',
+        columnId: 'col-todo',
+      });
+      const ticketId = ticketResponse.data.id;
+
+      // 2. Aggiungi contatto esterno al ticket
+      await ticketsApi.addExternalContacts(ticketId, [toEmail.trim()]);
+
+      // 3. Invia email
+      await ticketsApi.sendEmail(ticketId, {
+        subject,
+        body,
+        toEmails: [toEmail.trim()],
+      });
+
+      alert('Email inviata e ticket creato con successo!');
+      onCreate();
+      onClose();
+    } catch (error: any) {
+      console.error('Errore invio email:', error);
+      alert(error.response?.data?.error || 'Errore durante l\'invio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+        <div className="modal-header">
+          <h2>Invia Email Esterna</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">Destinatario *</label>
+            <input
+              type="email"
+              className="input"
+              placeholder="es. fornitore@azienda.com"
+              value={toEmail}
+              onChange={(e) => setToEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Oggetto *</label>
+            <input
+              type="text"
+              className="input"
+              placeholder="Oggetto della comunicazione"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              required
+            />
+            <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              Il riferimento ticket verrà aggiunto automaticamente nell'oggetto
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="label">Messaggio *</label>
+            <textarea
+              className="input"
+              placeholder="Scrivi il messaggio..."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={8}
+              style={{ resize: 'vertical' }}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Priorità</label>
+            <select
+              className="input"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+            >
+              <option value="LOW">Bassa</option>
+              <option value="MEDIUM">Media</option>
+              <option value="HIGH">Alta</option>
+              <option value="CRITICAL">Critica</option>
+            </select>
+          </div>
+
+          <div style={{ padding: '10px', backgroundColor: '#eef2ff', borderRadius: '6px', marginBottom: '15px', fontSize: '13px', border: '1px solid #c7d2fe' }}>
+            ℹ️ Verrà creato un ticket con questa email. Le risposte del destinatario verranno automaticamente collegate al ticket.
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
+              Annulla
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Invio in corso...' : '📤 Invia Email'}
             </button>
           </div>
         </form>
