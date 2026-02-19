@@ -173,7 +173,7 @@ Se non ci sono duplicati, rispondi: []`;
       return match
         ? { id: match.id, title: match.title, similarity: d.similarity || '' }
         : null;
-    }).filter(Boolean);
+    }).filter((x): x is { id: string; title: string; similarity: string } => x !== null);
   } catch {
     return [];
   }
@@ -224,7 +224,7 @@ Se nessun articolo è pertinente, rispondi: []`;
       return match
         ? { id: match.id, title: match.title, relevance: s.relevance || '' }
         : null;
-    }).filter(Boolean);
+    }).filter((x): x is { id: string; title: string; relevance: string } => x !== null);
   } catch {
     return [];
   }

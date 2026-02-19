@@ -212,7 +212,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
             onChange={(e) => setEditorData({ ...editorData, category: e.target.value })}
           >
             <option value="">Seleziona categoria...</option>
-            {[...new Set([...defaultCategories, ...categories])].map(cat => (
+            {Array.from(new Set([...defaultCategories, ...categories])).map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
