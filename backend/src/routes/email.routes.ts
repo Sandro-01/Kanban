@@ -69,7 +69,7 @@ router.put('/config', authenticate, authorize('ADMIN'), async (req: AuthRequest,
     }
 
     // Salva solo le chiavi permesse
-    const allowed = ['company_name', 'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password', 'smtp_from', 'imap_host', 'imap_port', 'imap_user', 'imap_password'];
+    const allowed = ['company_name', 'company_logo_url', 'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password', 'smtp_from', 'imap_host', 'imap_port', 'imap_user', 'imap_password'];
     const filtered: Record<string, string> = {};
     for (const [key, value] of Object.entries(entries)) {
       if (allowed.includes(key) && typeof value === 'string') {

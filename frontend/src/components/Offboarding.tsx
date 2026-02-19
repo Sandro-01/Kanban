@@ -216,7 +216,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
                               e.target.checked
                             )
                           }
-                          disabled={selectedOffboarding.status === 'COMPLETED'}
+                          disabled={selectedOffboarding.status === 'COMPLETED' && task.mandatory}
                         />
                       </div>
                       <div className="task-content">
