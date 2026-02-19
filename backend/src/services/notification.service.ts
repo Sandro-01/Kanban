@@ -27,7 +27,9 @@ export async function createNotification(
 }
 
 /**
- * Notifica commento a tutti gli interessati (tranne l'autore)
+ * Notifica commento a tutti gli interessati (tranne l'autore).
+ * Se dopo l'esclusione non ci sono altri destinatari, notifica comunque
+ * il creatore del ticket (utile in sistemi mono-utente o ticket senza assegnatari).
  */
 export async function notifyComment(
   ticketId: string,
@@ -39,11 +41,18 @@ export async function notifyComment(
   const ticketTitle = await getTicketTitle(ticketId);
   const preview = commentPreview.replace(/<[^>]*>/g, '').substring(0, 100);
 
-  for (const userId of recipients) {
+  // Fallback: se nessun altro è coinvolto, notifica il creator del ticket
+  let targets = recipients;
+  if (targets.length === 0) {
+    const allParticipants = await getTicketRecipients(ticketId);
+    targets = allParticipants;
+  }
+
+  for (const userId of targets) {
     await createNotification(
       userId,
       'COMMENT',
-      `Nuovo commento su #${ticketId.substring(0, 8)}`,
+      `Nuovo commento su "${ticketTitle}"`,
       `${authorName}: ${preview}`,
       ticketId
     );
@@ -80,15 +89,17 @@ export async function notifyStatusChange(
   oldStatus: string,
   newStatus: string
 ): Promise<void> {
-  const recipients = await getTicketRecipients(ticketId, changedByUserId);
+  // Per il cambio stato notifichiamo TUTTI i partecipanti incluso chi ha cambiato
+  // (utile come conferma e audit trail, specialmente in sistemi mono-utente)
+  const recipients = await getTicketRecipients(ticketId);
   const ticketTitle = await getTicketTitle(ticketId);
 
   for (const userId of recipients) {
     await createNotification(
       userId,
       'STATUS_CHANGE',
-      `Stato aggiornato: #${ticketId.substring(0, 8)}`,
-      `"${ticketTitle}" ${oldStatus} → ${newStatus} (da ${changedByName})`,
+      `Stato aggiornato: "${ticketTitle}"`,
+      `${oldStatus} → ${newStatus} (da ${changedByName})`,
       ticketId
     );
   }
