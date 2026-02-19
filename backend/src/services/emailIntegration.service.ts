@@ -6,6 +6,7 @@ import { createTicketFromEmail } from './email.service';
 import { getSmtpConfig, getImapConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
 import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
 import { buildEmailHtml, messageBlock, attachmentsList, callToAction, sanitizeHtmlForEmail } from '../utils/emailTemplate';
+import { notifyEmailReceived } from './notification.service';
 
 // Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
@@ -411,6 +412,11 @@ async function processIncomingEmail(parsed: any) {
   }
 
   console.log(`✅ Commento creato per ticket ${ticket.id} da email ${from}`);
+
+  // Notifica in-app a tutti i partecipanti del ticket
+  notifyEmailReceived(ticket.id, from).catch((e: any) =>
+    console.error('❌ notifyEmailReceived failed:', e.message)
+  );
 }
 
 /**
