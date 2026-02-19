@@ -15,14 +15,14 @@ import { generateEmailPdf } from '../utils/emailPdf';
  *   AZURE_TENANT_ID=<tenant-id>
  *   AZURE_CLIENT_ID=<client-id>
  *   AZURE_CLIENT_SECRET=<client-secret>
- *   GRAPH_SHARED_MAILBOX=assistenza@europoligrafico.it
+ *   GRAPH_SHARED_MAILBOX=assistenza@azienda.it
  */
 
 const GRAPH_CONFIG = {
   tenantId: process.env.AZURE_TENANT_ID || '',
   clientId: process.env.AZURE_CLIENT_ID || '',
   clientSecret: process.env.AZURE_CLIENT_SECRET || '',
-  sharedMailbox: process.env.GRAPH_SHARED_MAILBOX || process.env.EMAIL_FROM || 'assistenza@europoligrafico.it',
+  sharedMailbox: process.env.GRAPH_SHARED_MAILBOX || process.env.EMAIL_FROM || '',
 };
 
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
@@ -453,7 +453,7 @@ function cleanEmailContent(content: string): string {
     /Ticket #[a-f0-9].*Nuovo allegato/i,         // "Ticket #xxx 📎 Nuovo allegato"
     /^Oggetto ticket$/i,                          // Intestazione template
     /Rispondi a questa email per aggiungere/i,    // Footer template esatto
-    /Europoligrafico.*Sistema Kanban/i,           // Footer template
+    /Sistema Kanban/i,                             // Footer template
   ];
   const cleanedLines = cleaned.split('\n');
   for (let i = 0; i < cleanedLines.length; i++) {

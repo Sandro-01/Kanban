@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi } from '../services/api';
+import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, UPLOADS_URL } from '../services/api';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -1170,12 +1170,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                 .map((att: any) => (
                                   <div key={att.id} style={{ marginBottom: '8px', position: 'relative' }}>
                                     <a
-                                      href={`http://localhost:5000/uploads/${att.filePath}`}
+                                      href={`${UPLOADS_URL}/${att.filePath}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                     >
                                       <img
-                                        src={`http://localhost:5000/uploads/${att.filePath}`}
+                                        src={`${UPLOADS_URL}/${att.filePath}`}
                                         alt={att.fileName}
                                         style={{
                                           maxWidth: '100%',
@@ -1217,7 +1217,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                   <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <div>
                                       <a
-                                        href={`http://localhost:5000/uploads/${att.filePath}`}
+                                        href={`${UPLOADS_URL}/${att.filePath}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         download
@@ -1269,16 +1269,16 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                                   {f.mimeType?.startsWith('image/') ? (
-                                    <a href={`http://localhost:5000/uploads/${f.filePath}`} target="_blank" rel="noopener noreferrer">
+                                    <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
                                       <img
-                                        src={`http://localhost:5000/uploads/${f.filePath}`}
+                                        src={`${UPLOADS_URL}/${f.filePath}`}
                                         alt={f.fileName}
                                         style={{ maxWidth: '120px', maxHeight: '80px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}
                                       />
                                     </a>
                                   ) : null}
                                   <a
-                                    href={`http://localhost:5000/uploads/${f.filePath}`}
+                                    href={`${UPLOADS_URL}/${f.filePath}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     download

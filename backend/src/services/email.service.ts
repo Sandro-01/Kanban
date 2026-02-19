@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
-import { getSmtpConfig } from './config.service';
+import { getSmtpConfig, getCompanyName } from './config.service';
 
 const prisma = new PrismaClient();
 
@@ -184,7 +184,9 @@ export async function createTicketFromEmail(
   const cleanBody = cleanEmailBodyForDescription(body);
 
   // Crea ticket con descrizione pulita (verrà aggiornata con link allegati)
-  const emailThreadId = `ticket-${Date.now()}@europoligrafico.it`;
+  const smtp = await getSmtpConfig();
+  const emailDomain = smtp.from.includes('@') ? smtp.from.split('@')[1] : 'kanban.local';
+  const emailThreadId = `ticket-${Date.now()}@${emailDomain}`;
   const ticketData: any = {
     title: subject,
     description: cleanBody,
@@ -272,6 +274,7 @@ export async function createTicketFromEmail(
 
   // Invia conferma con [Ticket #ID] per tracciamento risposte (non bloccante)
   try {
+    const companyName = await getCompanyName();
     const priorityColors: Record<string, string> = { CRITICAL: '#dc2626', HIGH: '#f59e0b', MEDIUM: '#3b82f6', LOW: '#22c55e' };
     const pColor = priorityColors[priority] || '#3b82f6';
 
@@ -281,7 +284,7 @@ export async function createTicketFromEmail(
       `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 28px;">
-            <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">Europoligrafico — Assistenza</p>
+            <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">${companyName} — Assistenza</p>
             <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Richiesta ricevuta</h2>
           </div>
           <div style="padding: 28px; background: #ffffff;">
@@ -317,7 +320,7 @@ export async function createTicketFromEmail(
             </div>
           </div>
           <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-            <p style="margin: 0; font-size: 11px; color: #94a3b8;">Europoligrafico — Sistema Kanban ISO</p>
+            <p style="margin: 0; font-size: 11px; color: #94a3b8;">${companyName} — Sistema Kanban ISO</p>
           </div>
         </div>
       `,
@@ -403,6 +406,7 @@ export async function notifyTicketUpdate(
   }
 
   // Usa [Ticket #ID] nell'oggetto così le risposte vengono tracciate
+  const companyName = await getCompanyName();
   const subject = `[Ticket #${ticket.id.substring(0, 8)}] ${ticket.title} - ${updateType}`;
   const html = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
@@ -425,7 +429,7 @@ export async function notifyTicketUpdate(
         </div>
       </div>
       <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-        <p style="margin: 0; font-size: 11px; color: #94a3b8;">Europoligrafico — Sistema Kanban ISO</p>
+        <p style="margin: 0; font-size: 11px; color: #94a3b8;">${companyName} — Sistema Kanban ISO</p>
       </div>
     </div>
   `;

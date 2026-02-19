@@ -54,7 +54,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="user@europoligrafico.it"
+              placeholder="utente@azienda.it"
             />
           </div>
 
@@ -80,14 +80,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
 
         <div className="login-footer">
-          <div className="demo-credentials">
-            <h3>Credenziali di demo:</h3>
-            <ul>
-              <li><strong>Admin:</strong> admin@europoligrafico.it / admin123</li>
-              <li><strong>Riccardo (HR):</strong> riccardo@europoligrafico.it / user123</li>
-              <li><strong>Marco (IT):</strong> marco@europoligrafico.it / user123</li>
-            </ul>
-          </div>
+          <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
+            Contattare l'amministratore per le credenziali di accesso.
+          </p>
         </div>
 
         <div className="iso-badges">

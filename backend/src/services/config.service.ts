@@ -103,13 +103,24 @@ export async function setConfig(entries: Record<string, string>): Promise<void> 
 }
 
 /**
+ * Nome azienda (per email template e UI).
+ * Legge da DB, poi env, poi default.
+ */
+export async function getCompanyName(): Promise<string> {
+  const map = await getConfigRows(['company_name']);
+  return map.get('company_name') || process.env.COMPANY_NAME || 'Kanban ISO';
+}
+
+/**
  * Legge tutte le configurazioni email (SMTP + IMAP) — per UI admin.
  * Maschera la password.
  */
 export async function getEmailConfigForAdmin(): Promise<Record<string, string>> {
   const smtp = await getSmtpConfig();
   const imap = await getImapConfig();
+  const companyName = await getCompanyName();
   return {
+    company_name: companyName,
     smtp_host: smtp.host,
     smtp_port: String(smtp.port),
     smtp_secure: String(smtp.secure),

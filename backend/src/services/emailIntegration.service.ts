@@ -3,7 +3,7 @@ import Imap from 'node-imap';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
-import { getSmtpConfig, getImapConfig } from './config.service';
+import { getSmtpConfig, getImapConfig, getCompanyName } from './config.service';
 
 // Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
@@ -78,7 +78,9 @@ export const sendTicketEmail = async (
     // Genera email thread ID se non esiste
     let emailThreadId = ticket.emailThreadId;
     if (!emailThreadId) {
-      emailThreadId = `ticket-${ticketId}@europoligrafico.it`;
+      const smtpCfg = await getSmtpConfig();
+      const emailDomain = smtpCfg.from.includes('@') ? smtpCfg.from.split('@')[1] : 'kanban.local';
+      emailThreadId = `ticket-${ticketId}@${emailDomain}`;
       await prisma.ticket.update({
         where: { id: ticketId },
         data: { emailThreadId },
@@ -100,10 +102,11 @@ export const sendTicketEmail = async (
     }
 
     // Corpo email con footer
+    const companyName = await getCompanyName();
     const emailBody = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 28px;">
-          <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">Europoligrafico — Assistenza</p>
+          <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">${companyName} — Assistenza</p>
           <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Ticket #${ticketId.slice(0, 8)}</h2>
         </div>
         <div style="padding: 28px; background: #ffffff;">
@@ -118,7 +121,7 @@ export const sendTicketEmail = async (
           </div>
         </div>
         <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-          <p style="margin: 0; font-size: 11px; color: #94a3b8;">Ref: #${ticketId.slice(0, 8)} — Europoligrafico — Sistema Kanban ISO</p>
+          <p style="margin: 0; font-size: 11px; color: #94a3b8;">Ref: #${ticketId.slice(0, 8)} — ${companyName} — Sistema Kanban ISO</p>
         </div>
       </div>
     `;
@@ -136,14 +139,14 @@ export const sendTicketEmail = async (
     });
     const senderName = fromUser
       ? `${fromUser.firstName} ${fromUser.lastName}`
-      : 'Europoligrafico';
+      : companyName;
     const smtp = await getSmtpConfig();
     const systemEmail = smtp.from;
     const transport = await getTransporter();
 
     // Invia email a tutti i destinatari con allegati
     const info = await transport.sendMail({
-      from: `"${senderName} - Europoligrafico" <${systemEmail}>`,
+      from: `"${senderName} - ${companyName}" <${systemEmail}>`,
       replyTo: fromUser?.email || systemEmail,
       to: toEmails.join(', '),
       subject: emailSubject,
@@ -481,7 +484,7 @@ function cleanEmailContent(content: string): string {
     /Ticket #[a-f0-9].*Nuovo allegato/i,
     /^Oggetto ticket$/i,
     /Rispondi a questa email per aggiungere/i,
-    /Europoligrafico.*Sistema Kanban/i,
+    /Sistema Kanban/i,
   ];
   const cleanedLines2 = cleaned.split('\n');
   for (let i = 0; i < cleanedLines2.length; i++) {

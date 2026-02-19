@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { tickets as ticketsApi, users as usersApi } from '../services/api';
+import { tickets as ticketsApi, users as usersApi, UPLOADS_URL } from '../services/api';
 import './TicketArchive.css';
 
 interface TicketArchiveProps {
@@ -380,7 +380,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                     {selectedTicket.attachments.map((a: any) => (
                       <a
                         key={a.id}
-                        href={`http://localhost:5000/uploads/${a.filePath}`}
+                        href={`${UPLOADS_URL}/${a.filePath}`}
                         target="_blank"
                         rel="noreferrer"
                         className="attachment-link"

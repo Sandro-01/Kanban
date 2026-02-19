@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './UserManagement.css';
 
 interface User {
@@ -40,10 +40,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
 
   const loadUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get('/users');
       setUsers(response.data);
     } catch (error: any) {
       setError('Errore caricamento utenti: ' + (error.response?.data?.error || error.message));
@@ -92,18 +89,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
-      };
-
       if (editingUser) {
         // Update existing user
-        await axios.put(
-          `http://localhost:5000/api/users/${editingUser.id}`,
-          formData,
-          config
-        );
+        await api.put(`/users/${editingUser.id}`, formData);
         setSuccess('Utente aggiornato con successo');
       } else {
         // Create new user
@@ -111,7 +99,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
           setError('La password è obbligatoria per nuovi utenti');
           return;
         }
-        await axios.post('http://localhost:5000/api/users', formData, config);
+        await api.post('/users', formData);
         setSuccess('Utente creato con successo');
       }
 
@@ -130,10 +118,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/users/${userId}`);
       setSuccess('Utente eliminato con successo');
       loadUsers();
       setTimeout(() => setSuccess(''), 3000);

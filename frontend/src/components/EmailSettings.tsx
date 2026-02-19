@@ -8,6 +8,7 @@ interface EmailSettingsProps {
 
 const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
   const [config, setConfig] = useState<Record<string, string>>({
+    company_name: '',
     smtp_host: '',
     smtp_port: '587',
     smtp_secure: 'false',
@@ -101,8 +102,21 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
         </div>
       )}
 
-      <div className="env-fallback-note">
-        Se non configurato qui, il sistema usa le variabili d'ambiente (.env) come fallback.
+      {/* Company Name */}
+      <div className="config-section">
+        <h3>Generale</h3>
+        <p className="section-desc">Nome azienda visualizzato nelle email e nelle notifiche.</p>
+        <div className="config-grid">
+          <div className="config-field">
+            <label>Nome Azienda</label>
+            <input
+              type="text"
+              value={config.company_name}
+              onChange={e => handleChange('company_name', e.target.value)}
+              placeholder="es. Nome Azienda S.r.l."
+            />
+          </div>
+        </div>
       </div>
 
       {/* SMTP Section */}
