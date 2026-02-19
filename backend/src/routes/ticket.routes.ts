@@ -848,17 +848,20 @@ router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), a
     // Invia email con allegati
     await sendTicketEmail(id, toEmails, subject, body, currentUser.id, attachmentIds);
 
-    // Crea commento per tracciare l'invio email (con flag isOutgoingEmail)
-    const attachmentNames = ticket.attachments?.map((a: any) => a.fileName) || [];
-    await prisma.comment.create({
+    // Crea commento per tracciare l'invio email, poi imposta flag outgoing via raw SQL
+    // (raw SQL evita dipendenza da prisma generate per le nuove colonne)
+    const emailComment = await prisma.comment.create({
       data: {
         ticketId: id,
         userId: currentUser.id,
         content: body,
-        isOutgoingEmail: true,
-        toEmails: toEmails,
-      } as any,
+      },
     });
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Comment" SET "isOutgoingEmail" = true, "toEmails" = $1 WHERE "id" = $2`,
+      toEmails,
+      emailComment.id
+    );
 
     console.log(`✅ Email inviata per ticket ${id} a ${toEmails.join(', ')}`);
     if (ticket.attachments && ticket.attachments.length > 0) {

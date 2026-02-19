@@ -81,12 +81,23 @@ async function ensureSystemConfigTable() {
   }
 }
 
+// Auto-add outgoing email columns to Comment table if missing
+async function ensureCommentEmailColumns() {
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Comment" ADD COLUMN IF NOT EXISTS "isOutgoingEmail" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Comment" ADD COLUMN IF NOT EXISTS "toEmails" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`);
+  } catch (err: any) {
+    console.warn('⚠️  Comment email columns check failed:', err.message);
+  }
+}
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
 
-  // Ensure SystemConfig table exists for email settings
+  // Ensure DB schema is up to date
   await ensureSystemConfigTable();
+  await ensureCommentEmailColumns();
 
   // Email integration
   if (isGraphConfigured()) {
