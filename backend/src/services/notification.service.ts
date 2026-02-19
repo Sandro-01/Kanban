@@ -20,6 +20,7 @@ export async function createNotification(
        VALUES ($1, $2, $3, $4, $5, $6, false, NOW())`,
       id, userId, type, title, message, ticketId || null
     );
+    console.log(`🔔 Notification created [${type}] for user ${userId}`);
   } catch (err: any) {
     console.error('❌ Notification creation failed for userId', userId, ':', err.message);
   }
@@ -156,7 +157,9 @@ async function getTicketRecipients(ticketId: string, excludeUserId?: string): Pr
   }
 
   if (excludeUserId) userIds.delete(excludeUserId);
-  return Array.from(userIds);
+  const result = Array.from(userIds);
+  console.log(`👥 Recipients for ticket ${ticketId} (exclude ${excludeUserId}):`, result);
+  return result;
 }
 
 async function getTicketTitle(ticketId: string): Promise<string> {

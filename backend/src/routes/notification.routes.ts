@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../index';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { createNotification } from '../services/notification.service';
 
 const router = Router();
 
@@ -32,6 +33,17 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/notifications/test — crea una notifica di test per l'utente corrente
+router.get('/test', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    await createNotification(userId, 'AI_SUGGESTION', '🔔 Test notifica', 'Sistema di notifiche funzionante!');
+    res.json({ ok: true, message: 'Notifica di test creata', userId });
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
