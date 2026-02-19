@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor from './RichTextEditor';
@@ -22,12 +22,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [loading, setLoading] = useState(true);
+  const isDragging = useRef(false);
 
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       const response = await ticketsApi.getAll();
       setTickets(response.data);
@@ -36,7 +33,16 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Carica al mount e poi ogni 30 secondi; salta il refresh durante il drag
+  useEffect(() => {
+    loadTickets();
+    const interval = setInterval(() => {
+      if (!isDragging.current) loadTickets();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [loadTickets]);
 
   const handleMoveTicket = async (ticketId: string, newStatus: string) => {
     try {
@@ -48,14 +54,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   };
 
   const handleDragEnd = async (result: DropResult) => {
+    isDragging.current = false;
     const { source, destination, draggableId } = result;
 
-    // Dropped outside a valid droppable
-    if (!destination) {
-      return;
-    }
+    if (!destination) return;
 
-    // Dropped in the same position
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
@@ -63,7 +66,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
       return;
     }
 
-    // Move ticket to new column
     const newStatus = destination.droppableId;
     await handleMoveTicket(draggableId, newStatus);
   };
@@ -122,7 +124,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
         </div>
       </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
+      <DragDropContext onDragStart={() => { isDragging.current = true; }} onDragEnd={handleDragEnd}>
         <div className="kanban-board">
           {COLUMNS.map((column) => (
             <div key={column.id} className="kanban-column">
