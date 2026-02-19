@@ -3,7 +3,7 @@ import Imap from 'node-imap';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
-import { getSmtpConfig, getImapConfig, getCompanyName } from './config.service';
+import { getSmtpConfig, getImapConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
 import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
 import { buildEmailHtml, messageBlock, attachmentsList, callToAction, sanitizeHtmlForEmail } from '../utils/emailTemplate';
 
@@ -94,6 +94,7 @@ export const sendTicketEmail = async (
 
     // Costruisci email con template professionale
     const companyName = await getCompanyName();
+    const logoUrl = await getCompanyLogoUrl();
     const attachFileNames = ticket.attachments?.map((a: any) => a.fileName) || [];
 
     const bodyHtml = [
@@ -104,6 +105,7 @@ export const sendTicketEmail = async (
 
     const emailBody = buildEmailHtml({
       companyName,
+      logoUrl,
       heading: subject,
       subheading: `Ticket #${ticketId.slice(0, 8)}`,
       body: bodyHtml,
