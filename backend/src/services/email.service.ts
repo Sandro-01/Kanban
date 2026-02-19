@@ -3,6 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
 import { getSmtpConfig, getCompanyName } from './config.service';
+import {
+  buildEmailHtml, infoTable, messageBlock, attachmentsList,
+  callToAction, priorityBadge,
+} from '../utils/emailTemplate';
 
 const prisma = new PrismaClient();
 
@@ -275,55 +279,29 @@ export async function createTicketFromEmail(
   // Invia conferma con [Ticket #ID] per tracciamento risposte (non bloccante)
   try {
     const companyName = await getCompanyName();
-    const priorityColors: Record<string, string> = { CRITICAL: '#dc2626', HIGH: '#f59e0b', MEDIUM: '#3b82f6', LOW: '#22c55e' };
-    const pColor = priorityColors[priority] || '#3b82f6';
+
+    const confirmBody = [
+      `<p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.5;">La tua richiesta è stata presa in carico. Di seguito i dettagli:</p>`,
+      infoTable([
+        { label: 'Ticket', value: `#${ticket.id.substring(0, 8)}` },
+        { label: 'Oggetto', value: subject },
+        { label: 'Priorità', value: priority, highlight: true },
+        { label: 'SLA', value: `${slaHours} ore` },
+        { label: 'Scadenza', value: ticket.dueDate.toLocaleString('it-IT') },
+      ]),
+      callToAction('<strong>Rispondi a questa email</strong> per aggiungere aggiornamenti al ticket.'),
+    ].join('');
 
     await sendEmail(
       from,
       `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
-      `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-          <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 28px;">
-            <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">${companyName} — Assistenza</p>
-            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Richiesta ricevuta</h2>
-          </div>
-          <div style="padding: 28px; background: #ffffff;">
-            <p style="margin: 0 0 20px; font-size: 15px; color: #334155; line-height: 1.5;">
-              La tua richiesta è stata presa in carico. Di seguito i dettagli:
-            </p>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr>
-                <td style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b; width: 120px;">Ticket</td>
-                <td style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; font-family: 'Courier New', monospace; color: #1e293b;">#${ticket.id.substring(0, 8)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">Oggetto</td>
-                <td style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #1e293b;">${subject}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">Priorità</td>
-                <td style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 13px;"><span style="display: inline-block; padding: 2px 10px; border-radius: 12px; background: ${pColor}20; color: ${pColor}; font-weight: 600; font-size: 12px;">${priority}</span></td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">SLA</td>
-                <td style="padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #1e293b;">${slaHours} ore</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 14px; background: #f8fafc; font-size: 13px; color: #64748b;">Scadenza</td>
-                <td style="padding: 10px 14px; background: #f8fafc; font-size: 13px; color: #1e293b;">${ticket.dueDate.toLocaleString('it-IT')}</td>
-              </tr>
-            </table>
-            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
-              <p style="margin: 0; font-size: 13px; color: #1e40af;">
-                <strong>Rispondi a questa email</strong> per aggiungere aggiornamenti al ticket.
-              </p>
-            </div>
-          </div>
-          <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-            <p style="margin: 0; font-size: 11px; color: #94a3b8;">${companyName} — Sistema Kanban ISO</p>
-          </div>
-        </div>
-      `,
+      buildEmailHtml({
+        companyName,
+        heading: 'Richiesta ricevuta',
+        subheading: `Ticket #${ticket.id.substring(0, 8)}`,
+        body: confirmBody,
+        footerRef: `Ref: #${ticket.id.substring(0, 8)}`,
+      }),
       ticket.id
     );
   } catch (err: any) {
@@ -380,59 +358,32 @@ export async function notifyTicketUpdate(
 
   // Colori per tipo aggiornamento
   const typeColors: Record<string, string> = {
-    'Nuovo commento': '#3b82f6',
-    'Nuovo allegato': '#8b5cf6',
-    'Assegnazione': '#f59e0b',
+    'Nuovo commento': '#2563eb',
+    'Nuovo allegato': '#7c3aed',
+    'Assegnazione': '#d97706',
   };
-  const accentColor = typeColors[updateType] || '#3b82f6';
+  const accentColor = typeColors[updateType] || '#2563eb';
 
-  // Icone per tipo
-  const typeIcons: Record<string, string> = {
-    'Nuovo commento': '💬',
-    'Nuovo allegato': '📎',
-    'Assegnazione': '👤',
-  };
-  const icon = typeIcons[updateType] || '📋';
-
-  // Lista file allegati nell'email
-  let attachmentsListHtml = '';
-  if (fileAttachments && fileAttachments.length > 0) {
-    attachmentsListHtml = `
-      <div style="margin-top: 16px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #475569;">📎 Allegati (${fileAttachments.length}):</p>
-        ${fileAttachments.map(a => `<p style="margin: 4px 0; font-size: 13px; color: #334155;">&bull; ${a.fileName}</p>`).join('')}
-      </div>
-    `;
-  }
-
-  // Usa [Ticket #ID] nell'oggetto così le risposte vengono tracciate
   const companyName = await getCompanyName();
+  const attachFileNames = fileAttachments?.map(a => a.fileName) || [];
+
+  const notifBody = [
+    `<p style="margin:0 0 6px;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Oggetto ticket</p>`,
+    `<p style="margin:0 0 20px;font-size:15px;color:#0f172a;font-weight:600;">${ticket.title}</p>`,
+    messageBlock(details, { author: authorName, accentColor }),
+    attachmentsList(attachFileNames),
+    callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.', accentColor),
+  ].join('');
+
   const subject = `[Ticket #${ticket.id.substring(0, 8)}] ${ticket.title} - ${updateType}`;
-  const html = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-      <div style="background: linear-gradient(135deg, #1e40af, ${accentColor}); color: white; padding: 24px 28px;">
-        <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">Ticket #${ticket.id.substring(0, 8)}</p>
-        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">${icon} ${updateType}</h2>
-      </div>
-      <div style="padding: 28px; background: #ffffff;">
-        <p style="margin: 0 0 6px; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Oggetto ticket</p>
-        <p style="margin: 0 0 20px; font-size: 15px; color: #1e293b; font-weight: 600;">${ticket.title}</p>
-        <div style="background: #f8fafc; padding: 16px 18px; border-radius: 8px; border-left: 4px solid ${accentColor}; margin-bottom: 16px;">
-          ${authorName ? `<p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #1e40af;">✍️ ${authorName}</p>` : ''}
-          <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6; white-space: pre-wrap;">${details}</p>
-        </div>
-        ${attachmentsListHtml}
-        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-top: 20px;">
-          <p style="margin: 0; font-size: 13px; color: #1e40af;">
-            <strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.
-          </p>
-        </div>
-      </div>
-      <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-        <p style="margin: 0; font-size: 11px; color: #94a3b8;">${companyName} — Sistema Kanban ISO</p>
-      </div>
-    </div>
-  `;
+  const html = buildEmailHtml({
+    companyName,
+    heading: updateType,
+    subheading: `Ticket #${ticket.id.substring(0, 8)}`,
+    accentColor,
+    body: notifBody,
+    footerRef: `Ref: #${ticket.id.substring(0, 8)}`,
+  });
 
   for (const email of recipientSet) {
     try {

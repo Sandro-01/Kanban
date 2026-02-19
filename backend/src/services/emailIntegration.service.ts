@@ -5,6 +5,7 @@ import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
 import { getSmtpConfig, getImapConfig, getCompanyName } from './config.service';
 import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
+import { buildEmailHtml, messageBlock, attachmentsList, callToAction } from '../utils/emailTemplate';
 
 // Fallback config statica (usata solo come default se DB non disponibile)
 const EMAIL_CONFIG = {
@@ -91,41 +92,23 @@ export const sendTicketEmail = async (
     // Oggetto email include ticket ID per tracking
     const emailSubject = `[Ticket #${ticketId.slice(0, 8)}] ${subject}`;
 
-    // Lista allegati in HTML
-    let attachmentsHtml = '';
-    if (ticket.attachments && ticket.attachments.length > 0) {
-      attachmentsHtml = `
-        <div style="margin-top: 16px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #475569;">📎 Allegati (${ticket.attachments.length}):</p>
-          ${ticket.attachments.map(att => `<p style="margin: 4px 0; font-size: 13px; color: #334155;">&bull; ${att.fileName}</p>`).join('')}
-        </div>
-      `;
-    }
-
-    // Corpo email con footer
+    // Costruisci email con template professionale
     const companyName = await getCompanyName();
-    const emailBody = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 28px;">
-          <p style="margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">${companyName} — Assistenza</p>
-          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Ticket #${ticketId.slice(0, 8)}</h2>
-        </div>
-        <div style="padding: 28px; background: #ffffff;">
-          <div style="background: #f8fafc; padding: 16px 18px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 16px;">
-            <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6; white-space: pre-wrap;">${body}</p>
-          </div>
-          ${attachmentsHtml}
-          <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-top: 20px;">
-            <p style="margin: 0; font-size: 13px; color: #1e40af;">
-              <strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.
-            </p>
-          </div>
-        </div>
-        <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-          <p style="margin: 0; font-size: 11px; color: #94a3b8;">Ref: #${ticketId.slice(0, 8)} — ${companyName} — Sistema Kanban ISO</p>
-        </div>
-      </div>
-    `;
+    const attachFileNames = ticket.attachments?.map((a: any) => a.fileName) || [];
+
+    const bodyHtml = [
+      messageBlock(body),
+      attachmentsList(attachFileNames),
+      callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.'),
+    ].join('');
+
+    const emailBody = buildEmailHtml({
+      companyName,
+      heading: subject,
+      subheading: `Ticket #${ticketId.slice(0, 8)}`,
+      body: bodyHtml,
+      footerRef: `Ref: #${ticketId.slice(0, 8)}`,
+    });
 
     // Invia email: usa Graph API se configurato, altrimenti SMTP
     let info: any;
