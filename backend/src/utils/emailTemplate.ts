@@ -61,7 +61,7 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
   <!-- FOOTER -->
   <tr>
     <td style="padding:20px 36px;background-color:#000000;border-top:1px solid #000000;">
-      ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:70px;max-height:24px;width:auto;height:auto;display:inline-block;border:0;margin-bottom:10px;filter:invert(1);" /><br>` : ''}
+      ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="width:250px;max-width:100%;height:auto;display:block;border:0;margin-bottom:12px;" /><br>` : ''}
       <p style="margin:0;font-size:10px;color:#FFE600;text-transform:uppercase;letter-spacing:2px;font-weight:700;">${escapeHtml(opts.companyName)}</p>
       ${opts.footerRef ? `<p style="margin:6px 0 0;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(opts.footerRef)}</p>` : ''}
     </td>
