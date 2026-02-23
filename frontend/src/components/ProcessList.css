@@ -1,128 +1,149 @@
 .process-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2px;
   margin-top: 20px;
+  border: 2px solid #000000;
 }
 
 .process-card {
-  background: white;
-  border-radius: 12px;
+  background: #FFFFFF;
+  border-radius: 0;
   padding: 20px;
-  box-shadow: 0 1px 3px var(--shadow);
+  box-shadow: none;
   cursor: pointer;
-  transition: all 0.2s;
-  border-left: 4px solid var(--primary);
+  transition: background 0.15s;
+  border-right: 2px solid #000000;
+  border-left: 6px solid #000000;
+}
+
+.process-card:last-child {
+  border-right: none;
 }
 
 .process-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--shadow);
+  background: #F5F0EB;
+  transform: none;
+  box-shadow: none;
 }
 
 .process-card.offboarding {
-  border-left-color: var(--warning);
+  border-left-color: #FFE600;
 }
 
 .process-card.completed {
-  opacity: 0.8;
+  opacity: 0.75;
 }
 
 .process-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
 .process-header h3 {
-  font-size: 18px;
-  color: var(--dark);
+  font-size: 16px;
+  font-weight: 900;
+  color: #0A0A0A;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .status-in_progress {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #FFE600;
+  color: #000000;
+  border: 1px solid #000000;
 }
 
 .status-completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: #000000;
+  color: #FFFFFF;
 }
 
 .status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #F5F0EB;
+  color: #000000;
+  border: 1px solid #000000;
 }
 
 .process-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .info-row span:first-child {
-  color: var(--secondary);
+  color: #666666;
+  font-size: 12px;
 }
 
 .info-row span:last-child {
-  color: var(--dark);
-  font-weight: 500;
+  color: #0A0A0A;
+  font-weight: 600;
 }
 
 .progress-section {
-  margin: 15px 0;
+  margin: 12px 0;
 }
 
 .progress-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--secondary);
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
 .progress-bar {
-  height: 8px;
-  background: var(--light);
-  border-radius: 4px;
+  height: 6px;
+  background: #D0C8BF;
+  border-radius: 0;
   overflow: hidden;
+  border: 1px solid #000000;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary) 0%, #3b82f6 100%);
+  background: #000000;
   transition: width 0.3s;
 }
 
 .progress-fill.offboarding-fill {
-  background: linear-gradient(90deg, var(--warning) 0%, #fbbf24 100%);
+  background: #FFE600;
 }
 
 .task-summary {
-  font-size: 13px;
-  color: var(--secondary);
+  font-size: 11px;
+  color: #666666;
   text-align: center;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  border-top: 1px solid #D0C8BF;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
-/* Modale Processo */
+/* Process Modal */
 .process-modal {
   max-width: 800px;
 }
@@ -130,28 +151,32 @@
 .process-modal .modal-content {
   max-height: 70vh;
   overflow-y: auto;
+  padding: 20px 24px;
 }
 
 .process-details {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  padding: 20px;
-  background: var(--light);
-  border-radius: 8px;
+  gap: 14px;
+  padding: 16px;
+  background: #F5F0EB;
+  border-radius: 0;
   margin-bottom: 20px;
+  border: 2px solid #000000;
 }
 
 .detail-item {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .detail-item strong {
-  color: var(--secondary);
+  color: #666666;
   display: block;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
 }
 
 .tasks-section {
@@ -159,28 +184,34 @@
 }
 
 .tasks-section h3 {
-  margin-bottom: 15px;
-  color: var(--dark);
+  margin-bottom: 14px;
+  color: #0A0A0A;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 900;
 }
 
 .task-item {
   display: flex;
-  gap: 15px;
-  padding: 15px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 10px;
-  transition: all 0.2s;
+  gap: 14px;
+  padding: 14px;
+  background: #FFFFFF;
+  border: 2px solid #D0C8BF;
+  border-radius: 0;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
 }
 
 .task-item:hover {
-  background: var(--light);
+  background: #F5F0EB;
+  border-color: #000000;
 }
 
 .task-item.completed {
-  background: #f0fdf4;
-  border-color: var(--success);
+  background: #F5F0EB;
+  border-color: #000000;
+  border-left: 4px solid #000000;
 }
 
 .task-checkbox {
@@ -188,9 +219,10 @@
 }
 
 .task-checkbox input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  accent-color: #000000;
 }
 
 .task-content {
@@ -198,39 +230,42 @@
 }
 
 .task-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--dark);
-  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0A0A0A;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .task-description {
-  font-size: 13px;
-  color: var(--secondary);
+  font-size: 12px;
+  color: #666666;
   line-height: 1.5;
 }
 
 .task-completed-date {
-  font-size: 12px;
-  color: var(--success);
-  margin-top: 8px;
-  font-weight: 500;
+  font-size: 11px;
+  color: #000000;
+  margin-top: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .mandatory-badge {
-  padding: 3px 8px;
-  background: #fef3c7;
-  color: #92400e;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
+  padding: 2px 7px;
+  background: #FFE600;
+  color: #000000;
+  border-radius: 0;
+  font-size: 9px;
+  font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .mandatory-badge.mandatory {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #000000;
+  color: #FFFFFF;
 }

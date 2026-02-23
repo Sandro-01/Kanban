@@ -1,43 +1,49 @@
 .sla-page {
-  padding: 20px;
+  padding: 32px 28px;
 }
 
 .sla-overview-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 2px;
   margin: 20px 0;
+  border: 2px solid #000000;
 }
 
 .sla-overview-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 0;
+  padding: 22px 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 1px 3px var(--shadow);
-  border-left: 4px solid;
+  gap: 16px;
+  box-shadow: none;
+  border-left: none;
+  border-right: 2px solid #000000;
+}
+
+.sla-overview-card:last-child {
+  border-right: none;
 }
 
 .sla-overview-card.success {
-  border-left-color: var(--success);
+  border-top: 4px solid #000000;
 }
 
 .sla-overview-card.warning {
-  border-left-color: var(--warning);
+  border-top: 4px solid #FFE600;
 }
 
 .sla-overview-card.danger {
-  border-left-color: var(--danger);
+  border-top: 4px solid #c00000;
 }
 
 .sla-overview-card.primary {
-  border-left-color: var(--primary);
+  border-top: 4px solid #000000;
 }
 
 .card-icon {
-  font-size: 32px;
+  font-size: 28px;
 }
 
 .card-content {
@@ -45,48 +51,59 @@
 }
 
 .card-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--dark);
+  font-size: 36px;
+  font-weight: 900;
+  color: #0A0A0A;
+  line-height: 1;
 }
 
 .card-label {
-  font-size: 13px;
-  color: var(--secondary);
+  font-size: 10px;
+  color: #666666;
   text-transform: uppercase;
-  margin-top: 4px;
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+  font-weight: 700;
 }
 
 .priority-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
+  gap: 2px;
   margin-top: 20px;
+  border: 2px solid #000000;
 }
 
 .priority-metric-card {
   padding: 20px;
-  background: var(--light);
-  border-radius: 8px;
+  background: #F5F0EB;
+  border-radius: 0;
+  border-right: 2px solid #000000;
+}
+
+.priority-metric-card:last-child {
+  border-right: none;
 }
 
 .priority-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
 .compliance-rate {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--success);
+  font-size: 12px;
+  font-weight: 900;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .priority-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 12px;
 }
 
 .stat {
@@ -95,21 +112,23 @@
 
 .stat-label {
   display: block;
-  font-size: 12px;
-  color: var(--secondary);
-  margin-bottom: 8px;
+  font-size: 10px;
+  color: #666666;
+  margin-bottom: 6px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
 }
 
 .stat-value {
   display: block;
   font-size: 24px;
-  font-weight: 700;
-  color: var(--dark);
+  font-weight: 900;
+  color: #0A0A0A;
 }
 
 .stat-value.stat-danger {
-  color: var(--danger);
+  color: #c00000;
 }
 
 .sla-config-table {
@@ -120,99 +139,114 @@
 .sla-config-table table {
   width: 100%;
   border-collapse: collapse;
+  border: 2px solid #000000;
 }
 
 .sla-config-table th,
 .sla-config-table td {
-  padding: 12px;
+  padding: 12px 14px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #D0C8BF;
 }
 
 .sla-config-table th {
-  background: var(--light);
-  font-weight: 600;
-  color: var(--dark);
+  background: #000000;
+  font-weight: 900;
+  color: #FFFFFF;
   text-transform: uppercase;
-  font-size: 12px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  border-bottom: none;
 }
 
 .sla-config-table td {
-  font-size: 14px;
-  color: var(--dark);
+  font-size: 13px;
+  color: #0A0A0A;
+  background: #FFFFFF;
 }
 
 .violations-card {
-  border-left: 4px solid var(--danger);
+  border-top: 4px solid #c00000;
 }
 
 .violations-list {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
 .violation-item {
-  padding: 20px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
+  padding: 18px 20px;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  border-left: 6px solid #c00000;
+  border-radius: 0;
 }
 
 .violation-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .violation-header h4 {
-  font-size: 16px;
-  color: var(--dark);
+  font-size: 14px;
+  font-weight: 700;
+  color: #0A0A0A;
   margin: 0;
 }
 
 .violation-info {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .violation-detail {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
+  gap: 3px;
+  font-size: 12px;
 }
 
 .violation-detail span:first-child {
-  color: var(--secondary);
+  color: #666666;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
 .violation-detail span:last-child {
-  color: var(--dark);
-  font-weight: 500;
+  color: #0A0A0A;
+  font-weight: 600;
 }
 
 .overdue-time {
-  color: var(--danger) !important;
-  font-weight: 700 !important;
+  color: #c00000 !important;
+  font-weight: 900 !important;
 }
 
 .success-message {
   text-align: center;
   padding: 60px 20px;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: none;
+  background: #F5F0EB;
+  border: 2px solid #000000;
+  border-radius: 0;
 }
 
 .success-message h2 {
-  color: var(--success);
+  color: #000000;
   margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .success-message p {
-  color: #065f46;
-  font-size: 16px;
+  color: #333333;
+  font-size: 14px;
 }

@@ -3,51 +3,96 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
   padding: 20px;
-}
-
-.login-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 450px;
-  width: 100%;
+  position: relative;
   overflow: hidden;
 }
 
+/* Diagonal stripe background pattern */
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 40px,
+    rgba(255, 230, 0, 0.04) 40px,
+    rgba(255, 230, 0, 0.04) 80px
+  );
+  pointer-events: none;
+}
+
+.login-card {
+  background: #FFFFFF;
+  border-radius: 0;
+  border: 3px solid #FFFFFF;
+  box-shadow: 8px 8px 0 #FFE600;
+  max-width: 440px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
 .login-header {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  color: white;
-  padding: 40px 30px;
+  background: #000000;
+  color: #FFFFFF;
+  padding: 36px 32px 28px;
   text-align: center;
+  border-bottom: 3px solid #FFE600;
 }
 
 .login-header h1 {
-  font-size: 32px;
-  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  color: #FFFFFF;
 }
 
 .login-header p {
-  opacity: 0.9;
-  font-size: 14px;
+  opacity: 0.6;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
 }
 
 .login-form {
-  padding: 30px;
+  padding: 28px 32px;
 }
 
 .login-btn {
   width: 100%;
   padding: 14px;
-  font-size: 16px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   margin-top: 10px;
+  background: #000000;
+  color: #FFFFFF;
+  border: 2px solid #000000;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.login-btn:hover {
+  background: #FFE600;
+  color: #000000;
 }
 
 .login-footer {
-  padding: 20px 30px;
-  background: var(--light);
-  border-top: 1px solid var(--border);
+  padding: 18px 32px;
+  background: #F5F0EB;
+  border-top: 2px solid #000000;
 }
 
 .demo-credentials {
@@ -55,9 +100,12 @@
 }
 
 .demo-credentials h3 {
-  font-size: 13px;
-  margin-bottom: 10px;
-  color: var(--dark);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  color: #0A0A0A;
 }
 
 .demo-credentials ul {
@@ -66,24 +114,28 @@
 }
 
 .demo-credentials li {
-  padding: 4px 0;
-  color: var(--secondary);
+  padding: 3px 0;
+  color: #666666;
+  font-size: 12px;
 }
 
 .iso-badges {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  padding: 20px;
-  background: white;
+  gap: 10px;
+  padding: 16px 32px;
+  background: #FFFFFF;
+  border-top: 1px solid #D0C8BF;
 }
 
 .iso-badge {
-  padding: 8px 16px;
-  background: var(--light);
-  color: var(--dark);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  border: 2px solid var(--primary);
+  padding: 6px 14px;
+  background: #000000;
+  color: #FFFFFF;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 2px solid #000000;
 }

@@ -1,13 +1,13 @@
 .header {
-  background: white;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 3px var(--shadow);
+  background: #000000;
+  border-bottom: none;
+  box-shadow: none;
 }
 
 .header-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17,37 +17,41 @@
 .header-left {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 .logo {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--primary);
+  font-size: 15px;
+  font-weight: 900;
+  color: #FFFFFF;
   margin: 0;
   white-space: nowrap;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .nav-link {
-  padding: 6px 10px;
+  padding: 6px 12px;
   text-decoration: none;
-  color: var(--secondary);
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.15s;
+  color: #AAAAAA;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.15s;
   white-space: nowrap;
 }
 
 .nav-link:hover {
-  background: var(--light);
-  color: var(--dark);
+  color: #FFE600;
+  background: transparent;
 }
 
 /* Dropdown */
@@ -65,35 +69,38 @@
 }
 
 .dropdown-arrow {
-  font-size: 10px;
+  font-size: 9px;
   opacity: 0.6;
 }
 
 .nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 0px);
   left: 0;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  min-width: 140px;
+  background: #000000;
+  border: 2px solid #FFE600;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgba(255, 230, 0, 0.3);
+  min-width: 150px;
   z-index: 500;
   overflow: hidden;
 }
 
 .nav-dropdown-item {
   display: block;
-  padding: 9px 14px;
+  padding: 10px 16px;
   text-decoration: none;
-  color: var(--dark);
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.12s;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.12s, color 0.12s;
 }
 
 .nav-dropdown-item:hover {
-  background: var(--light);
+  background: #FFE600;
+  color: #000000;
 }
 
 /* Header right */
@@ -107,19 +114,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--dark);
-  font-weight: 500;
-  font-size: 14px;
+  color: #AAAAAA;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .role-badge {
-  padding: 3px 7px;
-  background: var(--primary);
-  color: white;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 3px 8px;
+  background: #FFE600;
+  color: #000000;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 /* Notification bell */
@@ -127,45 +138,45 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
   position: relative;
   padding: 4px 8px;
-  color: #64748b;
+  color: #AAAAAA;
   transition: color 0.15s;
 }
 
 .notif-bell:hover {
-  color: var(--dark);
+  color: #FFE600;
 }
 
 .notif-badge {
   position: absolute;
   top: -2px;
   right: 0;
-  background: #ef4444;
-  color: white;
-  border-radius: 50%;
-  width: 17px;
-  height: 17px;
+  background: #FFE600;
+  color: #000000;
+  border-radius: 0;
+  width: 16px;
+  height: 16px;
   font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 900;
 }
 
 /* Notification panel */
 .notif-panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   width: 360px;
   max-height: 460px;
   overflow-y: auto;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
+  background: #FFFFFF;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+  border: 2px solid #000000;
   z-index: 1000;
 }
 
@@ -174,19 +185,24 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  font-weight: 600;
-  font-size: 14px;
-  color: #0f172a;
+  border-bottom: 2px solid #000000;
+  font-weight: 900;
+  font-size: 11px;
+  color: #FFFFFF;
+  background: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .notif-mark-all {
   background: none;
   border: none;
   cursor: pointer;
-  color: #3b82f6;
-  font-size: 12px;
-  font-weight: 500;
+  color: #FFE600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .notif-mark-all:hover {
@@ -196,8 +212,10 @@
 .notif-empty {
   padding: 28px 16px;
   text-align: center;
-  color: #94a3b8;
-  font-size: 14px;
+  color: #666666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .notif-item {
@@ -205,26 +223,27 @@
   align-items: flex-start;
   gap: 10px;
   padding: 11px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #F5F0EB;
   cursor: pointer;
-  background: #fff;
+  background: #FFFFFF;
   transition: background 0.12s;
 }
 
 .notif-item:hover {
-  background: #f8fafc;
+  background: #F5F0EB;
 }
 
 .notif-item--unread {
-  background: #eff6ff;
+  background: #FAFAF8;
+  border-left: 3px solid #FFE600;
 }
 
 .notif-item--unread:hover {
-  background: #dbeafe;
+  background: #F5F0EB;
 }
 
 .notif-icon {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
   margin-top: 2px;
@@ -236,26 +255,28 @@
 }
 
 .notif-title {
-  font-size: 13px;
-  color: #0f172a;
+  font-size: 12px;
+  color: #0A0A0A;
   margin-bottom: 2px;
 }
 
 .notif-title--bold {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .notif-message {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 11px;
+  color: #666666;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .notif-time {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 10px;
+  color: #999999;
   flex-shrink: 0;
   margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
