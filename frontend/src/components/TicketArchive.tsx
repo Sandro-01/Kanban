@@ -71,7 +71,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
   const loadTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = {};
+      const params: any = { archive: 'true' };
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.status = statusFilter;
       if (priorityFilter) params.priority = priorityFilter;

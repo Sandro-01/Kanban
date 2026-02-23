@@ -36,8 +36,9 @@ const upload = multer({
 // Lista tickets
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { status, priority, boardId, search, assignedUserId, department, dateFrom, dateTo } = req.query;
+    const { status, priority, boardId, search, assignedUserId, department, dateFrom, dateTo, archive } = req.query;
     const currentUser = req.user!;
+    const isArchive = archive === 'true';
 
     const where: any = {};
     if (status) where.status = status;
@@ -97,8 +98,9 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 
     // Visibility rules:
     // ADMIN can see EVERYTHING
+    // Archive mode (isArchive=true) → all authenticated users see all tickets
     // Normal users follow assignment rules
-    if (currentUser.role !== 'ADMIN') {
+    if (currentUser.role !== 'ADMIN' && !isArchive) {
       // Visibility rules (user assignment has priority over department):
       // 1. OPEN tickets with NO assignments → visible to everyone
       // 2. Assigned to specific users → ONLY those users can see (even if department is also assigned)
