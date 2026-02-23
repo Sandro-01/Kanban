@@ -215,7 +215,7 @@ async function handleAuthRegister(req, res) {
 
   const existing = queryOne(`SELECT "id" FROM "User" WHERE "email" = ${escapeSQL(email)}`, ['id']);
   if (existing) {
-    return sendJson(res, 400, { error: 'Email già registrata' });
+    return sendJson(res, 400, { error: 'Email already registered' });
   }
 
   const userRole = role || 'USER';

@@ -98,7 +98,7 @@ router.post(
       });
 
       if (existingUser) {
-        return res.status(400).json({ error: 'Email già registrata' });
+        return res.status(400).json({ error: 'Email already registered' });
       }
 
       // Hash password
