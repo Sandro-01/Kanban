@@ -83,12 +83,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   };
 
   const typeIcons: Record<string, string> = {
-    COMMENT: '💬',
-    ASSIGNMENT: '👤',
-    STATUS_CHANGE: '🔄',
-    SLA_ALERT: '⚠️',
-    EMAIL: '📧',
-    AI_SUGGESTION: '🤖',
+    COMMENT: '▸',
+    ASSIGNMENT: '◆',
+    STATUS_CHANGE: '→',
+    SLA_ALERT: '!',
+    EMAIL: '✉',
+    AI_SUGGESTION: '◎',
   };
 
   const timeSince = (dateStr: string) => {
@@ -163,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
               className="notif-bell"
               title="Notifications"
             >
-              &#128276;
+              ●
               {unreadCount > 0 && (
                 <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
@@ -204,7 +204,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <span className="user-badge">
             {user.firstName} {user.lastName}
             <span className="role-badge">
-              {user.role === 'ADMIN' ? '👑 Admin' : user.department || 'User'}
+              {user.role === 'ADMIN' ? 'Admin' : user.department || 'User'}
             </span>
           </span>
           <button onClick={onLogout} className="btn btn-secondary">

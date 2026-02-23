@@ -101,21 +101,21 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
 
             <div className="process-info">
               <div className="info-row">
-                <span>👤 Manager:</span>
+                <span>Manager:</span>
                 <span>
                   {off.manager.firstName} {off.manager.lastName}
                 </span>
               </div>
               <div className="info-row">
-                <span>📅 Start:</span>
+                <span>Start:</span>
                 <span>{new Date(off.startDate).toLocaleDateString('en-GB')}</span>
               </div>
               <div className="info-row">
-                <span>⏰ Deadline:</span>
+                <span>Deadline:</span>
                 <span>{new Date(off.expectedEndDate).toLocaleDateString('en-GB')}</span>
               </div>
               <div className="info-row">
-                <span>📝 Reason:</span>
+                <span>Reason:</span>
                 <span>{off.reason}</span>
               </div>
             </div>
@@ -199,7 +199,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
               <div className="tasks-section">
                 <h3>Offboarding Checklist (ISO 27001)</h3>
                 <div className="alert alert-danger" style={{ marginBottom: '15px' }}>
-                  ⚠️ All mandatory tasks must be completed to ensure security
+                  ! All mandatory tasks must be completed to ensure security
                 </div>
                 {selectedOffboarding.tasks
                   .sort((a: any, b: any) => a.order - b.order)
@@ -229,7 +229,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
                         <div className="task-description">{task.description}</div>
                         {task.completed && task.completedAt && (
                           <div className="task-completed-date">
-                            ✓ Completed on{' '}
+                            Completed on{' '}
                             {new Date(task.completedAt).toLocaleDateString('en-GB')}
                           </div>
                         )}
@@ -367,7 +367,7 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="alert alert-danger" style={{ marginBottom: '15px' }}>
-            ⚠️ <strong>ISO 27001:</strong> The access revocation checklist will be created automatically.
+            <strong>ISO 27001:</strong> The access revocation checklist will be created automatically.
             All mandatory tasks must be completed.
           </div>
 

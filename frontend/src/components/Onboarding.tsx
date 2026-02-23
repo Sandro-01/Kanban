@@ -187,7 +187,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                         }
                       }
                     }}
-                    style={{ backgroundColor: '#ef4444', color: 'white', whiteSpace: 'nowrap' }}
+                    style={{ backgroundColor: '#000000', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                   >
                     🗑️ Delete
                   </button>
@@ -200,7 +200,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
             <div className="modal-content">
               {selectedOnboarding.status === 'PENDING_EQUIPMENT' && (
-                <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '12px' }}>
+                <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#FFE600', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
                   <strong>⚠️ Waiting for Equipment</strong><br />
                   <span style={{ fontSize: '14px' }}>
                     Basic information has been entered by HR. The Manager needs to add the necessary equipment.
@@ -210,8 +210,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
               <div className="process-details">
                 <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a202c', margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0A0A0A', margin: 0 }}>
                       Basic Information
                     </h4>
                     {canEditInfo && !editingInfo && (
@@ -257,7 +257,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                         <div className="form-group">
                           <label className="label">Expected End Date</label>
                           <input type="date" className="input" value={editFormData.expectedEndDate} onChange={(e) => setEditFormData({ ...editFormData, expectedEndDate: e.target.value })} />
-                          <span style={{ fontSize: '11px', color: '#6b7280' }}>Leave blank for permanent contract</span>
+                          <span style={{ fontSize: '11px', color: '#666666' }}>Leave blank for permanent contract</span>
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
@@ -330,7 +330,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {(selectedOnboarding.computerType || selectedOnboarding.phoneType || selectedOnboarding.needsHeadset || selectedOnboarding.needsWebcam || selectedOnboarding.additionalMonitor) && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
                       💻 Hardware Equipment
                     </h4>
                     {selectedOnboarding.computerType && selectedOnboarding.computerType !== 'Non necessario' && (
@@ -358,7 +358,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {(selectedOnboarding.needsMicrosoft365 || selectedOnboarding.softwareNeeded || selectedOnboarding.systemAccess) && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
                       🔐 Software and Access
                     </h4>
                     {selectedOnboarding.needsMicrosoft365 && (
@@ -381,7 +381,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {selectedOnboarding.additionalNotes && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #8b5cf6', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
                       📝 Additional Notes
                     </h4>
                     <div className="detail-item" style={{ whiteSpace: 'pre-wrap' }}>
@@ -460,7 +460,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
         <form onSubmit={handleSubmit}>
           {/* SECTION: Basic Information */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #3b82f6', paddingBottom: '6px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
               📋 Basic Information
             </h3>
 
@@ -538,7 +538,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
                   value={formData.expectedEndDate}
                   onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
                 />
-                <span style={{ fontSize: '11px', color: '#6b7280' }}>Leave blank for permanent contract</span>
+                <span style={{ fontSize: '11px', color: '#666666' }}>Leave blank for permanent contract</span>
               </div>
             </div>
 
@@ -638,7 +638,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
-        <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
+        <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#F5F0EB', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
           <strong>👤 Manager</strong><br />
           <span style={{ fontSize: '14px' }}>
             Fill in the necessary equipment for the new employee. Once saved, a ticket will be automatically created for IT.
@@ -648,7 +648,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
         <form onSubmit={handleSubmit}>
           {/* SECTION: Hardware Equipment */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '6px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
               💻 Hardware Equipment
             </h3>
 
@@ -683,7 +683,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsHeadset ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsHeadset ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.needsHeadset}
@@ -693,7 +693,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
                 <span>🎧 Headphones</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsWebcam ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsWebcam ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.needsWebcam}
@@ -703,7 +703,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
                 <span>📹 Webcam</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.additionalMonitor ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.additionalMonitor ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.additionalMonitor}
@@ -717,11 +717,11 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
 
           {/* SECTION: Software and Access */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '6px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
               🔐 Software and Access
             </h3>
 
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsMicrosoft365 ? '#dbeafe' : 'transparent', marginBottom: '15px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsMicrosoft365 ? '#FFE600' : 'transparent', marginBottom: '15px' }}>
               <input
                 type="checkbox"
                 checked={formData.needsMicrosoft365}
@@ -758,7 +758,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
 
           {/* SECTION: Additional Notes */}
           <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #8b5cf6', paddingBottom: '6px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
               📝 Additional Notes
             </h3>
 
@@ -774,7 +774,7 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
             </div>
           </div>
 
-          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#dcfce7', border: '1px solid #10b981', borderRadius: '6px', padding: '12px' }}>
+          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#F5F0EB', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
             <strong>🎫 Automatic IT Ticket</strong><br />
             <span style={{ fontSize: '14px' }}>
               By saving the equipment, a ticket will be automatically created for the IT department with all the details.

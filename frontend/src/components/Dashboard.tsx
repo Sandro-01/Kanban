@@ -71,12 +71,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <h1>Dashboard</h1>
         <p>Welcome, {user.firstName} {user.lastName}!</p>
         {user.role === 'ADMIN' ? (
-          <span className="badge" style={{ backgroundColor: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '5px', fontSize: '14px' }}>
-            👑 Administrator
+          <span className="badge" style={{ background: '#FFE600', color: '#000000', padding: '4px 12px', borderRadius: '0', fontSize: '11px', fontWeight: '900', letterSpacing: '0.08em', border: '2px solid #000000' }}>
+            ADMIN
           </span>
         ) : (
-          <span className="badge" style={{ backgroundColor: '#3b82f6', color: 'white', padding: '5px 10px', borderRadius: '5px', fontSize: '14px' }}>
-            👤 {user.department || 'User'}
+          <span className="badge" style={{ background: '#F5F0EB', color: '#000000', padding: '4px 12px', borderRadius: '0', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', border: '2px solid #000000' }}>
+            {user.department || 'USER'}
           </span>
         )}
       </div>
@@ -87,28 +87,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <h2>ISO 9001/27001 Compliant System</h2>
           <div className="iso-features">
             <div className="iso-feature">
-              <span className="icon">🔒</span>
+              <span className="icon" style={{ fontSize: '14px', fontWeight: '900' }}>■</span>
               <span>Audit Logging</span>
             </div>
             <div className="iso-feature">
-              <span className="icon">📊</span>
+              <span className="icon" style={{ fontSize: '14px', fontWeight: '900' }}>◆</span>
               <span>SLA Tracking</span>
             </div>
             <div className="iso-feature">
-              <span className="icon">📁</span>
+              <span className="icon" style={{ fontSize: '14px', fontWeight: '900' }}>▲</span>
               <span>Immutable Files</span>
             </div>
             <div className="iso-feature">
-              <span className="icon">👥</span>
+              <span className="icon" style={{ fontSize: '14px', fontWeight: '900' }}>●</span>
               <span>Onboarding/Offboarding</span>
             </div>
           </div>
         </div>
       ) : (
         // User view - show personalized message
-        <div className="card" style={{ padding: '20px', marginBottom: '20px', backgroundColor: '#f0f9ff', border: '1px solid #3b82f6' }}>
-          <h2 style={{ margin: '0 0 10px 0', color: '#1e40af' }}>👋 Welcome to your personal area</h2>
-          <p style={{ margin: 0, color: '#1e3a8a' }}>
+        <div className="card" style={{ padding: '20px', marginBottom: '20px', backgroundColor: '#FFE600', border: '2px solid #000000', borderRadius: '0' }}>
+          <h2 style={{ margin: '0 0 10px 0', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 900, fontSize: '18px' }}>Welcome to your personal area</h2>
+          <p style={{ margin: 0, color: '#333333', fontSize: '13px' }}>
             Here you can view your assigned tickets, monitor priorities and manage your tasks.
           </p>
         </div>
@@ -197,14 +197,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <h2>Quick Links</h2>
         <div className="links-grid">
           <a href="/board" className="quick-link">
-            <span className="icon">📋</span>
+            <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>→</span>
             <div>
               <h3>Kanban Board</h3>
               <p>Manage tickets</p>
             </div>
           </a>
           <a href="/sla" className="quick-link">
-            <span className="icon">⏱️</span>
+            <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>◆</span>
             <div>
               <h3>SLA Metrics</h3>
               <p>SLA monitoring</p>
@@ -215,14 +215,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           {user.role === 'ADMIN' && (
             <>
               <a href="/users" className="quick-link">
-                <span className="icon">👥</span>
+                <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>■</span>
                 <div>
                   <h3>User Management</h3>
                   <p>Create, edit, delete users</p>
                 </div>
               </a>
               <a href="/audit" className="quick-link">
-                <span className="icon">📝</span>
+                <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>▲</span>
                 <div>
                   <h3>Audit Logs</h3>
                   <p>Activity tracking</p>
@@ -234,7 +234,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           {/* Onboarding - visible to ADMIN and HR department */}
           {(user.role === 'ADMIN' || user.department === 'Risorse Umane') && (
             <a href="/onboarding" className="quick-link">
-              <span className="icon">🚀</span>
+              <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>+</span>
               <div>
                 <h3>Onboarding</h3>
                 <p>Manage new employees</p>
@@ -247,7 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             user.department === 'Risorse Umane' ||
             user.department === 'IT/Sistemi') && (
             <a href="/offboarding" className="quick-link">
-              <span className="icon">👋</span>
+              <span className="icon" style={{ fontSize: '20px', fontWeight: '900', color: '#000000' }}>×</span>
               <div>
                 <h3>Offboarding</h3>
                 <p>Employee exit process</p>

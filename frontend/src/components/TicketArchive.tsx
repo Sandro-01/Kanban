@@ -15,11 +15,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: '#3b82f6',
-  IN_PROGRESS: '#f59e0b',
-  WAITING: '#8b5cf6',
-  RESOLVED: '#10b981',
-  CLOSED: '#6b7280',
+  OPEN: '#000000',
+  IN_PROGRESS: '#FFE600',
+  WAITING: '#888888',
+  RESOLVED: '#333333',
+  CLOSED: '#CCCCCC',
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -30,10 +30,10 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#dc2626',
-  HIGH: '#f97316',
-  MEDIUM: '#eab308',
-  LOW: '#22c55e',
+  CRITICAL: '#000000',
+  HIGH: '#333333',
+  MEDIUM: '#FFE600',
+  LOW: '#D0C8BF',
 };
 
 const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
@@ -242,7 +242,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                 return (
                   <tr key={ticket.id} onClick={() => openDetail(ticket)} className="archive-row">
                     <td>
-                      <span className="status-badge" style={{ background: STATUS_COLORS[ticket.status] }}>
+                      <span className="status-badge" style={{ background: STATUS_COLORS[ticket.status], color: ticket.status === 'IN_PROGRESS' ? '#000000' : ticket.status === 'WAITING' || ticket.status === 'CLOSED' ? '#FFFFFF' : '#FFFFFF' }}>
                         {STATUS_LABELS[ticket.status] || ticket.status}
                       </span>
                     </td>
@@ -303,7 +303,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
               <div className="detail-grid">
                 <div className="detail-field">
                   <label>Status</label>
-                  <span className="status-badge" style={{ background: STATUS_COLORS[selectedTicket.status] }}>
+                  <span className="status-badge" style={{ background: STATUS_COLORS[selectedTicket.status], color: selectedTicket.status === 'IN_PROGRESS' ? '#000000' : '#FFFFFF' }}>
                     {STATUS_LABELS[selectedTicket.status]}
                   </span>
                 </div>

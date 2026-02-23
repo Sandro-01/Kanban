@@ -72,12 +72,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 
   const getPriorityColor = (priority: string) => {
     const colors: any = {
-      CRITICAL: '#ef4444',
-      HIGH: '#f59e0b',
-      MEDIUM: '#3b82f6',
-      LOW: '#10b981',
+      CRITICAL: '#000000',
+      HIGH: '#333333',
+      MEDIUM: '#FFE600',
+      LOW: '#D0C8BF',
     };
-    return colors[priority] || '#64748b';
+    return colors[priority] || '#888888';
   };
 
   const getTicketsForColumn = (status: string) => {
@@ -106,20 +106,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
           <button
             className="btn btn-primary"
             onClick={() => setShowSendEmail(true)}
-            style={{ background: '#6366f1' }}
           >
-            ✉️ Send Email
+            Send Email
           </button>
         </div>
       </div>
 
       <div className="alert alert-info" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '24px' }}>🖱️</span>
         <div>
-          <strong>Drag & Drop Active!</strong>
+          <strong>Drag &amp; Drop Active</strong>
           <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>
             Drag tickets between columns to update their status.
-            Hover over a ticket to see the drag indicator.
           </p>
         </div>
       </div>
@@ -811,7 +808,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
           {/* Onboarding Equipment Form - visible only for onboarding tickets */}
           {isOnboardingTicket && ticket.status !== 'RESOLVED' && (
-            <div style={{ margin: '15px 0', padding: '15px', backgroundColor: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '8px' }}>
+            <div style={{ margin: '15px 0', padding: '15px', backgroundColor: '#FFE600', border: '2px solid #000000', borderRadius: '0' }}>
               {!showEquipmentForm ? (
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ marginBottom: '10px', fontWeight: '600' }}>
@@ -827,12 +824,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 </div>
               ) : (
                 <div>
-                  <h3 style={{ marginBottom: '15px', borderBottom: '2px solid #f59e0b', paddingBottom: '8px' }}>
+                  <h3 style={{ marginBottom: '15px', borderBottom: '3px solid #000000', paddingBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 900 }}>
                     Equipment for New Employee
                   </h3>
 
                   {/* Hardware */}
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '4px' }}>
+                  <h4 style={{ fontSize: '11px', fontWeight: '900', marginBottom: '10px', color: '#000000', borderBottom: '2px solid #000000', paddingBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Hardware Equipment
                   </h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
@@ -856,25 +853,25 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsHeadset ? '#dbeafe' : 'transparent' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: equipmentData.needsHeadset ? '#FFE600' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.needsHeadset} onChange={(e) => setEquipmentData({ ...equipmentData, needsHeadset: e.target.checked })} style={{ marginRight: '8px' }} />
                       Headphones
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsWebcam ? '#dbeafe' : 'transparent' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: equipmentData.needsWebcam ? '#FFE600' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.needsWebcam} onChange={(e) => setEquipmentData({ ...equipmentData, needsWebcam: e.target.checked })} style={{ marginRight: '8px' }} />
                       Webcam
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.additionalMonitor ? '#dbeafe' : 'transparent' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: equipmentData.additionalMonitor ? '#FFE600' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.additionalMonitor} onChange={(e) => setEquipmentData({ ...equipmentData, additionalMonitor: e.target.checked })} style={{ marginRight: '8px' }} />
                       Additional monitor
                     </label>
                   </div>
 
                   {/* Software and Access */}
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
+                  <h4 style={{ fontSize: '11px', fontWeight: '900', marginBottom: '10px', color: '#000000', borderBottom: '2px solid #000000', paddingBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Software and Access
                   </h4>
-                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsMicrosoft365 ? '#dbeafe' : 'transparent', marginBottom: '10px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '10px', border: '2px solid #000000', borderRadius: '0', backgroundColor: equipmentData.needsMicrosoft365 ? '#FFE600' : 'transparent', marginBottom: '10px' }}>
                     <input type="checkbox" checked={equipmentData.needsMicrosoft365} onChange={(e) => setEquipmentData({ ...equipmentData, needsMicrosoft365: e.target.checked })} style={{ marginRight: '10px' }} />
                     <span style={{ fontWeight: '500' }}>Microsoft 365 Package</span>
                   </label>
@@ -928,7 +925,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
           <div className="assignments-section">
             <div className="assignments-header">
               <div className="assignments-header-left">
-                <span className="icon">👥</span>
+                <span className="icon" style={{ fontSize: '10px', fontWeight: '900' }}>+</span>
                 Assignments
               </div>
               <button
@@ -1006,7 +1003,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 {assignTab === 'users' && (
                   <div>
                     <div className="assignment-search-wrapper">
-                      <span className="assignment-search-icon">🔍</span>
+                      <span className="assignment-search-icon" style={{ fontWeight: '700', fontSize: '11px' }}>○</span>
                       <input
                         type="text"
                         className="assignment-search"
@@ -1033,7 +1030,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
                               onClick={() => !isDisabled && handleUserSelection(u.id)}
                             >
-                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#cbd5e1' }}>
+                              <div className="avatar-sm" style={{ background: isSelected ? '#000000' : '#D0C8BF' }}>
                                 {getInitials(u.firstName, u.lastName)}
                               </div>
                               <div className="item-info">
@@ -1047,7 +1044,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </div>
                     <div className="assignment-count">
                       {selectedDepartments.length > 0
-                        ? '⚠️ Deselect departments to assign to users'
+                        ? '! Deselect departments to assign to users'
                         : `${selectedUsers.length} user(s) selected`}
                     </div>
                   </div>
@@ -1057,7 +1054,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 {assignTab === 'departments' && (
                   <div>
                     <div className="assignment-search-wrapper">
-                      <span className="assignment-search-icon">🔍</span>
+                      <span className="assignment-search-icon" style={{ fontWeight: '700', fontSize: '11px' }}>○</span>
                       <input
                         type="text"
                         className="assignment-search"
@@ -1079,7 +1076,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
                               onClick={() => !isDisabled && handleDepartmentSelection(dept)}
                             >
-                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : '#cbd5e1' }}>
+                              <div className="avatar-sm" style={{ background: isSelected ? '#FFE600' : '#D0C8BF', color: isSelected ? '#000000' : '#FFFFFF' }}>
                                 {dept[0]}
                               </div>
                               <div className="item-info">
@@ -1092,7 +1089,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </div>
                     <div className="assignment-count">
                       {selectedUsers.length > 0
-                        ? '⚠️ Deselect users to assign to departments'
+                        ? '! Deselect users to assign to departments'
                         : `${selectedDepartments.length} department(s) selected`}
                     </div>
                   </div>
@@ -1333,12 +1330,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     } catch { alert('AI error'); }
                   }}
                   style={{
-                    background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px',
-                    padding: '4px 10px', fontSize: '12px', cursor: 'pointer', color: '#166534',
+                    background: '#F5F0EB', border: '2px solid #000000', borderRadius: '0',
+                    padding: '4px 10px', fontSize: '11px', cursor: 'pointer', color: '#000000',
+                    fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
                   }}
                   title="Generate AI-suggested response"
                 >
-                  🤖 Suggest response
+                  AI Suggest
                 </button>
               </div>
               <RichTextEditor

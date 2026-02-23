@@ -125,14 +125,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
             <div>
               <span style={{
-                display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-                background: '#eff6ff', color: '#2563eb', fontSize: '12px', fontWeight: '600',
-                marginBottom: '8px',
+                display: 'inline-block', padding: '2px 10px', borderRadius: '0',
+                background: '#000000', color: '#FFFFFF', fontSize: '10px', fontWeight: '900',
+                marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.08em',
               }}>
                 {selectedArticle.category}
               </span>
-              <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a' }}>{selectedArticle.title}</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#0A0A0A', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{selectedArticle.title}</h2>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#666666' }}>
                 By {selectedArticle.authorName} | {new Date(selectedArticle.createdAt).toLocaleDateString('en-GB')}
                 {' | '}{selectedArticle.viewCount} views
               </p>
@@ -141,22 +141,24 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
               <button
                 onClick={() => handleHelpful(selectedArticle.id)}
                 style={{
-                  background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px',
-                  padding: '6px 12px', cursor: 'pointer', fontSize: '13px', color: '#166534',
+                  background: '#F5F0EB', border: '2px solid #000000', borderRadius: '0',
+                  padding: '6px 12px', cursor: 'pointer', fontSize: '11px', color: '#000000',
+                  fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
                 }}
               >
-                👍 Helpful ({selectedArticle.helpfulCount || 0})
+                + Helpful ({selectedArticle.helpfulCount || 0})
               </button>
               {user.role === 'ADMIN' && (
                 <>
-                  <button onClick={() => handleEdit(selectedArticle)} className="btn btn-secondary" style={{ fontSize: '13px' }}>
-                    ✏️ Edit
+                  <button onClick={() => handleEdit(selectedArticle)} className="btn btn-secondary" style={{ fontSize: '11px' }}>
+                    Edit
                   </button>
                   <button onClick={() => handleDelete(selectedArticle.id)} style={{
-                    background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px',
-                    padding: '6px 12px', cursor: 'pointer', fontSize: '13px', color: '#dc2626',
+                    background: '#000000', border: '2px solid #000000', borderRadius: '0',
+                    padding: '6px 12px', cursor: 'pointer', fontSize: '11px', color: '#FFFFFF',
+                    fontWeight: '900', letterSpacing: '0.06em',
                   }}>
-                    🗑️
+                    ×
                   </button>
                 </>
               )}
@@ -167,8 +169,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
             <div style={{ marginBottom: '16px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {selectedArticle.tags.map((tag: string) => (
                 <span key={tag} style={{
-                  padding: '2px 8px', background: '#f1f5f9', borderRadius: '10px',
-                  fontSize: '11px', color: '#64748b',
+                  padding: '2px 8px', background: '#F5F0EB', borderRadius: '0',
+                  fontSize: '10px', color: '#000000', border: '1px solid #000000',
+                  fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em',
                 }}>
                   #{tag}
                 </span>
@@ -259,7 +262,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>📚 Knowledge Base</h1>
+        <h1>Knowledge Base</h1>
         {user.role === 'ADMIN' && (
           <button className="btn btn-primary" onClick={() => setShowEditor(true)}>
             + New Article
@@ -302,30 +305,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
               key={article.id}
               onClick={() => handleViewArticle(article.id)}
               style={{
-                background: '#fff', borderRadius: '8px', padding: '20px',
-                border: '1px solid #e2e8f0', cursor: 'pointer',
-                transition: 'box-shadow 0.15s, transform 0.15s',
+                background: '#FFFFFF', borderRadius: '0', padding: '20px',
+                border: '2px solid #000000', cursor: 'pointer',
+                transition: 'background 0.15s, box-shadow 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#F5F0EB'; e.currentTarget.style.boxShadow = '4px 4px 0 #000000'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <span style={{
-                display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-                background: '#eff6ff', color: '#2563eb', fontSize: '11px', fontWeight: '600',
-                marginBottom: '10px',
+                display: 'inline-block', padding: '2px 10px', borderRadius: '0',
+                background: '#000000', color: '#FFFFFF', fontSize: '10px', fontWeight: '900',
+                marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.08em',
               }}>
                 {article.category}
               </span>
-              <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: '#0f172a' }}>{article.title}</h3>
+              <h3 style={{ margin: '0 0 8px', fontSize: '14px', color: '#0A0A0A', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.title}</h3>
               <p style={{
-                margin: '0 0 12px', fontSize: '13px', color: '#64748b',
+                margin: '0 0 12px', fontSize: '12px', color: '#666666',
                 overflow: 'hidden', display: '-webkit-box',
                 WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
               }}>
                 {(article.preview || '').replace(/<[^>]*>/g, '')}
               </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8' }}>
-                <span>👁 {article.viewCount} | 👍 {article.helpfulCount}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#999999' }}>
+                <span>{article.viewCount} views | {article.helpfulCount} helpful</span>
                 <span>{new Date(article.createdAt).toLocaleDateString('en-GB')}</span>
               </div>
             </div>
