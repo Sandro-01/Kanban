@@ -1,8 +1,50 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications as notifApi } from '../services/api';
-import { Bell, MessageSquare, UserCheck, RefreshCw, AlertTriangle, Mail, Sparkles } from 'lucide-react';
 import './Header.css';
+
+// Inline SVG icons — thin stroke, Off-White minimal style
+const S = 14;
+const IconBell = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+);
+const IconComment = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const IconAssign = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <polyline points="16 11 18 13 22 9"/>
+  </svg>
+);
+const IconRefresh = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+);
+const IconAlert = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+const IconMail = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
+  </svg>
+);
+const IconAI = () => (
+  <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+  </svg>
+);
 
 interface HeaderProps {
   user: any;
@@ -84,12 +126,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   };
 
   const typeIcons: Record<string, React.ReactNode> = {
-    COMMENT: <MessageSquare size={14} strokeWidth={1.5} />,
-    ASSIGNMENT: <UserCheck size={14} strokeWidth={1.5} />,
-    STATUS_CHANGE: <RefreshCw size={14} strokeWidth={1.5} />,
-    SLA_ALERT: <AlertTriangle size={14} strokeWidth={1.5} />,
-    EMAIL: <Mail size={14} strokeWidth={1.5} />,
-    AI_SUGGESTION: <Sparkles size={14} strokeWidth={1.5} />,
+    COMMENT: <IconComment />,
+    ASSIGNMENT: <IconAssign />,
+    STATUS_CHANGE: <IconRefresh />,
+    SLA_ALERT: <IconAlert />,
+    EMAIL: <IconMail />,
+    AI_SUGGESTION: <IconAI />,
   };
 
   const timeSince = (dateStr: string) => {
@@ -164,7 +206,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
               className="notif-bell"
               title="Notifications"
             >
-              <Bell size={18} strokeWidth={1.5} />
+              <IconBell size={18} />
               {unreadCount > 0 && (
                 <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
@@ -189,7 +231,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                       onClick={() => handleNotifClick(n)}
                       className={`notif-item ${n.read ? '' : 'notif-item--unread'}`}
                     >
-                      <span className="notif-icon">{typeIcons[n.type] || <Bell size={14} strokeWidth={1.5} />}</span>
+                      <span className="notif-icon">{typeIcons[n.type] || <IconBell size={14} />}</span>
                       <div className="notif-body">
                         <div className={`notif-title ${n.read ? '' : 'notif-title--bold'}`}>{n.title}</div>
                         <div className="notif-message">{n.message}</div>
