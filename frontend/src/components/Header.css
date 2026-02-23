@@ -11,34 +11,38 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  height: 56px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 24px;
 }
 
 .logo {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--primary);
   margin: 0;
+  white-space: nowrap;
 }
 
 .nav {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 2px;
 }
 
 .nav-link {
-  padding: 8px 16px;
+  padding: 6px 10px;
   text-decoration: none;
   color: var(--secondary);
   border-radius: 6px;
   font-weight: 500;
-  transition: all 0.2s;
+  font-size: 14px;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -46,25 +50,212 @@
   color: var(--dark);
 }
 
+/* Dropdown */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 140px;
+  z-index: 500;
+  overflow: hidden;
+}
+
+.nav-dropdown-item {
+  display: block;
+  padding: 9px 14px;
+  text-decoration: none;
+  color: var(--dark);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.12s;
+}
+
+.nav-dropdown-item:hover {
+  background: var(--light);
+}
+
+/* Header right */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
 
 .user-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--dark);
   font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .role-badge {
-  padding: 4px 8px;
+  padding: 3px 7px;
   background: var(--primary);
   color: white;
   border-radius: 4px;
   font-size: 11px;
   text-transform: uppercase;
+}
+
+/* Notification bell */
+.notif-bell {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  position: relative;
+  padding: 4px 8px;
+  color: #64748b;
+  transition: color 0.15s;
+}
+
+.notif-bell:hover {
+  color: var(--dark);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 17px;
+  height: 17px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* Notification panel */
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 360px;
+  max-height: 460px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  z-index: 1000;
+}
+
+.notif-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.notif-mark-all {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #3b82f6;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.notif-mark-all:hover {
+  text-decoration: underline;
+}
+
+.notif-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.12s;
+}
+
+.notif-item:hover {
+  background: #f8fafc;
+}
+
+.notif-item--unread {
+  background: #eff6ff;
+}
+
+.notif-item--unread:hover {
+  background: #dbeafe;
+}
+
+.notif-icon {
+  font-size: 17px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notif-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-title {
+  font-size: 13px;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.notif-title--bold {
+  font-weight: 600;
+}
+
+.notif-message {
+  font-size: 12px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
