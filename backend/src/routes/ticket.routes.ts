@@ -8,7 +8,7 @@ import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
 import { notifyTicketUpdate, cleanEmailBodyForDescription } from '../services/email.service';
 import { sendTicketEmail } from '../services/emailIntegration.service';
-import { notifyComment, notifyAssignment, notifyStatusChange } from '../services/notification.service';
+import { notifyComment, notifyAssignment, notifyStatusChange, notifyPriorityChange } from '../services/notification.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -407,6 +407,12 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       notifyStatusChange(id, req.user!.id, changerName, oldTicket.status, updates.status).catch((e: any) => console.error('❌ notifyStatusChange failed:', e.message));
     }
 
+    // In-app notification per cambio priorità
+    if (updates.priority && updates.priority !== oldTicket.priority) {
+      const changerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+      notifyPriorityChange(id, req.user!.id, changerName, oldTicket.priority, updates.priority).catch((e: any) => console.error('❌ notifyPriorityChange failed:', e.message));
+    }
+
     res.json(ticket);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -762,6 +768,23 @@ router.post('/:id/assign-departments', authenticate, auditLog('ASSIGN_DEPARTMENT
         status: 'OPEN' // Keep in OPEN when assigning to departments
       }
     });
+
+    // In-app notification agli utenti dei reparti assegnati
+    if (departments.length > 0) {
+      try {
+        const deptUsers = await prisma.user.findMany({
+          where: { department: { in: departments }, status: 'ACTIVE' },
+          select: { id: true }
+        });
+        const deptUserIds = deptUsers.map((u: any) => u.id);
+        if (deptUserIds.length > 0) {
+          const assignerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+          notifyAssignment(id, deptUserIds, assignerName).catch((e: any) => console.error('❌ notifyAssignment (dept) failed:', e.message));
+        }
+      } catch (notifErr: any) {
+        console.error('⚠️ Department notification failed (non-critical):', notifErr.message);
+      }
+    }
 
     console.log(`✅ Successfully assigned departments, ticket status: ${ticket.status}`);
     res.json({ message: 'Departments assigned successfully', assignedDepartments: ticket.assignedDepartments });

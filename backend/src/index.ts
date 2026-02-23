@@ -21,6 +21,7 @@ import aiRoutes from './routes/ai.routes';
 import { startEmailListener } from './services/email.service';
 import { startEmailPolling } from './services/emailIntegration.service';
 import { startGraphEmailPolling, isGraphConfigured } from './services/graphEmail.service';
+import { startSLAChecker } from './services/notification.service';
 
 dotenv.config();
 
@@ -155,6 +156,9 @@ app.listen(PORT, async () => {
   await ensureCommentEmailColumns();
   await ensureNotificationTable();
   await ensureKBArticleTable();
+
+  // SLA violation checker
+  startSLAChecker();
 
   // Email integration
   if (isGraphConfigured()) {

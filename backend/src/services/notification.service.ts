@@ -143,19 +143,92 @@ export async function notifyEmailReceived(
   }
 }
 
+/**
+ * Notifica cambio priorità a tutti i partecipanti (tranne chi ha cambiato)
+ */
+export async function notifyPriorityChange(
+  ticketId: string,
+  changedByUserId: string,
+  changedByName: string,
+  oldPriority: string,
+  newPriority: string
+): Promise<void> {
+  const recipients = await getTicketRecipients(ticketId, changedByUserId);
+  const ticketTitle = await getTicketTitle(ticketId);
+
+  for (const userId of recipients) {
+    await createNotification(
+      userId,
+      'STATUS_CHANGE',
+      `Priorità aggiornata: "${ticketTitle}"`,
+      `${oldPriority} → ${newPriority} (da ${changedByName})`,
+      ticketId
+    );
+  }
+}
+
+/**
+ * Avvia il controllo periodico SLA (ogni 15 minuti).
+ * Marca i ticket scaduti come slaViolated e invia notifiche ai partecipanti.
+ */
+export function startSLAChecker(): void {
+  const CHECK_INTERVAL_MS = 15 * 60 * 1000;
+
+  async function checkSLAViolations() {
+    try {
+      const now = new Date();
+      const overdueTickets: any[] = await prisma.$queryRawUnsafe(
+        `SELECT "id", "title" FROM "Ticket"
+         WHERE "dueDate" < $1
+           AND "status" NOT IN ('RESOLVED', 'CLOSED')
+           AND "slaViolated" = false`,
+        now
+      );
+
+      for (const ticket of overdueTickets) {
+        // Segna come violato (una sola volta)
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Ticket" SET "slaViolated" = true WHERE "id" = $1`,
+          ticket.id
+        );
+
+        const recipients = await getTicketRecipients(ticket.id);
+        await notifySLAAlert(ticket.id, ticket.title, recipients);
+        console.log(`⚠️ SLA violato per ticket ${ticket.id} — notificati ${recipients.length} utenti`);
+      }
+    } catch (err: any) {
+      console.error('❌ SLA checker error:', err.message);
+    }
+  }
+
+  checkSLAViolations();
+  setInterval(checkSLAViolations, CHECK_INTERVAL_MS);
+  console.log('⏰ SLA checker avviato (ogni 15 minuti)');
+}
+
 // ─── Helpers ───
 
 async function getTicketRecipients(ticketId: string, excludeUserId?: string): Promise<string[]> {
   const userIds = new Set<string>();
 
   try {
-    // Creatore
+    // Creatore + assegnazione diretta + reparti assegnati
     const ticket: any[] = await prisma.$queryRawUnsafe(
-      `SELECT "createdById", "assignedToId" FROM "Ticket" WHERE "id" = $1`, ticketId
+      `SELECT "createdById", "assignedToId", "assignedDepartments" FROM "Ticket" WHERE "id" = $1`, ticketId
     );
     if (ticket.length > 0) {
       userIds.add(ticket[0].createdById);
       if (ticket[0].assignedToId) userIds.add(ticket[0].assignedToId);
+
+      // Utenti dei reparti assegnati
+      const depts: string[] = ticket[0].assignedDepartments || [];
+      if (depts.length > 0) {
+        const deptUsers: any[] = await prisma.$queryRawUnsafe(
+          `SELECT "id" FROM "User" WHERE "department" = ANY($1) AND "status" = 'ACTIVE'`,
+          depts
+        );
+        deptUsers.forEach((u: any) => userIds.add(u.id));
+      }
     }
 
     // Multi-assegnazioni
