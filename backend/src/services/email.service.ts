@@ -282,7 +282,7 @@ export async function createTicketFromEmail(
     const logoUrl = await getCompanyLogoUrl();
 
     const confirmBody = [
-      `<p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.5;">La tua richiesta è stata presa in carico. Di seguito i dettagli:</p>`,
+      `<p style="margin:0 0 24px;font-size:14px;color:#000000;line-height:1.75;">La tua richiesta è stata presa in carico. Di seguito i dettagli:</p>`,
       infoTable([
         { label: 'Ticket', value: `#${ticket.id.substring(0, 8)}` },
         { label: 'Oggetto', value: subject },
@@ -371,8 +371,8 @@ export async function notifyTicketUpdate(
   const attachFileNames = fileAttachments?.map(a => a.fileName) || [];
 
   const notifBody = [
-    `<p style="margin:0 0 6px;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Oggetto ticket</p>`,
-    `<p style="margin:0 0 20px;font-size:15px;color:#0f172a;font-weight:600;">${ticket.title}</p>`,
+    `<p style="margin:0 0 4px;font-size:9px;font-weight:800;color:#888888;text-transform:uppercase;letter-spacing:2px;">Oggetto ticket</p>`,
+    `<p style="margin:0 0 24px;font-size:16px;font-weight:800;color:#000000;letter-spacing:-0.2px;">${ticket.title}</p>`,
     messageBlock(sanitizeHtmlForEmail(details), { author: authorName, accentColor }),
     attachmentsList(attachFileNames),
     callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.', accentColor),
