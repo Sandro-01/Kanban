@@ -1138,8 +1138,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
           {/* Unified timeline - Comments and Files */}
           <div className="timeline-section">
             <div className="timeline-section-header">
-              <span className="timeline-section-title">{isEmailTicket ? 'Conversazione' : 'Attività'}</span>
-              <span className="timeline-section-count">{timeline.length} elementi</span>
+              <span className="timeline-section-title">{isEmailTicket ? 'Conversation' : 'Activity'}</span>
+              <span className="timeline-section-count">{timeline.length} items</span>
             </div>
             <div className="timeline-list">
               {timeline.length > 0 ? (
