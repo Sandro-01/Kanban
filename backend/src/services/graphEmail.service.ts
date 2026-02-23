@@ -1,6 +1,7 @@
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
 import { generateEmailPdf } from '../utils/emailPdf';
+import { notifyEmailReceived } from './notification.service';
 
 /**
  * Microsoft Graph API - Email Integration
@@ -242,6 +243,11 @@ async function processGraphEmail(message: any): Promise<void> {
     }
 
     console.log(`✅ Commento creato per ticket ${ticket.id} da email ${from}`);
+
+    // Notifica in-app a tutti i partecipanti del ticket
+    notifyEmailReceived(ticket.id, from).catch((e: any) =>
+      console.error('❌ notifyEmailReceived failed:', e.message)
+    );
   } else {
     // NUOVA email → crea ticket
     console.log('🆕 Nuova email → creazione ticket');
