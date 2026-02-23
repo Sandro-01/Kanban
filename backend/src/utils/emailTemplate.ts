@@ -1,31 +1,21 @@
 /**
- * Template email professionale condiviso per tutte le notifiche del sistema.
- * Stile aziendale moderno, compatibile con Outlook, Gmail e Apple Mail.
+ * Email template — Off-White design system.
+ * Black / white / #FFE600 yellow. Sharp edges, uppercase labels, monospace grid.
+ * Compatible with Outlook, Gmail, Apple Mail.
  */
 
 export interface EmailTemplateOptions {
-  /** Nome azienda (header + footer) */
   companyName: string;
-  /** URL logo aziendale (opzionale) */
   logoUrl?: string | null;
-  /** Titolo principale nell'header (es. "Richiesta ricevuta") */
   heading: string;
-  /** Sottotitolo (es. "Ticket #abc12345") */
   subheading?: string;
-  /** Colore accento (default: #2563eb) */
+  /** Unused — kept for API compatibility. Accent is always #FFE600. */
   accentColor?: string;
-  /** Contenuto HTML del corpo email */
   body: string;
-  /** Testo footer aggiuntivo (es. "Ref: #abc12345") */
   footerRef?: string;
 }
 
-/**
- * Genera l'HTML completo di una email professionale.
- */
 export function buildEmailHtml(opts: EmailTemplateOptions): string {
-  const accent = opts.accentColor || '#2563eb';
-
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -33,45 +23,47 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(opts.heading)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:32px 16px;">
+<body style="margin:0;padding:0;background-color:#F5F5F0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F5F5F0;padding:40px 16px;">
 <tr><td align="center">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border:1px solid #000000;">
 
-  <!-- TOP ACCENT BAR -->
+  <!-- TOP BAR: black 3px + yellow 3px -->
   <tr>
-    <td style="height:4px;background:${accent};font-size:0;line-height:0;">&nbsp;</td>
+    <td style="font-size:0;line-height:0;padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="height:3px;background:#000000;font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="height:3px;background:#FFE600;font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
   </tr>
 
   <!-- HEADER -->
   <tr>
-    <td style="padding:28px 32px 20px 32px;">
-      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:0.8px;">${escapeHtml(opts.companyName)}</p>
-      <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(opts.heading)}</h1>
-      ${opts.subheading ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${escapeHtml(opts.subheading)}</p>` : ''}
-    </td>
-  </tr>
-
-  <!-- DIVIDER -->
-  <tr>
-    <td style="padding:0 32px;">
-      <hr style="border:none;border-top:1px solid #e2e8f0;margin:0;">
+    <td style="padding:32px 36px 24px 36px;border-bottom:1px solid #000000;">
+      <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:2.5px;">${escapeHtml(opts.companyName)}</p>
+      <h1 style="margin:0;font-size:24px;font-weight:800;color:#000000;line-height:1.2;text-transform:uppercase;letter-spacing:-0.5px;">${escapeHtml(opts.heading)}</h1>
+      ${opts.subheading ? `<p style="margin:10px 0 0;font-size:12px;color:#555555;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(opts.subheading)}</p>` : ''}
     </td>
   </tr>
 
   <!-- BODY -->
   <tr>
-    <td style="padding:24px 32px 28px 32px;font-size:14px;color:#334155;line-height:1.6;">
+    <td style="padding:28px 36px 32px 36px;font-size:14px;color:#000000;line-height:1.7;">
       ${opts.body}
     </td>
   </tr>
 
   <!-- FOOTER -->
   <tr>
-    <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-      ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:80px;max-height:28px;width:auto;height:auto;display:inline-block;border:0;margin-bottom:8px;" /><br>` : ''}
-      <p style="margin:0;font-size:12px;color:#94a3b8;">${escapeHtml(opts.companyName)} &mdash; Assistenza IT</p>
-      ${opts.footerRef ? `<p style="margin:4px 0 0;font-size:11px;color:#cbd5e1;">${escapeHtml(opts.footerRef)}</p>` : ''}
+    <td style="padding:20px 36px;background-color:#000000;border-top:1px solid #000000;">
+      ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.companyName)}" style="max-width:70px;max-height:24px;width:auto;height:auto;display:inline-block;border:0;margin-bottom:10px;filter:invert(1);" /><br>` : ''}
+      <p style="margin:0;font-size:10px;color:#FFE600;text-transform:uppercase;letter-spacing:2px;font-weight:700;">${escapeHtml(opts.companyName)}</p>
+      ${opts.footerRef ? `<p style="margin:6px 0 0;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(opts.footerRef)}</p>` : ''}
     </td>
   </tr>
 
@@ -82,47 +74,39 @@ export function buildEmailHtml(opts: EmailTemplateOptions): string {
 </html>`;
 }
 
-/* ───── Helper: blocco informazioni (tabella chiave-valore) ───── */
+/* ───── Info table: sharp borders, uppercase labels ───── */
 
 export function infoTable(rows: { label: string; value: string; highlight?: boolean }[]): string {
-  const rowsHtml = rows.map((r, i) => {
-    const bg = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+  const rowsHtml = rows.map((r) => {
     const valStyle = r.highlight
-      ? 'display:inline-block;padding:2px 10px;border-radius:12px;background:#eff6ff;color:#2563eb;font-weight:600;font-size:12px;'
-      : 'color:#0f172a;';
+      ? 'display:inline-block;padding:1px 8px;background:#FFE600;color:#000000;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;'
+      : 'color:#000000;font-size:13px;';
     return `<tr>
-      <td style="padding:10px 14px;background:${bg};border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;width:130px;vertical-align:top;">${escapeHtml(r.label)}</td>
-      <td style="padding:10px 14px;background:${bg};border-bottom:1px solid #f1f5f9;font-size:13px;"><span style="${valStyle}">${escapeHtml(r.value)}</span></td>
+      <td style="padding:9px 14px;border-bottom:1px solid #E8E8E0;font-size:10px;font-weight:700;color:#888888;text-transform:uppercase;letter-spacing:1.5px;width:130px;vertical-align:top;white-space:nowrap;">${escapeHtml(r.label)}</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #E8E8E0;font-size:13px;"><span style="${valStyle}">${escapeHtml(r.value)}</span></td>
     </tr>`;
   }).join('');
 
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:20px;">${rowsHtml}</table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #000000;margin-bottom:24px;">${rowsHtml}</table>`;
 }
 
-/* ───── Helper: blocco messaggio / commento ───── */
+/* ───── Message / comment block ───── */
 
 export function messageBlock(html: string, opts?: { author?: string; accentColor?: string }): string {
-  const accent = opts?.accentColor || '#2563eb';
-  return `<div style="background:#f8fafc;padding:16px 18px;border-radius:8px;border-left:4px solid ${accent};margin-bottom:16px;">
-    ${opts?.author ? `<p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${accent};">${escapeHtml(opts.author)}</p>` : ''}
-    <div style="margin:0;font-size:14px;color:#334155;line-height:1.6;word-wrap:break-word;">${html}</div>
+  return `<div style="background:#F5F5F0;padding:16px 18px;border-left:3px solid #000000;margin-bottom:16px;">
+    ${opts?.author ? `<p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:1.5px;">${escapeHtml(opts.author)}</p>` : ''}
+    <div style="margin:0;font-size:14px;color:#000000;line-height:1.7;word-wrap:break-word;">${html}</div>
   </div>`;
 }
 
-/* ───── Helper: sanitizza HTML dell'editor per uso sicuro nelle email ───── */
+/* ───── Sanitise editor HTML for safe email use ───── */
 
 export function sanitizeHtmlForEmail(html: string): string {
   let out = html;
-
-  // Rimuovi script/style completamente
   out = out.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   out = out.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-
-  // Converti elementi block in <br>
   out = out.replace(/<\/?(p|div|h[1-6]|blockquote|section|article|header|footer|main|aside)[^>]*>/gi, '<br>');
   out = out.replace(/<br\s*\/?>/gi, '<br>');
-
-  // Permetti solo tag sicuri per la formattazione
   const safeTags = ['b', 'strong', 'em', 'i', 'u', 's', 'strike', 'code', 'pre', 'ul', 'ol', 'li'];
   out = out.replace(/<(\/?)([a-z][a-z0-9]*)([^>]*)>/gi, (match, slash, tag, attrs) => {
     const t = tag.toLowerCase();
@@ -132,61 +116,56 @@ export function sanitizeHtmlForEmail(html: string): string {
       if (slash) return '</a>';
       const hrefMatch = attrs.match(/href="([^"]+)"/i);
       if (hrefMatch && /^https?:\/\//i.test(hrefMatch[1])) {
-        return `<a href="${hrefMatch[1]}" style="color:#2563eb;text-decoration:underline;">`;
+        return `<a href="${hrefMatch[1]}" style="color:#000000;text-decoration:underline;font-weight:600;">`;
       }
       return '';
     }
     return '';
   });
-
-  // Elimina <br> multipli consecutivi (max 2)
   out = out.replace(/(<br>\s*){3,}/gi, '<br><br>');
-  // Elimina <br> iniziali e finali
   out = out.trim().replace(/^(<br>)+/, '').replace(/(<br>)+$/, '');
-
   return out;
 }
 
-/* ───── Helper: blocco allegati ───── */
+/* ───── Attachments list ───── */
 
 export function attachmentsList(fileNames: string[]): string {
   if (fileNames.length === 0) return '';
   const items = fileNames.map(n =>
-    `<tr><td style="padding:4px 0;font-size:13px;color:#334155;">&#128206;&ensp;${escapeHtml(n)}</td></tr>`
+    `<tr><td style="padding:5px 0;font-size:12px;color:#000000;border-bottom:1px solid #E8E8E0;">&#8212;&ensp;${escapeHtml(n)}</td></tr>`
   ).join('');
-  return `<div style="margin-top:16px;padding:14px 16px;background:#fafafa;border:1px solid #e2e8f0;border-radius:8px;">
-    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#475569;">Allegati (${fileNames.length})</p>
-    <table role="presentation" cellpadding="0" cellspacing="0">${items}</table>
+  return `<div style="margin-top:20px;padding:14px 16px;background:#F5F5F0;border:1px solid #000000;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:1.5px;">Allegati — ${fileNames.length}</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${items}</table>
   </div>`;
 }
 
-/* ───── Helper: call-to-action / info box ───── */
+/* ───── Call-to-action / info box ───── */
 
 export function callToAction(text: string, accentColor?: string): string {
-  const accent = accentColor || '#2563eb';
-  return `<div style="background:#eff6ff;border-left:4px solid ${accent};padding:12px 16px;border-radius:0 8px 8px 0;margin-top:20px;">
-    <p style="margin:0;font-size:13px;color:#1e40af;">${text}</p>
+  return `<div style="background:#FFE600;border-left:3px solid #000000;padding:12px 16px;margin-top:24px;">
+    <p style="margin:0;font-size:13px;color:#000000;font-weight:600;">${text}</p>
   </div>`;
 }
 
-/* ───── Helper: badge priorità ───── */
+/* ───── Priority badge ───── */
 
 export function priorityBadge(priority: string): string {
-  const colors: Record<string, string> = {
-    CRITICAL: '#dc2626',
-    HIGH: '#f59e0b',
-    MEDIUM: '#2563eb',
-    LOW: '#22c55e',
+  const styles: Record<string, string> = {
+    CRITICAL: 'background:#000000;color:#FFE600;',
+    HIGH:     'background:#000000;color:#FFFFFF;',
+    MEDIUM:   'background:#FFE600;color:#000000;',
+    LOW:      'background:#E8E8E0;color:#000000;',
   };
   const labels: Record<string, string> = {
     CRITICAL: 'Critica',
-    HIGH: 'Alta',
-    MEDIUM: 'Media',
-    LOW: 'Bassa',
+    HIGH:     'Alta',
+    MEDIUM:   'Media',
+    LOW:      'Bassa',
   };
-  const c = colors[priority] || '#2563eb';
+  const s = styles[priority] || styles.MEDIUM;
   const l = labels[priority] || priority;
-  return `<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:${c}18;color:${c};font-weight:600;font-size:12px;border:1px solid ${c}30;">${l}</span>`;
+  return `<span style="display:inline-block;padding:2px 10px;${s}font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:1px;">${l}</span>`;
 }
 
 /* ───── Utility ───── */
