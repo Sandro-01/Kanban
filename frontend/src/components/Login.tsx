@@ -22,13 +22,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin(response.data.token, response.data.user);
     } catch (err: any) {
       if (err.response) {
-        // Server ha risposto con un errore
-        setError(err.response.data?.error || 'Errore durante il login');
+        // Server responded with an error
+        setError(err.response.data?.error || 'Login error');
       } else if (err.request) {
-        // Nessuna risposta dal server
-        setError('Impossibile contattare il server. Verifica che il backend sia in esecuzione.');
+        // No response from server
+        setError('Unable to contact the server. Please ensure the backend is running.');
       } else {
-        setError('Errore durante il login');
+        setError('Login error');
       }
     } finally {
       setLoading(false);
@@ -40,7 +40,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="login-card">
         <div className="login-header">
           <h1>Kanban ISO</h1>
-          <p>Sistema di gestione conforme ISO 9001/27001</p>
+          <p>Management system compliant with ISO 9001/27001</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -54,7 +54,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="utente@azienda.it"
+              placeholder="user@company.com"
             />
           </div>
 
@@ -75,13 +75,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             className="btn btn-primary login-btn"
             disabled={loading}
           >
-            {loading ? 'Login in corso...' : 'Accedi'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
         <div className="login-footer">
           <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
-            Contattare l'amministratore per le credenziali di accesso.
+            Contact the administrator for login credentials.
           </p>
         </div>
 

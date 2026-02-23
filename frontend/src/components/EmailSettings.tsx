@@ -46,7 +46,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
       const res = await emailConfig.get();
       setConfig(prev => ({ ...prev, ...res.data }));
     } catch (err: any) {
-      setMessage({ type: 'error', text: 'Errore caricamento configurazione: ' + (err.response?.data?.error || err.message) });
+      setMessage({ type: 'error', text: 'Error loading configuration: ' + (err.response?.data?.error || err.message) });
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
       const res = await emailConfig.status();
       setEmailStatus(res.data);
     } catch {
-      // Non bloccante
+      // Non-blocking
     }
   };
 
@@ -70,11 +70,11 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
     setMessage(null);
     try {
       await emailConfig.save(config);
-      setMessage({ type: 'success', text: 'Configurazione salvata con successo!' });
+      setMessage({ type: 'success', text: 'Configuration saved successfully!' });
       // Reload to get masked passwords back
       await loadConfig();
     } catch (err: any) {
-      setMessage({ type: 'error', text: 'Errore salvataggio: ' + (err.response?.data?.error || err.message) });
+      setMessage({ type: 'error', text: 'Save error: ' + (err.response?.data?.error || err.message) });
     } finally {
       setSaving(false);
     }
@@ -85,9 +85,9 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
     setTestResult(null);
     try {
       const res = await emailConfig.test();
-      setTestResult({ type: 'success', text: res.data.message || 'Connessione riuscita!' });
+      setTestResult({ type: 'success', text: res.data.message || 'Connection successful!' });
     } catch (err: any) {
-      setTestResult({ type: 'error', text: 'Test fallito: ' + (err.response?.data?.error || err.message) });
+      setTestResult({ type: 'error', text: 'Test failed: ' + (err.response?.data?.error || err.message) });
     } finally {
       setTesting(false);
     }
@@ -97,7 +97,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
     return (
       <div className="email-settings-page">
         <div className="alert alert-danger">
-          Accesso negato: Solo gli amministratori possono configurare le impostazioni email.
+          Access denied: Only administrators can configure email settings.
         </div>
       </div>
     );
@@ -106,7 +106,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
   if (loading) {
     return (
       <div className="email-settings-page">
-        <p>Caricamento configurazione...</p>
+        <p>Loading configuration...</p>
       </div>
     );
   }
@@ -115,8 +115,8 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
 
   return (
     <div className="email-settings-page">
-      <h2>Configurazione Email</h2>
-      <p className="page-subtitle">Configura l'invio e la ricezione delle email.</p>
+      <h2>Email Configuration</h2>
+      <p className="page-subtitle">Configure sending and receiving of emails.</p>
 
       {/* Status Banner */}
       {emailStatus && (
@@ -129,10 +129,10 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
           </div>
           <span className="status-detail">
             {isGraph
-              ? `Casella: ${emailStatus.mailbox || 'non configurata'}`
+              ? `Mailbox: ${emailStatus.mailbox || 'not configured'}`
               : emailStatus.configured
-                ? `Host: ${emailStatus.host} | Utente: ${emailStatus.user}`
-                : 'Non configurato — compilare i campi sottostanti'
+                ? `Host: ${emailStatus.host} | User: ${emailStatus.user}`
+                : 'Not configured — fill in the fields below'
             }
           </span>
         </div>
@@ -146,31 +146,31 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
 
       {/* Company Name + Logo */}
       <div className="config-section">
-        <h3>Generale</h3>
-        <p className="section-desc">Nome azienda e logo visualizzati nelle email e nelle notifiche.</p>
+        <h3>General</h3>
+        <p className="section-desc">Company name and logo displayed in emails and notifications.</p>
         <div className="config-grid">
           <div className="config-field">
-            <label>Nome Azienda</label>
+            <label>Company Name</label>
             <input
               type="text"
               value={config.company_name}
               onChange={e => handleChange('company_name', e.target.value)}
-              placeholder="es. Nome Azienda S.r.l."
+              placeholder="e.g. Company Name Ltd."
             />
           </div>
           <div className="config-field">
-            <label>Logo URL <span style={{ fontWeight: 'normal', color: '#64748b' }}>(opzionale — sostituisce il nome nell'header email)</span></label>
+            <label>Logo URL <span style={{ fontWeight: 'normal', color: '#64748b' }}>(optional — replaces the name in the email header)</span></label>
             <input
               type="url"
               value={config.company_logo_url}
               onChange={e => handleChange('company_logo_url', e.target.value)}
-              placeholder="https://esempio.com/logo.png"
+              placeholder="https://example.com/logo.png"
             />
             {config.company_logo_url && (
               <div style={{ marginTop: '10px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}>
                 <img
                   src={config.company_logo_url}
-                  alt="Anteprima logo"
+                  alt="Logo preview"
                   style={{ maxWidth: '180px', maxHeight: '60px', objectFit: 'contain', display: 'block' }}
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
@@ -185,20 +185,20 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
         <div className="config-section">
           <h3>Microsoft Graph API</h3>
           <p className="section-desc">
-            L'invio e la ricezione delle email avviene tramite Microsoft Graph API (Azure AD).
-            La configurazione delle credenziali Azure (Tenant ID, Client ID, Client Secret) viene gestita
-            tramite variabili d'ambiente sul server.
+            Email sending and receiving is handled via Microsoft Graph API (Azure AD).
+            Azure credential configuration (Tenant ID, Client ID, Client Secret) is managed
+            via environment variables on the server.
           </p>
           <div className="config-grid">
             <div className="config-field">
-              <label>Casella condivisa</label>
+              <label>Shared mailbox</label>
               <input type="text" value={emailStatus?.mailbox || ''} disabled />
             </div>
           </div>
 
           <div className="config-actions">
             <button className="btn-test" onClick={handleTest} disabled={testing}>
-              {testing ? 'Test in corso...' : 'Test Connessione Graph'}
+              {testing ? 'Testing...' : 'Test Graph Connection'}
             </button>
           </div>
 
@@ -213,21 +213,21 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
       {/* SMTP Section - only show if not using Graph */}
       {!isGraph && (
         <div className="config-section">
-          <h3>SMTP - Invio Email</h3>
-          <p className="section-desc">Server per l'invio di email in uscita (notifiche, risposte ai ticket).</p>
+          <h3>SMTP - Outgoing Email</h3>
+          <p className="section-desc">Server for sending outgoing emails (notifications, ticket replies).</p>
 
           <div className="config-grid">
             <div className="config-field">
-              <label>Host SMTP</label>
+              <label>SMTP Host</label>
               <input
                 type="text"
                 value={config.smtp_host}
                 onChange={e => handleChange('smtp_host', e.target.value)}
-                placeholder="es. smtp.gmail.com"
+                placeholder="e.g. smtp.gmail.com"
               />
             </div>
             <div className="config-field">
-              <label>Porta</label>
+              <label>Port</label>
               <input
                 type="number"
                 value={config.smtp_port}
@@ -236,35 +236,35 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
               />
             </div>
             <div className="config-field">
-              <label>Connessione sicura (SSL/TLS)</label>
+              <label>Secure connection (SSL/TLS)</label>
               <select
                 value={config.smtp_secure}
                 onChange={e => handleChange('smtp_secure', e.target.value)}
               >
-                <option value="false">No (STARTTLS - porta 587)</option>
-                <option value="true">Si (SSL/TLS - porta 465)</option>
+                <option value="false">No (STARTTLS - port 587)</option>
+                <option value="true">Yes (SSL/TLS - port 465)</option>
               </select>
             </div>
             <div className="config-field">
-              <label>Indirizzo mittente (From)</label>
+              <label>Sender address (From)</label>
               <input
                 type="email"
                 value={config.smtp_from}
                 onChange={e => handleChange('smtp_from', e.target.value)}
-                placeholder="es. noreply@azienda.com"
+                placeholder="e.g. noreply@company.com"
               />
             </div>
             <div className="config-field">
-              <label>Utente SMTP</label>
+              <label>SMTP User</label>
               <input
                 type="text"
                 value={config.smtp_user}
                 onChange={e => handleChange('smtp_user', e.target.value)}
-                placeholder="es. user@azienda.com"
+                placeholder="e.g. user@company.com"
               />
             </div>
             <div className="config-field">
-              <label>Password SMTP</label>
+              <label>SMTP Password</label>
               <input
                 type="password"
                 value={config.smtp_password}
@@ -276,7 +276,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
 
           <div className="config-actions">
             <button className="btn-test" onClick={handleTest} disabled={testing}>
-              {testing ? 'Test in corso...' : 'Test Connessione SMTP'}
+              {testing ? 'Testing...' : 'Test SMTP Connection'}
             </button>
           </div>
 
@@ -291,21 +291,21 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
       {/* IMAP Section - only show if not using Graph */}
       {!isGraph && (
         <div className="config-section">
-          <h3>IMAP - Ricezione Email</h3>
-          <p className="section-desc">Server per la ricezione delle risposte email e creazione automatica dei ticket.</p>
+          <h3>IMAP - Incoming Email</h3>
+          <p className="section-desc">Server for receiving email replies and automatic ticket creation.</p>
 
           <div className="config-grid">
             <div className="config-field">
-              <label>Host IMAP</label>
+              <label>IMAP Host</label>
               <input
                 type="text"
                 value={config.imap_host}
                 onChange={e => handleChange('imap_host', e.target.value)}
-                placeholder="es. imap.gmail.com"
+                placeholder="e.g. imap.gmail.com"
               />
             </div>
             <div className="config-field">
-              <label>Porta</label>
+              <label>Port</label>
               <input
                 type="number"
                 value={config.imap_port}
@@ -314,16 +314,16 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
               />
             </div>
             <div className="config-field">
-              <label>Utente IMAP</label>
+              <label>IMAP User</label>
               <input
                 type="text"
                 value={config.imap_user}
                 onChange={e => handleChange('imap_user', e.target.value)}
-                placeholder="es. user@azienda.com"
+                placeholder="e.g. user@company.com"
               />
             </div>
             <div className="config-field">
-              <label>Password IMAP</label>
+              <label>IMAP Password</label>
               <input
                 type="password"
                 value={config.imap_password}
@@ -338,7 +338,7 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ user }) => {
       {/* Save */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Salvataggio...' : 'Salva Configurazione'}
+          {saving ? 'Saving...' : 'Save Configuration'}
         </button>
       </div>
     </div>

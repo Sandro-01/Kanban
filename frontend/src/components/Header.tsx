@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     if (showPanel) loadNotifications();
   }, [showPanel, loadNotifications]);
 
-  // Chiudi pannello notifiche cliccando fuori
+  // Close notifications panel when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -53,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showPanel]);
 
-  // Chiudi dropdown cliccando fuori
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -93,10 +93,10 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
   const timeSince = (dateStr: string) => {
     const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return 'ora';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m fa`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h fa`;
-    return `${Math.floor(seconds / 86400)}g fa`;
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
   };
 
   const isPersonale = user.role === 'ADMIN' ||
@@ -112,18 +112,18 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <nav className="nav" ref={dropdownRef}>
             <Link to="/" className="nav-link">Dashboard</Link>
             <Link to="/board" className="nav-link">Board</Link>
-            <Link to="/archivio" className="nav-link">Archivio</Link>
+            <Link to="/archivio" className="nav-link">Archive</Link>
             <Link to="/sla" className="nav-link">SLA</Link>
             <Link to="/kb" className="nav-link">Knowledge Base</Link>
 
-            {/* Dropdown Personale */}
+            {/* Dropdown Personnel */}
             {isPersonale && (
               <div className="nav-dropdown">
                 <button
                   className="nav-link nav-dropdown-trigger"
                   onClick={() => setOpenDropdown(openDropdown === 'personale' ? null : 'personale')}
                 >
-                  Personale <span className="dropdown-arrow">▾</span>
+                  Personnel <span className="dropdown-arrow">▾</span>
                 </button>
                 {openDropdown === 'personale' && (
                   <div className="nav-dropdown-menu">
@@ -146,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                 {openDropdown === 'admin' && (
                   <div className="nav-dropdown-menu">
                     <Link to="/audit" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Audit</Link>
-                    <Link to="/users" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Utenti</Link>
+                    <Link to="/users" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Users</Link>
                     <Link to="/settings/email" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Email</Link>
                   </div>
                 )}
@@ -161,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             <button
               onClick={() => setShowPanel(!showPanel)}
               className="notif-bell"
-              title="Notifiche"
+              title="Notifications"
             >
               &#128276;
               {unreadCount > 0 && (
@@ -172,15 +172,15 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             {showPanel && (
               <div className="notif-panel">
                 <div className="notif-panel-header">
-                  <span>Notifiche {unreadCount > 0 && `(${unreadCount})`}</span>
+                  <span>Notifications {unreadCount > 0 && `(${unreadCount})`}</span>
                   {unreadCount > 0 && (
                     <button onClick={handleMarkAllRead} className="notif-mark-all">
-                      Segna tutte lette
+                      Mark all as read
                     </button>
                   )}
                 </div>
                 {notifList.length === 0 ? (
-                  <div className="notif-empty">Nessuna notifica</div>
+                  <div className="notif-empty">No notifications</div>
                 ) : (
                   notifList.map(n => (
                     <div

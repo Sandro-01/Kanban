@@ -43,7 +43,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
       const response = await api.get('/users');
       setUsers(response.data);
     } catch (error: any) {
-      setError('Errore caricamento utenti: ' + (error.response?.data?.error || error.message));
+      setError('Error loading users: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -92,15 +92,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
       if (editingUser) {
         // Update existing user
         await api.put(`/users/${editingUser.id}`, formData);
-        setSuccess('Utente aggiornato con successo');
+        setSuccess('User updated successfully');
       } else {
         // Create new user
         if (!formData.password) {
-          setError('La password è obbligatoria per nuovi utenti');
+          setError('Password is required for new users');
           return;
         }
         await api.post('/users', formData);
-        setSuccess('Utente creato con successo');
+        setSuccess('User created successfully');
       }
 
       setTimeout(() => {
@@ -113,13 +113,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo utente?')) {
+    if (!window.confirm('Are you sure you want to delete this user?')) {
       return;
     }
 
     try {
       await api.delete(`/users/${userId}`);
-      setSuccess('Utente eliminato con successo');
+      setSuccess('User deleted successfully');
       loadUsers();
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
@@ -150,14 +150,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
   };
 
   if (loading) {
-    return <div className="loading">Caricamento...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   if (user.role !== 'ADMIN') {
     return (
       <div className="page">
         <div className="alert alert-danger">
-          <strong>Accesso negato:</strong> Solo gli amministratori possono accedere a questa pagina.
+          <strong>Access denied:</strong> Only administrators can access this page.
         </div>
       </div>
     );
@@ -166,21 +166,21 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
   return (
     <div className="page user-management-page">
       <div className="page-header">
-        <h1>Gestione Utenti</h1>
+        <h1>User Management</h1>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          + Nuovo Utente
+          + New User
         </button>
       </div>
 
       {error && (
         <div className="alert alert-danger">
-          <strong>Errore:</strong> {error}
+          <strong>Error:</strong> {error}
         </div>
       )}
 
       {success && (
         <div className="alert alert-success">
-          <strong>Successo:</strong> {success}
+          <strong>Success:</strong> {success}
         </div>
       )}
 
@@ -188,13 +188,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
         <table className="users-table">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th>Name</th>
               <th>Email</th>
-              <th>Ruolo</th>
-              <th>Dipartimento</th>
-              <th>Stato</th>
-              <th>Creato il</th>
-              <th>Azioni</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Created on</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -217,21 +217,21 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                     {u.status}
                   </span>
                 </td>
-                <td>{new Date(u.createdAt).toLocaleDateString('it-IT')}</td>
+                <td>{new Date(u.createdAt).toLocaleDateString('en-GB')}</td>
                 <td>
                   <div className="action-buttons">
                     <button
                       className="btn btn-sm btn-secondary"
                       onClick={() => handleOpenModal(u)}
                     >
-                      Modifica
+                      Edit
                     </button>
                     <button
                       className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(u.id)}
                       disabled={u.id === user.id}
                     >
-                      Elimina
+                      Delete
                     </button>
                   </div>
                 </td>
@@ -245,7 +245,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingUser ? 'Modifica Utente' : 'Nuovo Utente'}</h2>
+              <h2>{editingUser ? 'Edit User' : 'New User'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
                 ×
               </button>
@@ -254,7 +254,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="label">Nome</label>
+                  <label className="label">First Name</label>
                   <input
                     type="text"
                     className="input"
@@ -267,7 +267,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="label">Cognome</label>
+                  <label className="label">Last Name</label>
                   <input
                     type="text"
                     className="input"
@@ -295,7 +295,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
 
               <div className="form-group">
                 <label className="label">
-                  Password {editingUser && '(lascia vuoto per non modificare)'}
+                  Password {editingUser && '(leave blank to keep unchanged)'}
                 </label>
                 <input
                   type="password"
@@ -310,7 +310,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="label">Ruolo</label>
+                  <label className="label">Role</label>
                   <select
                     className="input"
                     value={formData.role}
@@ -327,7 +327,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="label">Dipartimento</label>
+                  <label className="label">Department</label>
                   <select
                     className="input"
                     value={formData.department}
@@ -335,11 +335,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                       setFormData({ ...formData, department: e.target.value })
                     }
                   >
-                    <option value="">Nessuno</option>
+                    <option value="">None</option>
                     <option value="HR">HR</option>
-                    <option value="Amministrazione">Amministrazione</option>
+                    <option value="Amministrazione">Administration</option>
                     <option value="IT">IT</option>
-                    <option value="Vendite">Vendite</option>
+                    <option value="Vendite">Sales</option>
                     <option value="Marketing">Marketing</option>
                   </select>
                 </div>
@@ -347,13 +347,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
 
               {error && (
                 <div className="alert alert-danger">
-                  <strong>Errore:</strong> {error}
+                  <strong>Error:</strong> {error}
                 </div>
               )}
 
               {success && (
                 <div className="alert alert-success">
-                  <strong>Successo:</strong> {success}
+                  <strong>Success:</strong> {success}
                 </div>
               )}
 
@@ -363,10 +363,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                   className="btn btn-secondary"
                   onClick={handleCloseModal}
                 >
-                  Annulla
+                  Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {editingUser ? 'Aggiorna' : 'Crea'}
+                  {editingUser ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

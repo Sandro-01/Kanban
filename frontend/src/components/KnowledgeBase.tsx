@@ -40,13 +40,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
       const res = await kbApi.getById(id);
       setSelectedArticle(res.data);
     } catch (err) {
-      alert('Errore caricamento articolo');
+      alert('Error loading article');
     }
   };
 
   const handleSave = async () => {
     if (!editorData.title || !editorData.content || !editorData.category) {
-      alert('Compila titolo, contenuto e categoria');
+      alert('Please fill in title, content and category');
       return;
     }
     try {
@@ -66,18 +66,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
       setEditorData({ title: '', content: '', category: '', tags: '' });
       loadArticles();
     } catch (err) {
-      alert('Errore salvataggio');
+      alert('Error saving');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Eliminare questo articolo?')) return;
+    if (!window.confirm('Delete this article?')) return;
     try {
       await kbApi.delete(id);
       setSelectedArticle(null);
       loadArticles();
     } catch (err) {
-      alert('Errore eliminazione');
+      alert('Error deleting');
     }
   };
 
@@ -103,11 +103,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
   };
 
   const defaultCategories = [
-    'Hardware', 'Software', 'Rete', 'Email', 'Stampa',
-    'ERP/Gestionale', 'Sicurezza', 'Procedure', 'FAQ', 'Altro',
+    'Hardware', 'Software', 'Network', 'Email', 'Printing',
+    'ERP/Management', 'Security', 'Procedures', 'FAQ', 'Other',
   ];
 
-  if (loading) return <div className="loading">Caricamento...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   // Article detail view
   if (selectedArticle) {
@@ -118,7 +118,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
           className="btn btn-secondary"
           style={{ marginBottom: '16px' }}
         >
-          ← Torna alla lista
+          ← Back to list
         </button>
 
         <div style={{ background: '#fff', borderRadius: '8px', padding: '28px', border: '1px solid #e2e8f0' }}>
@@ -133,8 +133,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
               </span>
               <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a' }}>{selectedArticle.title}</h2>
               <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-                Di {selectedArticle.authorName} | {new Date(selectedArticle.createdAt).toLocaleDateString('it-IT')}
-                {' | '}{selectedArticle.viewCount} visualizzazioni
+                By {selectedArticle.authorName} | {new Date(selectedArticle.createdAt).toLocaleDateString('en-GB')}
+                {' | '}{selectedArticle.viewCount} views
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -145,12 +145,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
                   padding: '6px 12px', cursor: 'pointer', fontSize: '13px', color: '#166534',
                 }}
               >
-                👍 Utile ({selectedArticle.helpfulCount || 0})
+                👍 Helpful ({selectedArticle.helpfulCount || 0})
               </button>
               {user.role === 'ADMIN' && (
                 <>
                   <button onClick={() => handleEdit(selectedArticle)} className="btn btn-secondary" style={{ fontSize: '13px' }}>
-                    ✏️ Modifica
+                    ✏️ Edit
                   </button>
                   <button onClick={() => handleDelete(selectedArticle.id)} style={{
                     background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px',
@@ -191,27 +191,27 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
   if (showEditor) {
     return (
       <div className="page" style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <h2>{editingId ? 'Modifica Articolo' : 'Nuovo Articolo'}</h2>
+        <h2>{editingId ? 'Edit Article' : 'New Article'}</h2>
 
         <div className="form-group">
-          <label className="label">Titolo *</label>
+          <label className="label">Title *</label>
           <input
             type="text"
             className="input"
             value={editorData.title}
             onChange={(e) => setEditorData({ ...editorData, title: e.target.value })}
-            placeholder="Titolo dell'articolo"
+            placeholder="Article title"
           />
         </div>
 
         <div className="form-group">
-          <label className="label">Categoria *</label>
+          <label className="label">Category *</label>
           <select
             className="input"
             value={editorData.category}
             onChange={(e) => setEditorData({ ...editorData, category: e.target.value })}
           >
-            <option value="">Seleziona categoria...</option>
+            <option value="">Select category...</option>
             {Array.from(new Set([...defaultCategories, ...categories])).map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -219,22 +219,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
         </div>
 
         <div className="form-group">
-          <label className="label">Tag (separati da virgola)</label>
+          <label className="label">Tags (comma-separated)</label>
           <input
             type="text"
             className="input"
             value={editorData.tags}
             onChange={(e) => setEditorData({ ...editorData, tags: e.target.value })}
-            placeholder="es. wifi, password, outlook"
+            placeholder="e.g. wifi, password, outlook"
           />
         </div>
 
         <div className="form-group">
-          <label className="label">Contenuto *</label>
+          <label className="label">Content *</label>
           <RichTextEditor
             value={editorData.content}
             onChange={(html) => setEditorData({ ...editorData, content: html })}
-            placeholder="Scrivi il contenuto dell'articolo..."
+            placeholder="Write the article content..."
             minHeight={250}
           />
         </div>
@@ -245,10 +245,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
             className="btn btn-secondary"
             onClick={() => { setShowEditor(false); setEditingId(null); setEditorData({ title: '', content: '', category: '', tags: '' }); }}
           >
-            Annulla
+            Cancel
           </button>
           <button type="button" className="btn btn-primary" onClick={handleSave}>
-            {editingId ? 'Salva Modifiche' : 'Pubblica Articolo'}
+            {editingId ? 'Save Changes' : 'Publish Article'}
           </button>
         </div>
       </div>
@@ -262,7 +262,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
         <h1>📚 Knowledge Base</h1>
         {user.role === 'ADMIN' && (
           <button className="btn btn-primary" onClick={() => setShowEditor(true)}>
-            + Nuovo Articolo
+            + New Article
           </button>
         )}
       </div>
@@ -272,7 +272,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
         <input
           type="text"
           className="input"
-          placeholder="Cerca articoli..."
+          placeholder="Search articles..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: '200px' }}
@@ -283,7 +283,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
           onChange={(e) => setFilterCategory(e.target.value)}
           style={{ width: '200px' }}
         >
-          <option value="">Tutte le categorie</option>
+          <option value="">All categories</option>
           {categories.map(cat => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
@@ -293,7 +293,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
       {/* Articles Grid */}
       {articles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-          {search || filterCategory ? 'Nessun articolo trovato' : 'Nessun articolo nella Knowledge Base. Crea il primo!'}
+          {search || filterCategory ? 'No articles found' : 'No articles in the Knowledge Base. Create the first one!'}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
@@ -326,7 +326,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ user }) => {
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8' }}>
                 <span>👁 {article.viewCount} | 👍 {article.helpfulCount}</span>
-                <span>{new Date(article.createdAt).toLocaleDateString('it-IT')}</span>
+                <span>{new Date(article.createdAt).toLocaleDateString('en-GB')}</span>
               </div>
             </div>
           ))}

@@ -23,7 +23,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
       const response = await offboardingApi.getAll();
       setOffboardings(response.data);
     } catch (error) {
-      console.error('Errore caricamento offboarding:', error);
+      console.error('Error loading offboarding:', error);
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
       const response = await usersApi.getAll();
       setAllUsers(response.data);
     } catch (error) {
-      console.error('Errore caricamento utenti:', error);
+      console.error('Error loading users:', error);
     }
   };
 
@@ -47,7 +47,7 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
         setSelectedOffboarding(updated.data);
       }
     } catch (error) {
-      console.error('Errore aggiornamento task:', error);
+      console.error('Error updating task:', error);
     }
   };
 
@@ -58,29 +58,29 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
   };
 
   if (loading) {
-    return <div className="loading">Caricamento...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Offboarding</h1>
-        <p>Gestisci i processi di offboarding e revoca accessi</p>
-        {/* Solo HR e ADMIN possono creare nuovi offboarding */}
+        <p>Manage offboarding processes and access revocation</p>
+        {/* Only HR and ADMIN can create new offboardings */}
         {(user.role === 'ADMIN' || user.department === 'HR') && (
           <button
             className="btn btn-primary"
             onClick={() => setShowNewForm(true)}
             style={{ marginLeft: 'auto' }}
           >
-            + Nuovo Offboarding
+            + New Offboarding
           </button>
         )}
       </div>
 
       <div className="alert alert-warning">
-        <strong>ISO 27001 Compliance:</strong> I processi di offboarding garantiscono la revoca
-        tempestiva di tutti gli accessi e la protezione dei dati aziendali.
+        <strong>ISO 27001 Compliance:</strong> Offboarding processes ensure timely
+        revocation of all access and protection of company data.
       </div>
 
       <div className="process-grid">
@@ -107,22 +107,22 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
                 </span>
               </div>
               <div className="info-row">
-                <span>📅 Inizio:</span>
-                <span>{new Date(off.startDate).toLocaleDateString('it-IT')}</span>
+                <span>📅 Start:</span>
+                <span>{new Date(off.startDate).toLocaleDateString('en-GB')}</span>
               </div>
               <div className="info-row">
-                <span>⏰ Scadenza:</span>
-                <span>{new Date(off.expectedEndDate).toLocaleDateString('it-IT')}</span>
+                <span>⏰ Deadline:</span>
+                <span>{new Date(off.expectedEndDate).toLocaleDateString('en-GB')}</span>
               </div>
               <div className="info-row">
-                <span>📝 Motivo:</span>
+                <span>📝 Reason:</span>
                 <span>{off.reason}</span>
               </div>
             </div>
 
             <div className="progress-section">
               <div className="progress-header">
-                <span>Progresso</span>
+                <span>Progress</span>
                 <span>{Math.round(getProgress(off))}%</span>
               </div>
               <div className="progress-bar">
@@ -134,15 +134,15 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
             </div>
 
             <div className="task-summary">
-              {off.tasks.filter((t: any) => t.completed).length} / {off.tasks.length} task completati
+              {off.tasks.filter((t: any) => t.completed).length} / {off.tasks.length} tasks completed
             </div>
           </div>
         ))}
 
         {offboardings.length === 0 && (
           <div className="empty-state">
-            <h3>Nessun offboarding attivo</h3>
-            <p>I processi di offboarding appariranno qui</p>
+            <h3>No active offboarding</h3>
+            <p>Offboarding processes will appear here</p>
           </div>
         )}
       </div>
@@ -171,35 +171,35 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
                   <strong>Email:</strong> {selectedOffboarding.user.email}
                 </div>
                 <div className="detail-item">
-                  <strong>Status Utente:</strong> {selectedOffboarding.user.status}
+                  <strong>User Status:</strong> {selectedOffboarding.user.status}
                 </div>
                 <div className="detail-item">
                   <strong>Manager:</strong> {selectedOffboarding.manager.firstName}{' '}
                   {selectedOffboarding.manager.lastName}
                 </div>
                 <div className="detail-item">
-                  <strong>Motivo:</strong> {selectedOffboarding.reason}
+                  <strong>Reason:</strong> {selectedOffboarding.reason}
                 </div>
                 <div className="detail-item">
-                  <strong>Data Inizio:</strong>{' '}
-                  {new Date(selectedOffboarding.startDate).toLocaleDateString('it-IT')}
+                  <strong>Start Date:</strong>{' '}
+                  {new Date(selectedOffboarding.startDate).toLocaleDateString('en-GB')}
                 </div>
                 <div className="detail-item">
-                  <strong>Data Prevista Fine:</strong>{' '}
-                  {new Date(selectedOffboarding.expectedEndDate).toLocaleDateString('it-IT')}
+                  <strong>Expected End Date:</strong>{' '}
+                  {new Date(selectedOffboarding.expectedEndDate).toLocaleDateString('en-GB')}
                 </div>
                 {selectedOffboarding.actualEndDate && (
                   <div className="detail-item">
-                    <strong>Data Effettiva Fine:</strong>{' '}
-                    {new Date(selectedOffboarding.actualEndDate).toLocaleDateString('it-IT')}
+                    <strong>Actual End Date:</strong>{' '}
+                    {new Date(selectedOffboarding.actualEndDate).toLocaleDateString('en-GB')}
                   </div>
                 )}
               </div>
 
               <div className="tasks-section">
-                <h3>Checklist Offboarding (ISO 27001)</h3>
+                <h3>Offboarding Checklist (ISO 27001)</h3>
                 <div className="alert alert-danger" style={{ marginBottom: '15px' }}>
-                  ⚠️ Tutti i task obbligatori devono essere completati per garantire la sicurezza
+                  ⚠️ All mandatory tasks must be completed to ensure security
                 </div>
                 {selectedOffboarding.tasks
                   .sort((a: any, b: any) => a.order - b.order)
@@ -223,14 +223,14 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
                         <div className="task-title">
                           {task.title}
                           {task.mandatory && (
-                            <span className="mandatory-badge mandatory">Obbligatorio</span>
+                            <span className="mandatory-badge mandatory">Mandatory</span>
                           )}
                         </div>
                         <div className="task-description">{task.description}</div>
                         {task.completed && task.completedAt && (
                           <div className="task-completed-date">
-                            ✓ Completato il{' '}
-                            {new Date(task.completedAt).toLocaleDateString('it-IT')}
+                            ✓ Completed on{' '}
+                            {new Date(task.completedAt).toLocaleDateString('en-GB')}
                           </div>
                         )}
                       </div>
@@ -254,35 +254,35 @@ const Offboarding: React.FC<OffboardingProps> = ({ user }) => {
   );
 };
 
-// Modal per creare nuovo offboarding
+// Modal to create new offboarding
 const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
   const [formData, setFormData] = useState({
     userId: '',
     managerId: currentUser.id,
     startDate: new Date().toISOString().split('T')[0],
     expectedEndDate: '',
-    reason: 'Dimissioni'
+    reason: 'Resignation'
   });
 
   const reasons = [
-    'Dimissioni',
-    'Licenziamento',
-    'Fine Contratto',
-    'Pensionamento',
-    'Trasferimento',
-    'Altro'
+    'Resignation',
+    'Dismissal',
+    'End of Contract',
+    'Retirement',
+    'Transfer',
+    'Other'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await offboardingApi.create(formData);
-      alert('Offboarding creato con successo!');
+      alert('Offboarding created successfully!');
       onCreated();
       onClose();
     } catch (error: any) {
-      console.error('Errore creazione offboarding:', error);
-      alert(error.response?.data?.error || 'Errore durante la creazione dell\'offboarding');
+      console.error('Error creating offboarding:', error);
+      alert(error.response?.data?.error || 'Error creating offboarding');
     }
   };
 
@@ -290,20 +290,20 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Nuovo Offboarding</h2>
+          <h2>New Offboarding</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="label">Dipendente in Uscita *</label>
+            <label className="label">Departing Employee *</label>
             <select
               className="input"
               value={formData.userId}
               onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
               required
             >
-              <option value="">Seleziona un dipendente...</option>
+              <option value="">Select an employee...</option>
               {allUsers.map((u: any) => (
                 <option key={u.id} value={u.id}>
                   {u.firstName} {u.lastName} ({u.email})
@@ -313,7 +313,7 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="form-group">
-            <label className="label">Manager Responsabile *</label>
+            <label className="label">Responsible Manager *</label>
             <select
               className="input"
               value={formData.managerId}
@@ -329,7 +329,7 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="form-group">
-            <label className="label">Motivo Uscita *</label>
+            <label className="label">Reason for Leaving *</label>
             <select
               className="input"
               value={formData.reason}
@@ -345,7 +345,7 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="form-group">
-            <label className="label">Data Inizio Processo *</label>
+            <label className="label">Process Start Date *</label>
             <input
               type="date"
               className="input"
@@ -356,7 +356,7 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="form-group">
-            <label className="label">Data Prevista Completamento *</label>
+            <label className="label">Expected Completion Date *</label>
             <input
               type="date"
               className="input"
@@ -367,16 +367,16 @@ const NewOffboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, on
           </div>
 
           <div className="alert alert-danger" style={{ marginBottom: '15px' }}>
-            ⚠️ <strong>ISO 27001:</strong> La checklist di revoca accessi verrà creata automaticamente.
-            Tutti i task obbligatori devono essere completati.
+            ⚠️ <strong>ISO 27001:</strong> The access revocation checklist will be created automatically.
+            All mandatory tasks must be completed.
           </div>
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annulla
+              Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Crea Offboarding
+              Create Offboarding
             </button>
           </div>
         </form>

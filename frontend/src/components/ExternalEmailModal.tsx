@@ -34,28 +34,28 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
     try {
       setLoading(true);
       await ticketsApi.addExternalContacts(ticket.id, [newEmail.trim()]);
-      alert('Contatto aggiunto con successo!');
+      alert('Contact added successfully!');
       setNewEmail('');
       onSuccess();
     } catch (error: any) {
-      console.error('Errore aggiunta contatto:', error);
-      alert(error.response?.data?.error || 'Errore durante l\'aggiunta del contatto');
+      console.error('Error adding contact:', error);
+      alert(error.response?.data?.error || 'Error adding contact');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveContact = async (email: string) => {
-    if (!window.confirm(`Rimuovere ${email} dai contatti?`)) return;
+    if (!window.confirm(`Remove ${email} from contacts?`)) return;
 
     try {
       setLoading(true);
       await ticketsApi.removeExternalContact(ticket.id, email);
-      alert('Contatto rimosso con successo!');
+      alert('Contact removed successfully!');
       onSuccess();
     } catch (error: any) {
-      console.error('Errore rimozione contatto:', error);
-      alert(error.response?.data?.error || 'Errore durante la rimozione del contatto');
+      console.error('Error removing contact:', error);
+      alert(error.response?.data?.error || 'Error removing contact');
     } finally {
       setLoading(false);
     }
@@ -64,14 +64,14 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailSubject.trim() || !emailBody.trim() || selectedEmails.length === 0) {
-      alert('Compila tutti i campi e seleziona almeno un destinatario');
+      alert('Please fill in all fields and select at least one recipient');
       return;
     }
 
     try {
       setLoading(true);
 
-      // Upload nuovi file prima di inviare
+      // Upload new files before sending
       const allAttachmentIds = [...selectedAttachments];
       for (const file of newFiles) {
         const res = await ticketsApi.uploadFile(ticket.id, file);
@@ -87,9 +87,9 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
 
       const totalAttachments = allAttachmentIds.length;
       const attachmentMsg = totalAttachments > 0
-        ? ` con ${totalAttachments} allegati`
+        ? ` with ${totalAttachments} attachment(s)`
         : '';
-      alert(`Email inviata con successo${attachmentMsg}!`);
+      alert(`Email sent successfully${attachmentMsg}!`);
 
       setEmailSubject('');
       setEmailBody('');
@@ -99,8 +99,8 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
       setMode('manage');
       onSuccess();
     } catch (error: any) {
-      console.error('Errore invio email:', error);
-      alert(error.response?.data?.error || 'Errore durante l\'invio dell\'email');
+      console.error('Error sending email:', error);
+      alert(error.response?.data?.error || 'Error sending email');
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
       >
         <div className="modal-header">
           <h2>
-            📧 Comunicazioni Esterne - Ticket #{ticket.id.slice(0, 8)}
+            📧 External Communications - Ticket #{ticket.id.slice(0, 8)}
           </h2>
           <button className="close-btn" onClick={onClose}>
             ×
@@ -153,7 +153,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                 borderRadius: '6px 6px 0 0',
               }}
             >
-              👥 Gestisci Contatti
+              👥 Manage Contacts
             </button>
             <button
               onClick={() => setMode('send')}
@@ -169,28 +169,28 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                 opacity: ticket.externalContacts?.length > 0 ? 1 : 0.5,
               }}
             >
-              ✉️ Invia Email
+              ✉️ Send Email
             </button>
           </div>
 
           {mode === 'manage' && (
             <div>
               <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
-                <strong>ℹ️ Comunicazioni Esterne</strong>
+                <strong>ℹ️ External Communications</strong>
                 <br />
                 <span style={{ fontSize: '14px' }}>
-                  Aggiungi indirizzi email di fornitori, clienti o partner esterni. Potrai inviare loro aggiornamenti e le risposte verranno automaticamente collegate a questo ticket.
+                  Add email addresses of suppliers, customers or external partners. You can send them updates and their replies will be automatically linked to this ticket.
                 </span>
               </div>
 
-              {/* Form aggiungi contatto */}
+              {/* Add contact form */}
               <form onSubmit={handleAddContact} style={{ marginBottom: '20px' }}>
-                <label className="label">Aggiungi Contatto Esterno</label>
+                <label className="label">Add External Contact</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <input
                     type="email"
                     className="input"
-                    placeholder="es. fornitore@example.com"
+                    placeholder="e.g. supplier@example.com"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     disabled={loading}
@@ -200,19 +200,19 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                     className="btn btn-primary"
                     disabled={loading || !newEmail.trim()}
                   >
-                    ➕ Aggiungi
+                    ➕ Add
                   </button>
                 </div>
               </form>
 
-              {/* Lista contatti */}
+              {/* Contacts list */}
               <div>
                 <label className="label">
-                  Contatti Esterni ({ticket.externalContacts?.length || 0})
+                  External Contacts ({ticket.externalContacts?.length || 0})
                 </label>
                 {!ticket.externalContacts || ticket.externalContacts.length === 0 ? (
                   <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280', background: '#f9fafb', borderRadius: '6px' }}>
-                    Nessun contatto esterno aggiunto
+                    No external contacts added
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -243,7 +243,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                             fontSize: '12px',
                           }}
                         >
-                          🗑️ Rimuovi
+                          🗑️ Remove
                         </button>
                       </div>
                     ))}
@@ -256,16 +256,16 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
           {mode === 'send' && (
             <form onSubmit={handleSendEmail}>
               <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#dcfce7', border: '1px solid #10b981', borderRadius: '6px', padding: '12px' }}>
-                <strong>✉️ Invia Email</strong>
+                <strong>✉️ Send Email</strong>
                 <br />
                 <span style={{ fontSize: '14px' }}>
-                  L'email includerà automaticamente il riferimento al ticket. Le risposte verranno aggiunte come commenti al ticket.
+                  The email will automatically include the ticket reference. Replies will be added as comments to the ticket.
                 </span>
               </div>
 
-              {/* Selezione destinatari */}
+              {/* Recipient selection */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="label">Destinatari *</label>
+                <label className="label">Recipients *</label>
                 {ticket.externalContacts.map((email: string) => (
                   <label
                     key={email}
@@ -291,37 +291,37 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                 ))}
               </div>
 
-              {/* Oggetto */}
+              {/* Subject */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="label">Oggetto *</label>
+                <label className="label">Subject *</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. Richiesta informazioni"
+                  placeholder="e.g. Information request"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
                   required
                 />
                 <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                  Il riferimento ticket verrà aggiunto automaticamente
+                  The ticket reference will be added automatically
                 </small>
               </div>
 
-              {/* Messaggio */}
+              {/* Message */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="label">Messaggio *</label>
+                <label className="label">Message *</label>
                 <RichTextEditor
                   value={emailBody}
                   onChange={setEmailBody}
-                  placeholder="Scrivi il tuo messaggio... (puoi incollare screenshot)"
+                  placeholder="Write your message... (you can paste screenshots)"
                   minHeight={150}
                   onPasteFiles={handlePasteFiles}
                 />
               </div>
 
-              {/* Upload nuovi allegati */}
+              {/* Upload new attachments */}
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="label">📎 Aggiungi Nuovi Allegati</label>
+                <label className="label">📎 Add New Attachments</label>
                 <div>
                   <input
                     type="file"
@@ -348,8 +348,8 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                     boxSizing: 'border-box',
                   }}>
                     {newFiles.length > 0
-                      ? `📎 ${newFiles.length} nuovi file — clicca per aggiungere`
-                      : '📎 Clicca per allegare nuovi file'}
+                      ? `📎 ${newFiles.length} new file(s) — click to add more`
+                      : '📎 Click to attach new files'}
                   </label>
                   {newFiles.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
@@ -374,14 +374,14 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                 </div>
               </div>
 
-              {/* Selezione Allegati */}
+              {/* Attachment selection */}
               {ticket.attachments && ticket.attachments.length > 0 && (
                 <div className="form-group" style={{ marginBottom: '20px' }}>
                   <label className="label">
-                    📎 Allegati da Includere ({selectedAttachments.length}/{ticket.attachments.length})
+                    📎 Attachments to Include ({selectedAttachments.length}/{ticket.attachments.length})
                   </label>
                   <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '10px' }}>
-                    Seleziona gli allegati del ticket da includere nell'email
+                    Select ticket attachments to include in the email
                   </div>
                   {ticket.attachments.filter((att: any) => !att.isDeleted).map((attachment: any) => (
                     <label
@@ -424,14 +424,14 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                   onClick={() => setMode('manage')}
                   disabled={loading}
                 >
-                  ← Indietro
+                  ← Back
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={loading || selectedEmails.length === 0}
                 >
-                  {loading ? 'Invio...' : '📤 Invia Email'}
+                  {loading ? 'Sending...' : '📤 Send Email'}
                 </button>
               </div>
             </form>
@@ -445,7 +445,7 @@ const ExternalEmailModal: React.FC<ExternalEmailModalProps> = ({
                 onClick={onClose}
                 disabled={loading}
               >
-                Chiudi
+                Close
               </button>
             </div>
           )}

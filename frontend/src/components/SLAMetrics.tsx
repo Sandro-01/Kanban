@@ -14,7 +14,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh ogni 30 secondi
+    // Auto-refresh every 30 seconds
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -31,7 +31,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
       setViolations(violationsRes.data);
       setConfigs(configsRes.data);
     } catch (error) {
-      console.error('Errore caricamento SLA:', error);
+      console.error('Error loading SLA:', error);
       // Set default values in case of error
       setMetrics({
         total: 0,
@@ -53,7 +53,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
   };
 
   if (loading) {
-    return <div className="loading">Caricamento metriche SLA...</div>;
+    return <div className="loading">Loading SLA metrics...</div>;
   }
 
   if (!metrics) {
@@ -61,10 +61,10 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
       <div className="page sla-page">
         <div className="page-header">
           <h1>SLA Metrics</h1>
-          <p>Monitoraggio in tempo reale dei Service Level Agreement</p>
+          <p>Real-time monitoring of Service Level Agreements</p>
         </div>
         <div className="card">
-          <p>Impossibile caricare le metriche SLA. Verifica che il backend sia avviato.</p>
+          <p>Unable to load SLA metrics. Please ensure the backend is running.</p>
         </div>
       </div>
     );
@@ -78,12 +78,12 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
     <div className="page sla-page">
       <div className="page-header">
         <h1>SLA Metrics</h1>
-        <p>Monitoraggio in tempo reale dei Service Level Agreement</p>
+        <p>Real-time monitoring of Service Level Agreements</p>
       </div>
 
       <div className="alert alert-info">
-        <strong>ISO 9001 Compliance:</strong> Il tracking SLA garantisce tempi di risposta
-        conformi agli standard di qualità definiti.
+        <strong>ISO 9001 Compliance:</strong> SLA tracking ensures response times
+        compliant with defined quality standards.
       </div>
 
       {/* Overview */}
@@ -92,7 +92,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
           <div className="card-icon">✅</div>
           <div className="card-content">
             <div className="card-value">{metrics.withinSLA}</div>
-            <div className="card-label">Entro SLA</div>
+            <div className="card-label">Within SLA</div>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
           <div className="card-icon">⚠️</div>
           <div className="card-content">
             <div className="card-value">{metrics.nearingSLA}</div>
-            <div className="card-label">Vicino Scadenza</div>
+            <div className="card-label">Nearing Deadline</div>
           </div>
         </div>
 
@@ -108,7 +108,7 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
           <div className="card-icon">🚨</div>
           <div className="card-content">
             <div className="card-value">{metrics.violated}</div>
-            <div className="card-label">Violati</div>
+            <div className="card-label">Violated</div>
           </div>
         </div>
 
@@ -121,9 +121,9 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Per Priorità */}
+      {/* By Priority */}
       <div className="card">
-        <h2>Distribuzione per Priorità</h2>
+        <h2>Distribution by Priority</h2>
         <div className="priority-metrics">
           {Object.entries(metrics.byPriority || {}).map(([priority, data]: any) => {
             const complianceRate = data.total > 0
@@ -140,11 +140,11 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
                 </div>
                 <div className="priority-stats-grid">
                   <div className="stat">
-                    <span className="stat-label">Totale</span>
+                    <span className="stat-label">Total</span>
                     <span className="stat-value">{data.total}</span>
                   </div>
                   <div className="stat">
-                    <span className="stat-label">Violati</span>
+                    <span className="stat-label">Violated</span>
                     <span className="stat-value stat-danger">{data.violated}</span>
                   </div>
                 </div>
@@ -154,17 +154,17 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Configurazioni SLA */}
+      {/* SLA Configurations */}
       <div className="card">
-        <h2>Configurazioni SLA</h2>
+        <h2>SLA Configurations</h2>
         <div className="sla-config-table">
           <table>
             <thead>
               <tr>
-                <th>Categoria</th>
-                <th>Priorità</th>
-                <th>SLA (ore)</th>
-                <th>Descrizione</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>SLA (hours)</th>
+                <th>Description</th>
               </tr>
             </thead>
             <tbody>
@@ -185,10 +185,10 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Violazioni */}
+      {/* Violations */}
       {violations.length > 0 && (
         <div className="card violations-card">
-          <h2>🚨 Violazioni SLA Attive ({violations.length})</h2>
+          <h2>🚨 Active SLA Violations ({violations.length})</h2>
           <div className="violations-list">
             {violations.map((ticket) => {
               const hoursOverdue = Math.floor(
@@ -205,19 +205,19 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
                   </div>
                   <div className="violation-info">
                     <div className="violation-detail">
-                      <span>📅 Scaduto il:</span>
-                      <span>{new Date(ticket.dueDate).toLocaleString('it-IT')}</span>
+                      <span>📅 Expired on:</span>
+                      <span>{new Date(ticket.dueDate).toLocaleString('en-GB')}</span>
                     </div>
                     <div className="violation-detail">
-                      <span>⏰ In ritardo di:</span>
+                      <span>⏰ Overdue by:</span>
                       <span className="overdue-time">{hoursOverdue}h</span>
                     </div>
                     <div className="violation-detail">
-                      <span>👤 Assegnato a:</span>
+                      <span>👤 Assigned to:</span>
                       <span>
                         {ticket.assignedTo
                           ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                          : 'Non assegnato'}
+                          : 'Unassigned'}
                       </span>
                     </div>
                   </div>
@@ -230,8 +230,8 @@ const SLAMetrics: React.FC<SLAMetricsProps> = ({ user }) => {
 
       {violations.length === 0 && (
         <div className="card success-message">
-          <h2>✅ Nessuna Violazione SLA</h2>
-          <p>Tutti i ticket sono gestiti entro i tempi previsti!</p>
+          <h2>✅ No SLA Violations</h2>
+          <p>All tickets are being handled within the expected timeframes!</p>
         </div>
       )}
     </div>
