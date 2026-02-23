@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor from './RichTextEditor';
@@ -23,6 +24,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [loading, setLoading] = useState(true);
   const isDragging = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-apri ticket se arriva dalla notifica (?ticketId=...)
+  useEffect(() => {
+    const ticketId = searchParams.get('ticketId');
+    if (ticketId && tickets.length > 0) {
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        setSelectedTicket(ticket);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, tickets]);
 
   const loadTickets = useCallback(async () => {
     try {

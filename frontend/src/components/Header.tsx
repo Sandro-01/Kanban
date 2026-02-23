@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     }
     if (n.ticketId) {
       setShowPanel(false);
-      navigate('/board');
+      navigate(`/board?ticketId=${n.ticketId}`);
     }
   };
 
