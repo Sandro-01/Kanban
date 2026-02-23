@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications as notifApi } from '../services/api';
+import { Bell, MessageSquare, UserCheck, RefreshCw, AlertTriangle, Mail, Sparkles } from 'lucide-react';
 import './Header.css';
 
 interface HeaderProps {
@@ -82,13 +83,13 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     setNotifList(prev => prev.map(x => ({ ...x, read: true })));
   };
 
-  const typeIcons: Record<string, string> = {
-    COMMENT: '▸',
-    ASSIGNMENT: '◆',
-    STATUS_CHANGE: '→',
-    SLA_ALERT: '!',
-    EMAIL: '✉',
-    AI_SUGGESTION: '◎',
+  const typeIcons: Record<string, React.ReactNode> = {
+    COMMENT: <MessageSquare size={14} strokeWidth={1.5} />,
+    ASSIGNMENT: <UserCheck size={14} strokeWidth={1.5} />,
+    STATUS_CHANGE: <RefreshCw size={14} strokeWidth={1.5} />,
+    SLA_ALERT: <AlertTriangle size={14} strokeWidth={1.5} />,
+    EMAIL: <Mail size={14} strokeWidth={1.5} />,
+    AI_SUGGESTION: <Sparkles size={14} strokeWidth={1.5} />,
   };
 
   const timeSince = (dateStr: string) => {
@@ -163,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
               className="notif-bell"
               title="Notifications"
             >
-              ●
+              <Bell size={18} strokeWidth={1.5} />
               {unreadCount > 0 && (
                 <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
@@ -188,7 +189,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                       onClick={() => handleNotifClick(n)}
                       className={`notif-item ${n.read ? '' : 'notif-item--unread'}`}
                     >
-                      <span className="notif-icon">{typeIcons[n.type] || '🔔'}</span>
+                      <span className="notif-icon">{typeIcons[n.type] || <Bell size={14} strokeWidth={1.5} />}</span>
                       <div className="notif-body">
                         <div className={`notif-title ${n.read ? '' : 'notif-title--bold'}`}>{n.title}</div>
                         <div className="notif-message">{n.message}</div>
