@@ -580,9 +580,32 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
+  // Returns true if content looks like an NDR / bounce message
+  const isNdrContent = (content: string) =>
+    /couldn'?t be delivered|Recipient Unknown|550 5\.\d+\.\d+|Undeliverable:|non è stato possibile recapitare/i.test(content);
+
   // Clean email content for display (also handles legacy data in DB)
   const cleanEmailReplyContent = (content: string, fromEmail?: string): string => {
     let cleaned = content;
+
+    // ── NDR / bounce detection (Microsoft Exchange, Office 365, Gmail) ──────
+    if (isNdrContent(cleaned)) {
+      const recipientMatch =
+        cleaned.match(/message to\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i) ||
+        cleaned.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\s+wasn'?t found/i);
+      const recipient = recipientMatch ? recipientMatch[1] : '';
+      const codeMatch = cleaned.match(/(5\d{2}\s+5\.\d+\.\d+)/);
+      const code = codeMatch ? codeMatch[1] : '550 5.1.10';
+      return [
+        `<strong style="font-size:13px;">&#9888;&ensp;Email non consegnata</strong>`,
+        recipient
+          ? `<span style="font-size:12px;color:#555;">Destinatario non trovato:&ensp;<strong>${recipient}</strong></span>`
+          : '',
+        `<span style="font-size:11px;color:#888;display:block;margin-top:4px;">Codice errore: ${code} — l'indirizzo potrebbe essere errato o inesistente.</span>`,
+      ].filter(Boolean).join('<br>');
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     // Remove legacy prefix "📧 **Risposta da email@...:**"
     cleaned = cleaned.replace(/^📧\s*\*{0,2}Risposta da\s+[^:*]+:?\*{0,2}\s*/i, '');
     // Remove system notification template text (specific patterns)
@@ -1114,11 +1137,14 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
           {/* Unified timeline - Comments and Files */}
           <div className="timeline-section">
-            <strong>{isEmailTicket ? 'Conversation:' : 'Activity history:'}</strong>
+            <div className="timeline-section-header">
+              <span className="timeline-section-title">{isEmailTicket ? 'Conversazione' : 'Attività'}</span>
+              <span className="timeline-section-count">{timeline.length} elementi</span>
+            </div>
             <div className="timeline-list">
               {timeline.length > 0 ? (
                 timeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}${item.isOutgoingEmail ? ' email-outgoing' : ''}`}>
+                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}${item.isOutgoingEmail ? ' email-outgoing' : ''}${item.isEmailReply && isNdrContent(item.content) ? ' email-ndr' : ''}`}>
                     {item.type === 'comment' ? (
                       <>
                         <div className="timeline-icon">
@@ -1128,29 +1154,28 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           <div className="timeline-header">
                             {item.isOutgoingEmail ? (
                               <>
-                                <strong>{item.user?.firstName} {item.user?.lastName}</strong>
-                                <span className="email-outgoing-badge">Email sent</span>
-                                <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                                  A: {item.toEmails?.join(', ')}
-                                </span>
+                                <span className="email-outgoing-badge">&#8593;&ensp;Inviata</span>
+                                <span className="email-direction-label">Da:&ensp;<strong>{item.user?.firstName} {item.user?.lastName}</strong></span>
+                                <span className="email-direction-label">A:&ensp;<strong>{item.toEmails?.join(', ')}</strong></span>
                               </>
                             ) : item.isEmailReply ? (
                               <>
-                                <strong>{item.fromEmail}</strong>
-                                <span className="email-reply-badge">Email reply</span>
+                                {isNdrContent(item.content)
+                                  ? <span className="email-ndr-badge">&#9888;&ensp;Bounce</span>
+                                  : <span className="email-reply-badge">&#8595;&ensp;Ricevuta</span>
+                                }
+                                <span className="email-direction-label">Da:&ensp;<strong>{item.fromEmail}</strong></span>
                               </>
                             ) : (
                               <>
-                                <strong>
-                                  {item.user.firstName} {item.user.lastName}
-                                </strong>
+                                <strong>{item.user.firstName} {item.user.lastName}</strong>
                                 {item.user.department && (
-                                  <span className="user-department">({item.user.department})</span>
+                                  <span className="user-department">{item.user.department}</span>
                                 )}
                               </>
                             )}
                             <span className="timeline-date">
-                              {item.date.toLocaleString('en-GB')}
+                              {item.date.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
                             </span>
                             {user.role === 'ADMIN' && (
                               <button

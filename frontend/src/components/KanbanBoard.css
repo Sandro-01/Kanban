@@ -767,6 +767,32 @@
   border-radius: 0;
 }
 
+.timeline-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #000000;
+  margin-bottom: 4px;
+}
+
+.timeline-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #000000;
+}
+
+.timeline-section-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: #999999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: auto;
+}
+
 .timeline-list {
   max-height: 400px;
   overflow-y: auto;
@@ -810,6 +836,27 @@
   letter-spacing: 0.06em;
 }
 
+.email-ndr-badge {
+  display: inline-block;
+  background: #000000;
+  color: #FFE600;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.email-direction-label {
+  font-size: 11px;
+  color: #555555;
+}
+
+.email-direction-label strong {
+  color: #000000;
+}
+
 .timeline-item.email-outgoing {
   border-left-color: #000000;
   background: #FAFAF8;
@@ -817,6 +864,12 @@
 
 .timeline-item.email-outgoing:hover {
   background: #F5F0EB;
+}
+
+.timeline-item.email-ndr {
+  border-left-color: #000000;
+  background: #FFF8E8;
+  border-left-width: 4px;
 }
 
 .email-outgoing-badge {
