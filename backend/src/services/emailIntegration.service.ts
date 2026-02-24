@@ -3,6 +3,8 @@ import Imap from 'node-imap';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../index';
 import { createTicketFromEmail } from './email.service';
+import path from 'path';
+import fs from 'fs';
 import { getSmtpConfig, getImapConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
 import { isGraphConfigured, sendEmailViaGraph } from './graphEmail.service';
 import { buildEmailHtml, messageBlock, attachmentsList, callToAction, sanitizeHtmlForEmail } from '../utils/emailTemplate';
@@ -299,8 +301,9 @@ async function processIncomingEmail(parsed: any) {
         content: att.content,
         contentType: att.contentType,
         size: att.size,
+        cid: att.cid || null,  // Content-ID for inline images
       }));
-      const ticket = await createTicketFromEmail(from, subject, text || html, emailAttachments, messageId);
+      const ticket = await createTicketFromEmail(from, subject, text || '', html || null, emailAttachments, messageId);
       console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);
@@ -338,58 +341,82 @@ async function processIncomingEmail(parsed: any) {
     return;
   }
 
-  // Pulisci il contenuto (rimuovi quote delle email precedenti)
-  const cleanContent = cleanEmailContent(text || html);
+  // ── Save attachments first so we can replace cid: refs in the HTML ────────
+  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+  const cidMap = new Map<string, string>();
+  const savedAtts: Array<{ fileName: string; uniqueFileName: string; att: any }> = [];
+
+  if (attachments.length > 0) {
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    for (const attachment of attachments) {
+      try {
+        const fileName = attachment.filename ||
+          `attachment-${Date.now()}.${(attachment.contentType || 'image/png').split('/')[1] || 'bin'}`;
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        fs.writeFileSync(filePath, attachment.content);
+
+        if (attachment.cid) {
+          const fileUrl = `${baseUrl}/uploads/${uniqueFileName}`;
+          cidMap.set(attachment.cid, fileUrl);
+          cidMap.set(attachment.cid.split('@')[0], fileUrl);
+        }
+        savedAtts.push({ fileName, uniqueFileName, att: attachment });
+        console.log(`   ✅ Allegato salvato: ${fileName}`);
+      } catch (error) {
+        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, error);
+      }
+    }
+  }
+
+  // ── Build comment content: prefer HTML (with cid refs replaced) ────────────
+  let commentContent: string;
+  if (html && html.trim()) {
+    const replaced = html.replace(/src=["']cid:([^"']+)["']/gi, (_m: string, cid: string) => {
+      const url = cidMap.get(cid) || cidMap.get(cid.split('@')[0]);
+      return url ? `src="${url}"` : `src="cid:${cid}"`;
+    });
+    // Lightweight strip of dangerous tags (DOMPurify handles the rest on client)
+    commentContent = replaced
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+      .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+  } else {
+    commentContent = cleanEmailContent(text || html);
+  }
 
   // Crea commento da email
   const comment = await prisma.comment.create({
     data: {
       ticketId: ticket.id,
-      userId: ticket.createdById, // Assegnato al creatore del ticket
-      content: cleanContent,
+      userId: ticket.createdById,
+      content: commentContent,
       isEmailReply: true,
       fromEmail: from,
       emailMessageId: messageId,
     },
   });
 
-  // Salva allegati se presenti
-  if (attachments.length > 0) {
-    const fs = await import('fs');
-    const path = await import('path');
-
-    const uploadDir = path.join(__dirname, '../../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    for (const attachment of attachments) {
-      try {
-        // Genera nome file per allegati inline senza nome (screenshot)
-        const fileName = attachment.filename || `screenshot-${Date.now()}.${(attachment.contentType || 'image/png').split('/')[1] || 'png'}`;
-        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
-        const filePath = path.join(uploadDir, uniqueFileName);
-
-        // Salva file su disco
-        fs.writeFileSync(filePath, attachment.content);
-
-        // Crea record in database
-        await prisma.attachment.create({
-          data: {
-            ticketId: ticket.id,
-            commentId: comment.id,
-            uploadedById: ticket.createdById,
-            fileName: fileName,
-            filePath: uniqueFileName,
-            fileSize: attachment.size || attachment.content.length,
-            mimeType: attachment.contentType || 'application/octet-stream',
-          },
-        });
-
-        console.log(`   ✅ Allegato salvato: ${fileName}`);
-      } catch (error) {
-        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, error);
-      }
+  // Crea record DB per gli allegati
+  for (const { fileName, uniqueFileName, att } of savedAtts) {
+    try {
+      await prisma.attachment.create({
+        data: {
+          ticketId: ticket.id,
+          commentId: comment.id,
+          uploadedById: ticket.createdById,
+          fileName,
+          filePath: uniqueFileName,
+          fileSize: att.size || att.content.length,
+          mimeType: att.contentType || 'application/octet-stream',
+          isInline: !!att.cid,
+          contentId: att.cid || null,
+        } as any,
+      });
+    } catch (error) {
+      console.error(`   ❌ Errore record DB allegato ${fileName}:`, error);
     }
   }
 

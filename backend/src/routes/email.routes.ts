@@ -16,7 +16,8 @@ router.post('/webhook', async (req: any, res: Response) => {
     await createTicketFromEmail(
       from,
       subject,
-      html || text,
+      text || '',
+      html || null,
       attachments || []
     );
 

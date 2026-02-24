@@ -104,12 +104,38 @@ export async function sendEmail(
 }
 
 /**
+ * Replaces cid: references in HTML body with actual file URLs.
+ * Returns { html, cidMap } where cidMap maps cid → filePath.
+ */
+function replaceCidRefs(html: string, cidMap: Map<string, string>): string {
+  return html.replace(/src=["']cid:([^"']+)["']/gi, (_match, cid) => {
+    // Try exact CID, then the part before @ (some clients include domain)
+    const url = cidMap.get(cid) || cidMap.get(cid.split('@')[0]);
+    return url ? `src="${url}"` : `src="cid:${cid}"`;
+  });
+}
+
+/**
+ * Lightweight server-side HTML sanitization: removes scripts, event handlers
+ * and javascript: hrefs. DOMPurify on the client handles the final pass.
+ */
+function sanitizeIncomingHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+}
+
+/**
  * Crea ticket da email
  */
 export async function createTicketFromEmail(
   from: string,
   subject: string,
   body: string,
+  htmlBody: string | null,  // full HTML body from email (may contain cid: refs)
   attachments: any[],
   emailMessageId?: string
 ) {
@@ -184,16 +210,55 @@ export async function createTicketFromEmail(
     slaHours = 24;
   }
 
-  // Pulisci il corpo email per la descrizione
-  const cleanBody = cleanEmailBodyForDescription(body);
+  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
 
-  // Crea ticket con descrizione pulita (verrà aggiornata con link allegati)
+  // ── Save attachments first so we can build the cid→URL map ────────────────
+  const cidMap = new Map<string, string>(); // cid → full URL
+  if (attachments && attachments.length > 0) {
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    for (const attachment of attachments) {
+      try {
+        if (!attachment.content) continue;
+        const fileName = attachment.filename || `attachment-${Date.now()}`;
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        fs.writeFileSync(filePath, attachment.content);
+
+        // Build cid map BEFORE ticket creation so HTML can reference the URLs
+        if (attachment.cid) {
+          const fileUrl = `${baseUrl}/uploads/${uniqueFileName}`;
+          cidMap.set(attachment.cid, fileUrl);
+          cidMap.set(attachment.cid.split('@')[0], fileUrl); // also map local part
+        }
+
+        // Store temporarily; we create DB records after the ticket exists
+        (attachment as any)._uniqueFileName = uniqueFileName;
+        (attachment as any)._fileName = fileName;
+        console.log(`   ✅ Allegato salvato: ${fileName}`);
+      } catch (err) {
+        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, err);
+      }
+    }
+  }
+
+  // ── Build description: prefer HTML body (with cid refs replaced) ───────────
+  let description: string;
+  if (htmlBody && htmlBody.trim()) {
+    const processedHtml = sanitizeIncomingHtml(replaceCidRefs(htmlBody, cidMap));
+    description = processedHtml;
+  } else {
+    description = cleanEmailBodyForDescription(body);
+  }
+
+  // Crea ticket
   const smtp = await getSmtpConfig();
   const emailDomain = smtp.from.includes('@') ? smtp.from.split('@')[1] : 'kanban.local';
   const emailThreadId = `ticket-${Date.now()}@${emailDomain}`;
   const ticketData: any = {
     title: subject,
-    description: cleanBody,
+    description,
     boardId: board.id,
     columnId: column.id,
     createdById: user.id,
@@ -211,59 +276,29 @@ export async function createTicketFromEmail(
 
   const ticket = await prisma.ticket.create({ data: ticketData });
 
-  // Salva allegati se presenti
-  const savedAttachments: { fileName: string; filePath: string; mimeType: string }[] = [];
-  if (attachments && attachments.length > 0) {
-    const uploadDir = path.join(__dirname, '../../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+  // ── Create DB attachment records now that we have the ticket ID ───────────
+  for (const attachment of (attachments || [])) {
+    try {
+      const uniqueFileName = (attachment as any)._uniqueFileName;
+      const fileName = (attachment as any)._fileName;
+      if (!uniqueFileName) continue;
 
-    for (const attachment of attachments) {
-      try {
-        if (!attachment.filename || !attachment.content) continue;
-        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${attachment.filename}`;
-        const filePath = path.join(uploadDir, uniqueFileName);
-        fs.writeFileSync(filePath, attachment.content);
-
-        await prisma.attachment.create({
-          data: {
-            ticketId: ticket.id,
-            uploadedById: user.id,
-            fileName: attachment.filename,
-            filePath: uniqueFileName,
-            fileSize: attachment.size || attachment.content.length,
-            mimeType: attachment.contentType || 'application/octet-stream',
-          }
-        });
-        savedAttachments.push({
-          fileName: attachment.filename,
+      const isInline = !!attachment.cid;
+      await prisma.attachment.create({
+        data: {
+          ticketId: ticket.id,
+          uploadedById: user.id,
+          fileName,
           filePath: uniqueFileName,
+          fileSize: attachment.size || attachment.content.length,
           mimeType: attachment.contentType || 'application/octet-stream',
-        });
-        console.log(`   ✅ Allegato salvato: ${attachment.filename}`);
-      } catch (err) {
-        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, err);
-      }
+          isInline,
+          contentId: attachment.cid || null,
+        } as any,
+      });
+    } catch (err) {
+      console.error(`   ❌ Errore record DB allegato:`, err);
     }
-  }
-
-  // Aggiorna descrizione con link agli allegati
-  if (savedAttachments.length > 0) {
-    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
-    const attachmentLines = savedAttachments.map(a => {
-      const url = `${baseUrl}/uploads/${a.filePath}`;
-      const isImage = a.mimeType.startsWith('image/');
-      return isImage
-        ? `![${a.fileName}](${url})`
-        : `[${a.fileName}](${url})`;
-    });
-    const updatedDescription = cleanBody
-      + '\n\n---\n**Allegati:**\n' + attachmentLines.join('\n');
-    await prisma.ticket.update({
-      where: { id: ticket.id },
-      data: { description: updatedDescription },
-    });
   }
 
   // Registra nella history

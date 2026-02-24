@@ -651,6 +651,16 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const cleanEmailReplyContent = (content: string, fromEmail?: string): string => {
     let cleaned = content;
 
+    // ── If content is already HTML (stored from new backend), render directly ─
+    // Detect by presence of block-level or structural HTML tags
+    if (/^\s*<(html|div|p|table|span|img|h[1-6]|ul|ol|li|br)/i.test(cleaned)) {
+      // Only strip XSS vectors; DOMPurify handles the rest at render time
+      return cleaned
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+    }
+
     // ── NDR / bounce detection (Microsoft Exchange, Office 365, Gmail) ──────
     if (isNdrContent(cleaned)) {
       const recipientMatch =
@@ -1368,13 +1378,18 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 const initials = fileTypeInfo ? fileTypeInfo.label : computeInitials(primaryLabel);
                 const avatarBg  = fileTypeInfo ? fileTypeInfo.bg  : getAvatarColor(primaryLabel);
 
-                // Separate real images from signature images (only filter for emails)
+                // Separate real images from inline/signature images (only filter for emails)
                 const atts: any[] = item.attachments || [];
                 const isEmailItem = item.isEmailReply || item.isOutgoingEmail;
+                // Hide inline images (embedded in HTML body) and CID signature images
                 const realImages = atts.filter((a: any) =>
-                  a.mimeType?.startsWith('image/') && !(isEmailItem && isSignatureImage(a))
+                  a.mimeType?.startsWith('image/') &&
+                  !(isEmailItem && (a.isInline || isSignatureImage(a)))
                 );
-                const otherFiles = atts.filter((a: any) => !a.mimeType?.startsWith('image/'));
+                // Hide inline non-image files too (rare but possible)
+                const otherFiles = atts.filter((a: any) =>
+                  !a.mimeType?.startsWith('image/') && !(isEmailItem && a.isInline)
+                );
 
                 const fmtDate = (d: Date) => d.toLocaleString('it-IT', {
                   day: '2-digit', month: 'short', year: '2-digit',

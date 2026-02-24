@@ -207,26 +207,49 @@ async function processGraphEmail(message: any): Promise<void> {
       return;
     }
 
-    const cleanContent = cleanEmailContent(body);
+    // Save attachments first so we can replace cid: refs in HTML body
+    let cidMap = new Map<string, string>();
+    try {
+      cidMap = await saveGraphAttachments(message.id, ticket.id, null, ticket.createdById);
+    } catch (e) {
+      // Non fallire se non ci sono allegati
+    }
+
+    // Build comment content: use HTML body with cid refs replaced
+    const isHtmlBody = message.body?.contentType?.toLowerCase() === 'html';
+    let commentContent: string;
+    if (isHtmlBody && body.trim()) {
+      const replaced = body.replace(/src=["']cid:([^"']+)["']/gi, (_m: string, cid: string) => {
+        const url = cidMap.get(cid) || cidMap.get(cid.split('@')[0]);
+        return url ? `src="${url}"` : `src="cid:${cid}"`;
+      });
+      commentContent = replaced
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+    } else {
+      commentContent = cleanEmailContent(body);
+    }
 
     const comment = await prisma.comment.create({
       data: {
         ticketId: ticket.id,
         userId: ticket.createdById,
-        content: cleanContent,
+        content: commentContent,
         isEmailReply: true,
         fromEmail: from,
         emailMessageId: messageId,
       },
     });
 
-    // Salva allegati (incluse immagini inline/screenshot)
-    // hasAttachments potrebbe essere false per immagini solo inline, controlliamo sempre
+    // Link saved attachments to the comment
     try {
-      await saveGraphAttachments(message.id, ticket.id, comment.id, ticket.createdById);
-    } catch (e) {
-      // Non fallire se non ci sono allegati
-    }
+      await prisma.attachment.updateMany({
+        where: { ticketId: ticket.id, commentId: null,
+          createdAt: { gte: new Date(Date.now() - 30000) } },
+        data: { commentId: comment.id },
+      });
+    } catch (_e) { /* non bloccante */ }
 
     // Aggiorna ticket
     await prisma.ticket.update({
@@ -252,33 +275,31 @@ async function processGraphEmail(message: any): Promise<void> {
     // NUOVA email → crea ticket
     console.log('🆕 Nuova email → creazione ticket');
     try {
-      // Scarica allegati (incluse immagini inline/screenshot)
+      // Scarica allegati (incluse immagini inline/screenshot), con contentId
       let emailAttachments: any[] = [];
       try {
         const graphAttachments = await getEmailAttachments(message.id);
         emailAttachments = graphAttachments.map((att: any) => ({
-          filename: att.name || `screenshot-${Date.now()}.${(att.contentType || 'image/png').split('/')[1] || 'png'}`,
+          filename: att.name || `attachment-${Date.now()}.${(att.contentType || 'image/png').split('/')[1] || 'bin'}`,
           content: Buffer.from(att.contentBytes, 'base64'),
           contentType: att.contentType,
           size: att.size,
+          cid: att.contentId || null,  // Graph API provides contentId for inline images
         }));
       } catch (e) {
         // Nessun allegato
       }
 
-      // Descrizione breve + pulita per il ticket
-      const cleanBody = cleanEmailContent(body);
       const cleanSubject = cleanEmailSubject(subject);
+      const isHtmlBody = message.body?.contentType?.toLowerCase() === 'html';
 
-      // Descrizione corta: solo il corpo pulito (max 500 char) + nota PDF
-      const shortDescription = cleanBody.length > 500
-        ? cleanBody.substring(0, 500) + '...'
-        : cleanBody;
-      const description = shortDescription
-        ? `${shortDescription}\n\n📎 Email originale completa in allegato (PDF)`
-        : `Email ricevuta da ${from}\n\n📎 Email originale completa in allegato (PDF)`;
-
-      const ticket = await createTicketFromEmail(from, cleanSubject, description, emailAttachments, messageId);
+      const ticket = await createTicketFromEmail(
+        from, cleanSubject,
+        isHtmlBody ? '' : (body || ''),    // textBody (fallback if not HTML)
+        isHtmlBody ? body : null,          // htmlBody (preferred)
+        emailAttachments,
+        messageId
+      );
 
       // Genera PDF con email completa e allegalo al ticket
       try {
@@ -329,11 +350,13 @@ async function processGraphEmail(message: any): Promise<void> {
 async function saveGraphAttachments(
   graphMessageId: string,
   ticketId: string,
-  commentId: string,
+  commentId: string | null,
   uploadedById: string
-): Promise<void> {
+): Promise<Map<string, string>> {
   const fs = await import('fs');
   const path = await import('path');
+  const cidMap = new Map<string, string>();
+  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
 
   const attachments = await getEmailAttachments(graphMessageId);
   const uploadDir = path.join(__dirname, '../../../uploads');
@@ -351,6 +374,15 @@ async function saveGraphAttachments(
       const buffer = Buffer.from(att.contentBytes, 'base64');
       fs.writeFileSync(filePath, buffer);
 
+      const isInline = !!att.isInline;
+      const contentId = att.contentId || null;
+
+      if (contentId) {
+        const fileUrl = `${baseUrl}/uploads/${uniqueFileName}`;
+        cidMap.set(contentId, fileUrl);
+        cidMap.set(contentId.split('@')[0], fileUrl);
+      }
+
       await prisma.attachment.create({
         data: {
           ticketId,
@@ -360,7 +392,9 @@ async function saveGraphAttachments(
           filePath: uniqueFileName,
           fileSize: att.size || buffer.length,
           mimeType: att.contentType || 'application/octet-stream',
-        },
+          isInline,
+          contentId,
+        } as any,
       });
 
       console.log(`   ✅ Allegato salvato: ${fileName}`);
@@ -368,6 +402,7 @@ async function saveGraphAttachments(
       console.error(`   ❌ Errore salvataggio allegato ${att.name}:`, error);
     }
   }
+  return cidMap;
 }
 
 /**

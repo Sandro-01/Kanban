@@ -312,6 +312,10 @@ model Attachment {
   createdAt   DateTime @default(now())
   uploadedAt  DateTime @default(now())
 
+  // Inline email images (CID attachments embedded in HTML body)
+  isInline    Boolean  @default(false)
+  contentId   String?  // CID value, e.g. "image001.xyz@domain"
+
   // IMMUTABILE: Non può essere eliminato
   isDeleted   Boolean  @default(false) // Soft delete solo per UI, ma file rimane
 
