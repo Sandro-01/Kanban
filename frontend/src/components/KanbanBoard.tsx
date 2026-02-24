@@ -325,6 +325,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const convEndRef = useRef<HTMLDivElement>(null);
   const [, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -363,6 +364,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     convEndRef.current?.scrollIntoView();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket.id, (ticket.comments || []).length, (ticket.attachments || []).length]);
+
+  // Close @mention dropdown on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setMentionQuery(null); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   // Detect if ticket was created from email
   const isEmailTicket = !!(ticket.emailThreadId || (ticket.externalContacts && ticket.externalContacts.length > 0));
@@ -552,9 +560,29 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   // Unified handler for comment, file, and assignments
   const handleSubmit = async () => {
     // Check if there's anything to submit (strip HTML tags to detect empty editor)
+    // ── Parse @mentions from the comment HTML ─────────────────────────────
+    const parseMentions = (html: string) => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      const userIds: string[] = [];
+      const emails: string[] = [];
+      div.querySelectorAll<HTMLElement>('.mention[data-user-id]').forEach(el => {
+        const id = el.dataset.userId;
+        if (id) userIds.push(id);
+      });
+      div.querySelectorAll<HTMLElement>('.mention[data-email]').forEach(el => {
+        const email = el.dataset.email;
+        if (email) emails.push(email);
+      });
+      return { userIds, emails };
+    };
+
+    const { userIds: mentionedUserIds, emails: mentionedEmails } = parseMentions(comment);
+
     const hasComment = comment.replace(/<[^>]*>/g, '').trim();
     const hasFiles = files.length > 0;
-    const usersChanged = JSON.stringify([...selectedUsers].sort()) !== JSON.stringify([...initialUsers].sort());
+    const allAssignedUsers = Array.from(new Set([...selectedUsers, ...mentionedUserIds]));
+    const usersChanged = JSON.stringify([...allAssignedUsers].sort()) !== JSON.stringify([...initialUsers].sort());
     const deptsChanged = JSON.stringify([...selectedDepartments].sort()) !== JSON.stringify([...initialDepartments].sort());
     const hasAssignments = usersChanged || deptsChanged;
 
@@ -581,22 +609,36 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         }
       }
 
-      // Handle assignments (users have priority)
+      // Handle assignments — include users from @mentions
       if (hasAssignments) {
-        if (selectedUsers.length > 0) {
-          await ticketsApi.assignUsers(ticket.id, selectedUsers);
-          console.log('✅ Users assigned:', selectedUsers);
+        if (allAssignedUsers.length > 0) {
+          await ticketsApi.assignUsers(ticket.id, allAssignedUsers);
+          console.log('✅ Users assigned (incl. @mentions):', allAssignedUsers);
         } else if (selectedDepartments.length > 0) {
           await ticketsApi.assignDepartments(ticket.id, selectedDepartments);
           console.log('✅ Departments assigned:', selectedDepartments);
         }
-        // Close the assignment panel after successful assignment
         setShowAssignments(false);
+      }
+
+      // Handle @mentioned external emails: add to contacts + send email
+      if (mentionedEmails.length > 0) {
+        await ticketsApi.addExternalContacts(ticket.id, mentionedEmails);
+        console.log('✅ External contacts added from @mentions:', mentionedEmails);
+        if (hasComment) {
+          await ticketsApi.sendEmail(ticket.id, {
+            subject: `Re: ${ticket.title}`,
+            body: comment,
+            toEmails: mentionedEmails,
+          });
+          console.log('✅ Email sent to @mentioned addresses:', mentionedEmails);
+        }
       }
 
       // Reset form
       setComment('');
       setFiles([]);
+      setMentionQuery(null);
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
@@ -1518,15 +1560,83 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </div>
 
             {/* Unified form for comment and file */}
-            <div className="unified-form">
+            <div className="unified-form" style={{ position: 'relative' }}>
+
+              {/* @mention autocomplete dropdown */}
+              {mentionQuery !== null && (() => {
+                const q = mentionQuery.toLowerCase();
+                const isEmailQ = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(mentionQuery);
+                const matchedUsers = allUsers
+                  .filter(u => {
+                    const full = `${u.firstName}${u.lastName}`.toLowerCase();
+                    const spaced = `${u.firstName} ${u.lastName}`.toLowerCase();
+                    return full.includes(q) || spaced.includes(q) || (u.email || '').toLowerCase().includes(q);
+                  })
+                  .slice(0, 8);
+                const showEmail = isEmailQ;
+                if (!matchedUsers.length && !showEmail) return null;
+                return (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, right: 0, zIndex: 300,
+                    background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    boxShadow: '0 -4px 16px rgba(0,0,0,0.12)', marginBottom: '4px', overflow: 'hidden',
+                  }}>
+                    {matchedUsers.map(u => (
+                      <div
+                        key={u.id}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8f5ff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        onMouseDown={e => {
+                          e.preventDefault(); // keep editor focus
+                          const name = `${u.firstName} ${u.lastName}`;
+                          const html = `<span class="mention mention--user" data-user-id="${u.id}" contenteditable="false">@${name}</span>&nbsp;`;
+                          editorRef.current?.replaceMentionQuery(mentionQuery, html);
+                          setMentionQuery(null);
+                        }}
+                      >
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#ede9fe', color: '#6d28d9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                          {(u.firstName[0] || '') + (u.lastName[0] || '')}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{u.firstName} {u.lastName}</div>
+                          {u.department && <div style={{ fontSize: 11, color: '#6b7280' }}>{u.department}</div>}
+                        </div>
+                        <div style={{ marginLeft: 'auto', fontSize: 11, color: '#a78bfa', fontWeight: 500 }}>assegna</div>
+                      </div>
+                    ))}
+                    {showEmail && (
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', cursor: 'pointer', borderTop: matchedUsers.length ? '1px solid #f0f0f0' : 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f0fdf4')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          const html = `<span class="mention mention--email" data-email="${mentionQuery}" contenteditable="false">@${mentionQuery}</span>&nbsp;`;
+                          editorRef.current?.replaceMentionQuery(mentionQuery, html);
+                          setMentionQuery(null);
+                        }}
+                      >
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✉</div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{mentionQuery}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280' }}>Aggiungi contatto esterno · riceverà l'email</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               <RichTextEditor
                 ref={editorRef}
                 value={comment}
                 onChange={setComment}
-                placeholder="Write a comment... (Ctrl+V to paste images)"
+                placeholder="Write a comment... (@nome per colleghi, @email@ext.com per esterni)"
                 minHeight={80}
                 borderless
                 onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
+                onMentionQuery={setMentionQuery}
               />
               <div className="composer-bottom-bar">
                 <div className="composer-left">

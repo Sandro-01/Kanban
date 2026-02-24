@@ -2,6 +2,8 @@ import React, { useRef, useCallback, useEffect, useState, useImperativeHandle, f
 
 export interface RichTextEditorHandle {
   insertText: (text: string) => void;
+  /** Replace the @query being typed at the cursor with the given HTML mention chip */
+  replaceMentionQuery: (query: string, mentionHtml: string) => void;
 }
 
 interface RichTextEditorProps {
@@ -13,6 +15,8 @@ interface RichTextEditorProps {
   onPasteFiles?: (files: File[]) => void;
   /** Remove outer border/radius (used when the parent provides its own container styling) */
   borderless?: boolean;
+  /** Called with the current @mention query (text after @) or null when no mention is active */
+  onMentionQuery?: (query: string | null) => void;
 }
 
 const HIGHLIGHT_COLORS = [
@@ -38,6 +42,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({
   minHeight = 120,
   onPasteFiles,
   borderless = false,
+  onMentionQuery,
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
@@ -58,8 +63,27 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({
     if (editorRef.current) {
       isInternalChange.current = true;
       onChange(editorRef.current.innerHTML);
+
+      // Detect @mention query at cursor position
+      if (onMentionQuery) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const node = range.startContainer;
+          if (node.nodeType === Node.TEXT_NODE) {
+            const before = (node.textContent || '').slice(0, range.startOffset);
+            // Match @followed-by-non-space chars at end of text (includes emails like @a@b.com)
+            const match = before.match(/@([\w.@+-]*)$/);
+            onMentionQuery(match ? match[1] : null);
+          } else {
+            onMentionQuery(null);
+          }
+        } else {
+          onMentionQuery(null);
+        }
+      }
     }
-  }, [onChange]);
+  }, [onChange, onMentionQuery]);
 
   useImperativeHandle(ref, () => ({
     insertText: (text: string) => {
@@ -68,6 +92,32 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({
       if (editorRef.current) {
         isInternalChange.current = true;
         onChange(editorRef.current.innerHTML);
+      }
+    },
+    replaceMentionQuery: (query: string, mentionHtml: string) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        const offset = range.startOffset;
+        const before = text.slice(0, offset);
+        // Find the @ that started this mention (accounts for emails like a@b.com)
+        const atIdx = before.lastIndexOf('@');
+        if (atIdx !== -1) {
+          const newRange = document.createRange();
+          newRange.setStart(node, atIdx);
+          newRange.setEnd(node, offset);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+          document.execCommand('insertHTML', false, mentionHtml);
+          isInternalChange.current = true;
+          onChange(editor.innerHTML);
+        }
       }
     },
   }));
@@ -401,6 +451,18 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({
           min-width: 40px;
         }
         [contenteditable] th { background: #f3f4f6; font-weight: 700; }
+        .mention {
+          display: inline-block;
+          border-radius: 4px;
+          padding: 1px 6px;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.4;
+          cursor: default;
+          user-select: none;
+        }
+        .mention--user  { background: #ede9fe; color: #6d28d9; }
+        .mention--email { background: #dcfce7; color: #15803d; }
       `}</style>
     </div>
   );
