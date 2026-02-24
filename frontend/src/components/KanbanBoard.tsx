@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
-import RichTextEditor from './RichTextEditor';
+import RichTextEditor, { RichTextEditorHandle } from './RichTextEditor';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -249,11 +249,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   );
 };
 
+const EMOJI_LIST = [
+  '😀','😂','😊','😍','🤔','😅','😢','😡','🥳','👏',
+  '👍','👎','👋','🙏','🎉','🔥','❤️','✅','❌','⚠️',
+  '💡','📎','🔗','📧','📱','💻','⚙️','🔧','📝','📊',
+  '🗓️','🚀','⏰','🔍','💬','📌','🏷️','🗂️','✏️','🖊️',
+];
+
 // Ticket modal component
 const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUpdate, onMove }) => {
   const [comment, setComment] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [ticket, setTicket] = useState(initialTicket);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const editorRef = useRef<RichTextEditorHandle>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -276,6 +286,17 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     systemAccess: '',
     additionalNotes: ''
   });
+
+  // Close emoji picker on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmoji(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Detect if ticket was created from email
   const isEmailTicket = !!(ticket.emailThreadId || (ticket.externalContacts && ticket.externalContacts.length > 0));
@@ -1359,6 +1380,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             {/* Unified form for comment and file */}
             <div className="unified-form">
               <RichTextEditor
+                ref={editorRef}
                 value={comment}
                 onChange={setComment}
                 placeholder="Write a comment... (Ctrl+V to paste images)"
@@ -1368,6 +1390,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               />
               <div className="composer-bottom-bar">
                 <div className="composer-left">
+                  {/* Attach file */}
                   <input
                     type="file"
                     id="file-upload"
@@ -1382,6 +1405,37 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   <label htmlFor="file-upload" className="composer-icon-btn" title="Attach file">
                     📎
                   </label>
+
+                  {/* Emoji picker */}
+                  <div ref={emojiPickerRef} style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      className="composer-icon-btn"
+                      title="Insert emoji"
+                      onClick={() => setShowEmoji(p => !p)}
+                    >
+                      😊
+                    </button>
+                    {showEmoji && (
+                      <div className="emoji-picker">
+                        {EMOJI_LIST.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className="emoji-btn"
+                            onClick={() => {
+                              editorRef.current?.insertText(emoji);
+                              setShowEmoji(false);
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected file tags */}
                   {files.length > 0 && (
                     <div className="selected-files-list">
                       {files.map((f, i) => (

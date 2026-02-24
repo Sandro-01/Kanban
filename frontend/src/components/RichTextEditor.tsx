@@ -1,4 +1,8 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+
+export interface RichTextEditorHandle {
+  insertText: (text: string) => void;
+}
 
 interface RichTextEditorProps {
   value: string;
@@ -11,16 +15,34 @@ interface RichTextEditorProps {
   borderless?: boolean;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({
+const HIGHLIGHT_COLORS = [
+  { value: '#FFFF99', label: 'Yellow' },
+  { value: '#B9F6CA', label: 'Green' },
+  { value: '#BBDEFB', label: 'Blue' },
+  { value: '#F8BBD0', label: 'Pink' },
+  { value: '#FFE0B2', label: 'Orange' },
+  { value: 'transparent', label: 'Remove' },
+];
+
+const FONT_SIZES = [
+  { label: 'Small', value: '2' },
+  { label: 'Normal', value: '3' },
+  { label: 'Large', value: '5' },
+  { label: 'Heading', value: 'h3' },
+];
+
+const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({
   value,
   onChange,
   placeholder = 'Scrivi qui...',
   minHeight = 120,
   onPasteFiles,
   borderless = false,
-}) => {
+}, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
+  const [showHighlight, setShowHighlight] = useState(false);
+  const [showFontSize, setShowFontSize] = useState(false);
 
   // Sync external value changes into contentEditable
   useEffect(() => {
@@ -38,6 +60,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
+
+  useImperativeHandle(ref, () => ({
+    insertText: (text: string) => {
+      editorRef.current?.focus();
+      document.execCommand('insertText', false, text);
+      if (editorRef.current) {
+        isInternalChange.current = true;
+        onChange(editorRef.current.innerHTML);
+      }
+    },
+  }));
 
   const execCmd = useCallback((command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -64,7 +97,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       return;
     }
 
-    // For non-image pastes: paste as plain text to avoid messy HTML from Word/Outlook
     if (!e.clipboardData.types.includes('Files')) {
       const text = e.clipboardData.getData('text/plain');
       if (text) {
@@ -75,7 +107,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [onPasteFiles]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Ctrl+B / Ctrl+I / Ctrl+U shortcuts
     if (e.ctrlKey || e.metaKey) {
       if (e.key === 'b') { e.preventDefault(); execCmd('bold'); }
       if (e.key === 'i') { e.preventDefault(); execCmd('italic'); }
@@ -83,62 +114,230 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [execCmd]);
 
-  const toolbarBtnStyle: React.CSSProperties = {
-    padding: '4px 8px',
+  const insertTable = useCallback(() => {
+    const cell = (header = false) => {
+      const tag = header ? 'th' : 'td';
+      return `<${tag} style="border:1px solid #ccc;padding:6px 10px;min-width:60px">&nbsp;</${tag}>`;
+    };
+    const row = (header = false) => `<tr>${cell(header).repeat(3)}</tr>`;
+    const table = `<table style="border-collapse:collapse;width:100%;margin:8px 0">${row(true)}${row()}${row()}</table><p><br></p>`;
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false, table);
+    handleInput();
+  }, [handleInput]);
+
+  const applyHighlight = useCallback((color: string) => {
+    setShowHighlight(false);
+    editorRef.current?.focus();
+    if (color === 'transparent') {
+      document.execCommand('removeFormat');
+    } else {
+      document.execCommand('backColor', false, color);
+    }
+    handleInput();
+  }, [handleInput]);
+
+  const applyFontSize = useCallback((value: string) => {
+    setShowFontSize(false);
+    editorRef.current?.focus();
+    if (value === 'h3') {
+      document.execCommand('formatBlock', false, 'h3');
+    } else {
+      document.execCommand('fontSize', false, value);
+    }
+    handleInput();
+  }, [handleInput]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handler = () => {
+      setShowHighlight(false);
+      setShowFontSize(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const btn: React.CSSProperties = {
+    padding: '3px 7px',
     border: '1px solid #d1d5db',
     borderRadius: '4px',
     background: '#fff',
     cursor: 'pointer',
     fontSize: '13px',
     lineHeight: 1,
-    minWidth: '28px',
+    minWidth: '26px',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: '1px',
   };
 
-  const separatorStyle: React.CSSProperties = {
+  const sep: React.CSSProperties = {
     width: '1px',
-    height: '20px',
+    height: '18px',
     background: '#d1d5db',
-    margin: '0 4px',
+    margin: '0 3px',
     display: 'inline-block',
-    verticalAlign: 'middle',
+    flexShrink: 0,
+  };
+
+  const popupBase: React.CSSProperties = {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    left: 0,
+    zIndex: 200,
+    background: '#fff',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   };
 
   return (
-    <div style={borderless ? { overflow: 'hidden', background: '#fff' } : { border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+    <div style={borderless
+      ? { overflow: 'hidden', background: '#fff' }
+      : { border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', background: '#fff' }
+    }>
       {/* Toolbar */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: '3px',
-        padding: '6px 8px',
+        padding: '5px 8px',
         borderBottom: '1px solid #e5e7eb',
         background: '#f9fafb',
       }}>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('bold')} title="Grassetto (Ctrl+B)"><b>B</b></button>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('italic')} title="Corsivo (Ctrl+I)"><i>I</i></button>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('underline')} title="Sottolineato (Ctrl+U)"><u>U</u></button>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('strikeThrough')} title="Barrato"><s>S</s></button>
+        {/* Text formatting */}
+        <button type="button" style={btn} onClick={() => execCmd('bold')} title="Bold (Ctrl+B)">
+          <b style={{ fontSize: '13px' }}>B</b>
+        </button>
+        <button type="button" style={{ ...btn, fontStyle: 'italic' }} onClick={() => execCmd('italic')} title="Italic (Ctrl+I)">
+          <i>I</i>
+        </button>
+        <button type="button" style={{ ...btn, textDecoration: 'underline' }} onClick={() => execCmd('underline')} title="Underline (Ctrl+U)">
+          U
+        </button>
+        <button type="button" style={{ ...btn, textDecoration: 'line-through' }} onClick={() => execCmd('strikeThrough')} title="Strikethrough">
+          S
+        </button>
 
-        <span style={separatorStyle} />
+        <span style={sep} />
 
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('insertUnorderedList')} title="Elenco puntato">&#8226; Lista</button>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('insertOrderedList')} title="Elenco numerato">1. Lista</button>
+        {/* Lists */}
+        <button type="button" style={btn} onClick={() => execCmd('insertUnorderedList')} title="Bullet list">
+          ☰
+        </button>
+        <button type="button" style={btn} onClick={() => execCmd('insertOrderedList')} title="Numbered list">
+          <span style={{ fontSize: '10px', fontWeight: 700 }}>1.</span>☰
+        </button>
 
-        <span style={separatorStyle} />
+        <span style={sep} />
 
-        <button type="button" style={toolbarBtnStyle} onClick={() => {
-          const url = prompt('Inserisci URL:');
+        {/* Table */}
+        <button type="button" style={btn} onClick={insertTable} title="Insert table">
+          ⊞
+        </button>
+
+        {/* Highlight color */}
+        <div style={{ position: 'relative', display: 'inline-flex' }} onMouseDown={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            style={{ ...btn, flexDirection: 'column', gap: 0, paddingBottom: '2px' }}
+            onClick={() => { setShowHighlight(p => !p); setShowFontSize(false); }}
+            title="Highlight color"
+          >
+            <span style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1 }}>A</span>
+            <span style={{ width: '100%', height: '3px', background: '#FFFF00', borderRadius: '1px', display: 'block', marginTop: '1px' }} />
+          </button>
+          {showHighlight && (
+            <div style={{ ...popupBase, padding: '6px', display: 'flex', gap: '4px' }}>
+              {HIGHLIGHT_COLORS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => applyHighlight(value)}
+                  title={label}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    border: '1px solid #999',
+                    background: value === 'transparent'
+                      ? 'linear-gradient(135deg, #fff 40%, #f00 40%, #f00 60%, #fff 60%)'
+                      : value,
+                    flexShrink: 0,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Font size */}
+        <div style={{ position: 'relative', display: 'inline-flex' }} onMouseDown={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            style={btn}
+            onClick={() => { setShowFontSize(p => !p); setShowHighlight(false); }}
+            title="Font size"
+          >
+            <span style={{ fontSize: '10px' }}>A</span>
+            <span style={{ fontSize: '14px', fontWeight: 700 }}>A</span>
+          </button>
+          {showFontSize && (
+            <div style={{ ...popupBase, minWidth: '100px', overflow: 'hidden' }}>
+              {FONT_SIZES.map(({ label, value }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => applyFontSize(value)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '7px 12px',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    borderBottom: '1px solid #f3f4f6',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <span style={sep} />
+
+        {/* Blockquote */}
+        <button type="button" style={{ ...btn, fontSize: '16px', fontWeight: 700 }} onClick={() => execCmd('formatBlock', 'blockquote')} title="Blockquote">
+          ❝
+        </button>
+
+        {/* Link */}
+        <button type="button" style={btn} onClick={() => {
+          const url = prompt('Insert URL:');
           if (url) execCmd('createLink', url);
-        }} title="Inserisci link">🔗</button>
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('formatBlock', 'pre')} title="Blocco codice">&lt;/&gt;</button>
+        }} title="Insert link">🔗</button>
 
-        <span style={separatorStyle} />
+        {/* Code */}
+        <button type="button" style={{ ...btn, fontFamily: 'monospace', fontSize: '12px' }} onClick={() => execCmd('formatBlock', 'pre')} title="Code block">
+          &lt;/&gt;
+        </button>
 
-        <button type="button" style={toolbarBtnStyle} onClick={() => execCmd('removeFormat')} title="Rimuovi formattazione">T&#x0336;</button>
+        <span style={sep} />
+
+        {/* Remove format */}
+        <button type="button" style={btn} onClick={() => execCmd('removeFormat')} title="Remove formatting">
+          T<span style={{ textDecoration: 'line-through', fontSize: '10px' }}>x</span>
+        </button>
       </div>
 
       {/* Editable area */}
@@ -163,7 +362,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }}
       />
 
-      {/* CSS for placeholder */}
       <style>{`
         [contenteditable][data-placeholder]:empty:before {
           content: attr(data-placeholder);
@@ -181,11 +379,32 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           white-space: pre-wrap;
           overflow-x: auto;
         }
+        [contenteditable] blockquote {
+          border-left: 4px solid #d1d5db;
+          margin: 8px 0;
+          padding: 4px 16px;
+          color: #6b7280;
+          background: #f9fafb;
+          font-style: italic;
+        }
+        [contenteditable] h3 {
+          font-size: 18px;
+          font-weight: 700;
+          margin: 8px 0 4px;
+        }
         [contenteditable] a { color: #2563eb; text-decoration: underline; }
         [contenteditable] ul, [contenteditable] ol { padding-left: 24px; }
+        [contenteditable] table { border-collapse: collapse; width: 100%; }
+        [contenteditable] td, [contenteditable] th {
+          border: 1px solid #ccc;
+          padding: 6px 10px;
+          min-width: 40px;
+        }
+        [contenteditable] th { background: #f3f4f6; font-weight: 700; }
       `}</style>
     </div>
   );
-};
+});
 
+RichTextEditor.displayName = 'RichTextEditor';
 export default RichTextEditor;
