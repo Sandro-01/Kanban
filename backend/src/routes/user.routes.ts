@@ -7,27 +7,34 @@ import { auditLog } from '../middleware/audit.middleware';
 const router = Router();
 const prisma = new PrismaClient();
 
+// Cast helper: prisma.user typed as any so the new allowedPages field
+// compiles before `npx prisma generate` has been run on the target machine.
+// After running `prisma generate` these casts can be removed.
+const userRepo = prisma.user as any;
+
+const USER_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  department: true,
+  status: true,
+  allowedPages: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 // Get all users (All authenticated users can see this for ticket assignment)
 router.get(
   '/',
   authenticate,
   async (req: AuthRequest, res: Response) => {
     try {
-      const users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          allowedPages: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      const users = await userRepo.findMany({
+        select: USER_SELECT,
         where: {
-          status: 'ACTIVE', // Only show active users
+          status: 'ACTIVE',
         },
         orderBy: {
           createdAt: 'desc',
@@ -50,20 +57,9 @@ router.get(
     try {
       const { id } = req.params;
 
-      const user = await prisma.user.findUnique({
+      const user = await userRepo.findUnique({
         where: { id },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          allowedPages: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: USER_SELECT,
       });
 
       if (!user) {
@@ -87,27 +83,20 @@ router.post(
     try {
       const { email, password, firstName, lastName, role, department, allowedPages } = req.body;
 
-      // Validate required fields
       if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({
           error: 'Email, password, nome e cognome sono obbligatori'
         });
       }
 
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
-      });
-
+      const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         return res.status(400).json({ error: 'Email already registered' });
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
-      const user = await prisma.user.create({
+      const user = await userRepo.create({
         data: {
           email,
           password: hashedPassword,
@@ -118,17 +107,7 @@ router.post(
           status: 'ACTIVE',
           allowedPages: Array.isArray(allowedPages) ? allowedPages : [],
         },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          allowedPages: true,
-          createdAt: true,
-        },
+        select: USER_SELECT,
       });
 
       res.status(201).json(user);
@@ -149,27 +128,18 @@ router.put(
       const { id } = req.params;
       const { email, password, firstName, lastName, role, department, status, allowedPages } = req.body;
 
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id }
-      });
-
+      const existingUser = await prisma.user.findUnique({ where: { id } });
       if (!existingUser) {
         return res.status(404).json({ error: 'Utente non trovato' });
       }
 
-      // Check if email is being changed and if it's already in use
       if (email && email !== existingUser.email) {
-        const emailExists = await prisma.user.findUnique({
-          where: { email }
-        });
-
+        const emailExists = await prisma.user.findUnique({ where: { email } });
         if (emailExists) {
           return res.status(400).json({ error: 'Email già in uso' });
         }
       }
 
-      // Build update data
       const updateData: any = {};
 
       if (email) updateData.email = email;
@@ -180,27 +150,14 @@ router.put(
       if (status) updateData.status = status;
       if (Array.isArray(allowedPages)) updateData.allowedPages = allowedPages;
 
-      // Hash password if provided
       if (password) {
         updateData.password = await bcrypt.hash(password, 10);
       }
 
-      // Update user
-      const user = await prisma.user.update({
+      const user = await userRepo.update({
         where: { id },
         data: updateData,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          allowedPages: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: USER_SELECT,
       });
 
       res.json(user);
@@ -220,26 +177,21 @@ router.delete(
     try {
       const { id } = req.params;
 
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id }
-      });
-
+      const existingUser = await prisma.user.findUnique({ where: { id } });
       if (!existingUser) {
         return res.status(404).json({ error: 'Utente non trovato' });
       }
 
-      // Prevent deleting yourself
       if (id === req.user!.id) {
         return res.status(400).json({
           error: 'Non puoi eliminare il tuo account'
         });
       }
 
-      // Delete user (soft delete by setting status to INACTIVE)
+      // Soft delete
       await prisma.user.update({
         where: { id },
-        data: { status: 'INACTIVE' },
+        data: { status: 'INACTIVE' }
       });
 
       res.json({ message: 'Utente eliminato con successo' });

@@ -77,17 +77,18 @@ router.post('/login', auditLog('LOGIN', 'User'), async (req: Request, res: Respo
       { expiresIn: '7d' }
     );
 
+    const u = user as any;
     res.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        department: user.department,
-        status: user.status,
-        allowedPages: user.allowedPages ?? []
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        department: u.department,
+        status: u.status,
+        allowedPages: u.allowedPages ?? []
       }
     });
   } catch (error: any) {
@@ -108,9 +109,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         role: true,
         department: true,
         status: true,
-        allowedPages: true,
         createdAt: true
-      }
+      } as any
     });
 
     res.json(user);
