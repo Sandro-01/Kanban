@@ -686,6 +686,9 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
 
       {/* ── Body ── */}
       <div className="ticket-detail-body">
+
+        {/* ── Left column: info, description, assignments ── */}
+        <div className="ticket-col-left">
         <div className="ticket-info">
           {isEmailTicket && !isHtmlDescription(ticket.description || '') ? (
             <div className="email-description-container">
@@ -1015,6 +1018,10 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
           </div>
         </div>
 
+        </div>{/* /ticket-col-left */}
+
+        {/* ── Right column: conversation + composer ── */}
+        <div className="ticket-col-right">
         {/* ── Conversation / Activity ── */}
         <div className="conv-section">
           <div className="conv-header">
@@ -1316,6 +1323,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
             </div>
           </div>
         </div>
+        </div>{/* /ticket-col-right */}
       </div>
     </div>
   );
