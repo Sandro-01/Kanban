@@ -322,6 +322,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [showEmoji, setShowEmoji] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const convEndRef = useRef<HTMLDivElement>(null);
   const [, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -355,6 +356,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Auto-scroll conversation to the latest message whenever the ticket opens
+  // or a new comment/attachment is added (after send/refresh)
+  useEffect(() => {
+    convEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticket.id, (ticket.comments || []).length, (ticket.attachments || []).length]);
 
   // Detect if ticket was created from email
   const isEmailTicket = !!(ticket.emailThreadId || (ticket.externalContacts && ticket.externalContacts.length > 0));
@@ -1495,6 +1503,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               }) : (
                 <div className="conv-no-activity">Nessuna attività</div>
               )}
+              {/* Scroll anchor — always kept at the bottom of the list */}
+              <div ref={convEndRef} />
             </div>
 
             {/* Unified form for comment and file */}
