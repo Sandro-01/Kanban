@@ -137,7 +137,8 @@ export async function createTicketFromEmail(
   body: string,
   htmlBody: string | null,  // full HTML body from email (may contain cid: refs)
   attachments: any[],
-  emailMessageId?: string
+  emailMessageId?: string,
+  ccRecipients: string[] = []  // To/CC recipients to include in externalContacts
 ) {
   // Deduplicazione: controlla se esiste già un ticket per questo messaggio email
   if (emailMessageId) {
@@ -266,7 +267,7 @@ export async function createTicketFromEmail(
     slaHours,
     dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
     emailThreadId,
-    externalContacts: [from],
+    externalContacts: Array.from(new Set([from, ...ccRecipients].map(e => e.toLowerCase()))),
   };
 
   // Aggiungi emailMessageId se presente (richiede migrazione DB)

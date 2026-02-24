@@ -290,6 +290,16 @@ async function processIncomingEmail(parsed: any) {
     return;
   }
 
+  // Estrai CC/To per includerli nei contatti esterni del ticket
+  const extractAddresses = (field: any): string[] =>
+    (field?.value || [])
+      .map((v: any) => v.address?.toLowerCase())
+      .filter((a: string) => a && a !== ownMailbox && a !== from.toLowerCase());
+  const allRecipients = [
+    ...extractAddresses(parsed.to),
+    ...extractAddresses(parsed.cc),
+  ];
+
   // Estrai ticket ID dall'oggetto
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
   if (!ticketIdMatch) {
@@ -303,7 +313,7 @@ async function processIncomingEmail(parsed: any) {
         size: att.size,
         cid: att.cid || null,  // Content-ID for inline images
       }));
-      const ticket = await createTicketFromEmail(from, subject, text || '', html || null, emailAttachments, messageId);
+      const ticket = await createTicketFromEmail(from, subject, text || '', html || null, emailAttachments, messageId, allRecipients);
       console.log(`✅ Nuovo ticket creato da email: ${ticket.id} - "${subject}"`);
     } catch (error) {
       console.error('❌ Errore creazione ticket da email:', error);
@@ -426,14 +436,14 @@ async function processIncomingEmail(parsed: any) {
     data: { updatedAt: new Date() },
   });
 
-  // Aggiungi mittente ai contatti esterni se non già presente
-  if (!ticket.externalContacts.includes(from)) {
+  // Aggiungi mittente + CC/To ai contatti esterni (senza duplicati)
+  const newContacts = [from.toLowerCase(), ...allRecipients]
+    .filter(e => !ticket.externalContacts.map((c: string) => c.toLowerCase()).includes(e));
+  if (newContacts.length > 0) {
     await prisma.ticket.update({
       where: { id: ticket.id },
       data: {
-        externalContacts: {
-          push: from,
-        },
+        externalContacts: { push: newContacts },
       },
     });
   }

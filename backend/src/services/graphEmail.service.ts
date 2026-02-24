@@ -184,6 +184,16 @@ async function processGraphEmail(message: any): Promise<void> {
     return;
   }
 
+  // Estrai CC/To per includerli nei contatti esterni (escludi casella propria)
+  const extractGraphAddresses = (list: any[]): string[] =>
+    (list || [])
+      .map((r: any) => r.emailAddress?.address?.toLowerCase())
+      .filter((a: string) => a && a !== ownMailbox && a !== from.toLowerCase());
+  const allRecipients = [
+    ...extractGraphAddresses(message.toRecipients || []),
+    ...extractGraphAddresses(message.ccRecipients || []),
+  ];
+
   // Controlla se è una risposta a un ticket esistente
   const ticketIdMatch = subject.match(/\[Ticket #([a-f0-9-]+)\]/i);
 
@@ -257,11 +267,13 @@ async function processGraphEmail(message: any): Promise<void> {
       data: { updatedAt: new Date() },
     });
 
-    // Aggiungi ai contatti esterni
-    if (!ticket.externalContacts.includes(from)) {
+    // Aggiungi mittente + CC/To ai contatti esterni (senza duplicati)
+    const newContacts = [from.toLowerCase(), ...allRecipients]
+      .filter(e => !ticket.externalContacts.map((c: string) => c.toLowerCase()).includes(e));
+    if (newContacts.length > 0) {
       await prisma.ticket.update({
         where: { id: ticket.id },
-        data: { externalContacts: { push: from } },
+        data: { externalContacts: { push: newContacts } },
       });
     }
 
@@ -298,7 +310,8 @@ async function processGraphEmail(message: any): Promise<void> {
         isHtmlBody ? '' : (body || ''),    // textBody (fallback if not HTML)
         isHtmlBody ? body : null,          // htmlBody (preferred)
         emailAttachments,
-        messageId
+        messageId,
+        allRecipients                      // CC/To → externalContacts
       );
 
       // Genera PDF con email completa e allegalo al ticket
