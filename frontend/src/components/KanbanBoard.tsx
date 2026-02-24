@@ -1362,14 +1362,20 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   return { label: ext, bg: '#8b5cf6' };
                 };
 
-                // Primary label: for incoming/NDR emails show the from address; for files show filename
+                // Primary label: for incoming/NDR emails show the from address;
+                // for files show who uploaded it; for internal notes/outgoing show author
+                const fileAuthor = cardType === 'files'
+                  ? (authorName || item.file?.uploadedBy?.email || item.fromEmail || 'Sistema')
+                  : null;
                 const primaryLabel = (cardType === 'email-in' || cardType === 'email-ndr')
                   ? (item.fromEmail || 'Email')
                   : cardType === 'files'
-                  ? (item.file?.fileName || 'Allegato')
+                  ? fileAuthor!
                   : authorName || 'Sistema';
 
-                // Sub-line: recipient for emails, file size for files, department for internal notes
+                // Sub-line: recipient for emails, "filename · size" for files, department for internal notes
+                const fileSizeLabel = item.file?.fileSize ? `${(item.file.fileSize / 1024).toFixed(1)} KB` : '';
+                const fileNameLabel = item.file?.fileName || '';
                 const subLabel = cardType === 'email-in'
                   ? `A: ${ticket.externalContacts?.[0]?.email || 'support'}`
                   : cardType === 'email-out'
@@ -1377,7 +1383,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   : cardType === 'email-ndr'
                   ? 'Delivery failure notice'
                   : cardType === 'files'
-                  ? (item.file?.fileSize ? `${(item.file.fileSize / 1024).toFixed(1)} KB` : '')
+                  ? [fileNameLabel, fileSizeLabel].filter(Boolean).join(' · ')
                   : item.user?.department || '';
 
                 // Initials / avatar
@@ -1390,8 +1396,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   return label.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
                 };
                 const fileTypeInfo = cardType === 'files' ? getFileTypeInfo(item.file) : null;
-                const initials = fileTypeInfo ? fileTypeInfo.label : computeInitials(primaryLabel);
-                const avatarBg  = fileTypeInfo ? fileTypeInfo.bg  : getAvatarColor(primaryLabel);
+                // For file cards: show author initials in the avatar (file type shown in subLabel),
+                // but keep the file-type colour for quick visual identification
+                const initials = fileTypeInfo
+                  ? computeInitials(primaryLabel)   // author initials, e.g. "SS" for Sandro Sellaro
+                  : computeInitials(primaryLabel);
+                const avatarBg  = fileTypeInfo ? fileTypeInfo.bg : getAvatarColor(primaryLabel);
 
                 // Separate real images from inline/signature images (only filter for emails)
                 const atts: any[] = item.attachments || [];
