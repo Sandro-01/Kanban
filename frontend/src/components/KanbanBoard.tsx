@@ -1239,8 +1239,22 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   ))}
                 </div>
               )}
+              {ticket.externalContacts && ticket.externalContacts.length > 0 && (
+                <div className="assignments-chips">
+                  {ticket.externalContacts.map((email: string) => (
+                    <div className="assignment-chip" key={email}>
+                      <span className="avatar" style={{ background: '#dcfce7', color: '#15803d', fontSize: 14 }}>✉</span>
+                      <span className="chip-info">
+                        <span className="chip-name" style={{ fontSize: 12 }}>{email}</span>
+                        <span className="chip-dept">Esterno</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {(!ticket.assignments || ticket.assignments.length === 0) &&
-               (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) && (
+               (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) &&
+               (!ticket.externalContacts || ticket.externalContacts.length === 0) && (
                 <div className="assignments-empty">
                   <span>⚠️</span>
                   No assignments — Visible to all
