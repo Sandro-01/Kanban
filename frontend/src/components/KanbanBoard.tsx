@@ -758,6 +758,32 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const getTimeline = () => {
     const items: any[] = [];
 
+    // ── For email tickets: insert original email as first conversation item ──
+    // Zendesk model: the email that opened the ticket is always the first
+    // message in the thread. Our backend stores the body in ticket.description
+    // instead of creating a comment, so we synthesise the entry here.
+    if (isEmailTicket && ticket.description) {
+      const ticketCreatedMs = new Date(ticket.createdAt).getTime();
+      const hasInitialEmailComment = (ticket.comments || []).some((c: any) =>
+        c.isEmailReply && !c.isOutgoingEmail &&
+        Math.abs(new Date(c.createdAt).getTime() - ticketCreatedMs) < 120_000
+      );
+      if (!hasInitialEmailComment) {
+        items.push({
+          type: 'comment',
+          id: 'email-origin',
+          date: new Date(ticket.createdAt),
+          user: null,
+          content: ticket.description,
+          isEmailReply: true,
+          isOutgoingEmail: false,
+          fromEmail: ticket.externalContacts?.[0]?.email || '',
+          toEmails: [],
+          attachments: [],
+        });
+      }
+    }
+
     // Add comments with a mutable attachments array (we may push email-linked files into it)
     if (ticket.comments) {
       ticket.comments.forEach((c: any) => {
