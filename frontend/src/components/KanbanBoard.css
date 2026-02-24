@@ -745,216 +745,250 @@
 }
 
 /* Timeline Section */
-.timeline-section {
-  margin: 20px 0;
-  padding: 15px;
-  border: 2px solid #000000;
-  border-radius: 0;
+/* ═══════════════════════════════════════════════════════════════════════════
+   Conversation / Activity section  —  redesign 2025
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.conv-section {
+  margin: 20px 0 0;
+  border: 2px solid #000;
 }
 
-.timeline-section-header {
+/* ── Header bar ─────────────────────────────────────────────────────────── */
+.conv-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #000000;
-  margin-bottom: 4px;
+  padding: 9px 14px;
+  background: #000;
 }
 
-.timeline-section-title {
-  font-size: 11px;
-  font-weight: 800;
+.conv-header-title {
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: #000000;
-}
-
-.timeline-section-count {
-  font-size: 10px;
-  font-weight: 600;
-  color: #999999;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-left: auto;
-}
-
-.timeline-list {
-  max-height: 700px;
-  overflow-y: auto;
-  margin: 15px 0;
-  padding: 0;
-}
-
-.timeline-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: #F5F0EB;
-  border-radius: 0;
-  margin-bottom: 8px;
-  border-left: 4px solid transparent;
-  transition: background 0.15s;
-}
-
-.timeline-item.comment {
-  border-left-color: #000000;
-}
-
-.timeline-item.email-reply {
-  border-left-color: #FFE600;
-  background: #FAFAF8;
-}
-
-.timeline-item.email-reply:hover {
-  background: #F5F0EB;
-}
-
-.email-reply-badge {
-  display: inline-block;
-  background: #FFE600;
-  color: #000000;
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.email-ndr-badge {
-  display: inline-block;
-  background: #000000;
   color: #FFE600;
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
-.email-direction-label {
-  font-size: 11px;
-  color: #555555;
+.conv-header-count {
+  font-size: 10px;
+  color: #666;
+  margin-left: auto;
+  font-weight: 600;
+  letter-spacing: 1px;
 }
 
-.email-direction-label strong {
-  color: #000000;
+/* ── Scrollable list ─────────────────────────────────────────────────────── */
+.conv-list {
+  max-height: 680px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #EDEBE7;
 }
 
-.timeline-item.email-outgoing {
-  border-left-color: #000000;
-  background: #FAFAF8;
+/* ── Message card ────────────────────────────────────────────────────────── */
+.conv-card {
+  background: #fff;
+  border: 1.5px solid #D6D1CB;
+  border-left: 4px solid #94a3b8;
+  transition: box-shadow 0.12s;
 }
 
-.timeline-item.email-outgoing:hover {
-  background: #F5F0EB;
+.conv-card:hover {
+  box-shadow: 3px 3px 0 #000;
+  border-color: #000;
 }
 
-.timeline-item.email-ndr {
-  border-left-color: #000000;
-  background: #FFF8E8;
-  border-left-width: 4px;
+.conv-card.type-internal  { border-left-color: #3b82f6; }
+.conv-card.type-email-in  { border-left-color: #f59e0b; background: #fffef7; }
+.conv-card.type-email-out { border-left-color: #10b981; background: #f6fefb; }
+.conv-card.type-email-ndr { border-left-color: #ef4444; background: #fff5f5; }
+.conv-card.type-files     { border-left-color: #8b5cf6; background: #faf8ff; }
+
+/* ── Meta row (top of each card) ─────────────────────────────────────────── */
+.conv-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #EAE6E0;
+  flex-wrap: wrap;
+  min-height: 36px;
 }
 
-.email-outgoing-badge {
-  display: inline-block;
-  background: #000000;
-  color: #FFFFFF;
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.timeline-item.file {
-  border-left-color: #000000;
-}
-
-.timeline-item:hover {
-  background: #EDE8E2;
-  transform: translateX(2px);
-}
-
-.timeline-icon {
-  font-size: 18px;
-  width: 30px;
-  height: 30px;
+.conv-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.conv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border: 1.5px solid currentColor;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.timeline-content {
-  flex: 1;
-  min-width: 0;
-}
+.conv-badge-in  { color: #92400e; background: #fef3c7; }
+.conv-badge-out { color: #065f46; background: #d1fae5; }
+.conv-badge-ndr { color: #991b1b; background: #fee2e2; }
 
-.timeline-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+.conv-meta-author {
   font-size: 12px;
-  flex-wrap: wrap;
-}
-
-.timeline-header strong {
-  color: #0A0A0A;
   font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
 }
 
-.user-department {
-  color: #666666;
-  font-size: 11px;
-  font-weight: normal;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.timeline-date {
-  color: #999999;
-  font-size: 11px;
-  margin-left: auto;
-}
-
-.timeline-text {
-  font-size: 13px;
-  color: #0A0A0A;
-  margin: 0;
-  word-wrap: break-word;
-}
-
-.timeline-file {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.timeline-file a {
-  color: #000000;
-  text-decoration: underline;
-  font-size: 13px;
-  word-break: break-all;
-  font-weight: 700;
-}
-
-.timeline-file a:hover {
-  color: #333333;
-}
-
-.no-activity {
-  text-align: center;
-  color: #666666;
-  padding: 20px;
-  margin: 0;
-  font-size: 12px;
+.conv-meta-dept {
+  font-size: 10px;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.conv-meta-email {
+  font-size: 11px;
+  color: #475569;
+  word-break: break-all;
+}
+
+.conv-meta-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.conv-meta-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #cbd5e1;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+.conv-meta-delete:hover { color: #ef4444; }
+
+/* ── Card body (rich-text content) ──────────────────────────────────────── */
+.conv-body {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #1e293b;
+  line-height: 1.65;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.conv-body p          { margin: 0 0 8px; }
+.conv-body p:last-child { margin-bottom: 0; }
+.conv-body ul, .conv-body ol { margin: 4px 0 8px 20px; }
+.conv-body blockquote {
+  border-left: 3px solid #e2e8f0;
+  margin: 6px 0;
+  padding: 4px 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* ── Image grid (real images, no signatures) ─────────────────────────────── */
+.conv-img-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #EAE6E0;
+}
+
+.conv-img-thumb {
+  max-height: 160px;
+  max-width: 240px;
+  border: 1.5px solid #e2e8f0;
+  display: block;
+  cursor: zoom-in;
+  object-fit: cover;
+}
+
+.conv-img-del {
+  display: block;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: #ef4444;
+  padding: 1px 0;
+  text-align: left;
+}
+
+/* ── File chips row ──────────────────────────────────────────────────────── */
+.conv-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 12px;
+  border-top: 1px solid #EAE6E0;
+}
+
+.conv-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1.5px solid #D1D5DB;
+  background: #F9FAFB;
+  font-size: 11px;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.1s, border-color 0.1s;
+}
+.conv-file-chip:hover {
+  background: #FFE600;
+  border-color: #000;
+  color: #000;
+}
+
+.conv-file-chip-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 10px;
+  padding: 0 0 0 2px;
+  line-height: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.conv-no-activity {
+  text-align: center;
+  color: #94a3b8;
+  padding: 36px 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 /* Unified Form / Composer */

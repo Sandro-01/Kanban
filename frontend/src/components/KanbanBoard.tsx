@@ -256,6 +256,46 @@ const EMOJI_LIST = [
   '🗓️','🚀','⏰','🔍','💬','📌','🏷️','🗂️','✏️','🖊️',
 ];
 
+// ── Conversation helpers ───────────────────────────────────────────────────
+
+const AVATAR_PALETTE = ['#3b82f6','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#64748b'];
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+/** Rileva immagini firma email (Outlook inline, ATT*, image001, logo piccoli < 20 KB) */
+function isSignatureImage(att: any): boolean {
+  const name: string = att.fileName || '';
+  const size: number = att.fileSize || 0;
+  if (/^(image\d+|Outlook-[A-Za-z0-9]+|ATT\d+)\.(png|jpg|jpeg|gif|bmp)$/i.test(name)) return true;
+  if (/^(logo|signature|sign|firma)\.(png|jpg|jpeg|gif)$/i.test(name)) return true;
+  if (size > 0 && size < 20480 && (att.mimeType || '').startsWith('image/')) return true;
+  return false;
+}
+
+/** Chip compatta per allegati nelle card conversation */
+const ConvFileChip: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDelete }) => {
+  const url  = `${UPLOADS_URL}/${att.filePath}`;
+  const name: string = att.fileName || '';
+  const mime: string = att.mimeType || '';
+  const sizeKB = att.fileSize ? (att.fileSize / 1024).toFixed(1) : null;
+  const icon = mime.startsWith('image/') ? '🖼' : mime.includes('pdf') ? '📄'
+    : mime.includes('word') ? '📝' : mime.includes('excel') || mime.includes('spreadsheet') ? '📊' : '📎';
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <a href={url} target="_blank" rel="noopener noreferrer" download className="conv-file-chip">
+        <span>{icon}</span>
+        <span>{name}{sizeKB ? ` · ${sizeKB} KB` : ''}</span>
+      </a>
+      {onDelete && (
+        <button onClick={onDelete} className="conv-file-chip-del" title="Elimina">✕</button>
+      )}
+    </div>
+  );
+};
+
 // File preview card used in Activity / Conversation
 const FilePreview: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDelete }) => {
   const url = `${UPLOADS_URL}/${att.filePath}`;
@@ -787,8 +827,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       }
     }
 
-    // Sort by date descending (newest first)
-    return items.sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Sort chronologically oldest → newest (Jira/Linear style)
+    return items.sort((a, b) => a.date.getTime() - b.date.getTime());
   };
 
   const timeline = getTimeline();
@@ -1227,115 +1267,140 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             )}
           </div>
 
-          {/* Unified timeline - Comments and Files */}
-          <div className="timeline-section">
-            <div className="timeline-section-header">
-              <span className="timeline-section-title">{isEmailTicket ? 'Conversation' : 'Activity'}</span>
-              <span className="timeline-section-count">{timeline.length} items</span>
+          {/* ── Conversation / Activity ── */}
+          <div className="conv-section">
+            <div className="conv-header">
+              <span className="conv-header-title">{isEmailTicket ? 'Conversation' : 'Activity'}</span>
+              <span className="conv-header-count">{timeline.length} {timeline.length === 1 ? 'item' : 'items'}</span>
             </div>
-            <div className="timeline-list">
-              {timeline.length > 0 ? (
-                timeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className={`timeline-item ${item.type}${item.isEmailReply ? ' email-reply' : ''}${item.isOutgoingEmail ? ' email-outgoing' : ''}${item.isEmailReply && isNdrContent(item.content) ? ' email-ndr' : ''}`}>
-                    {item.type === 'comment' ? (
-                      <>
-                        <div className="timeline-icon">
-                          {item.isOutgoingEmail ? '📤' : item.isEmailReply ? '📧' : '💬'}
-                        </div>
-                        <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
-                          <div className="timeline-header">
-                            {item.isOutgoingEmail ? (
-                              <>
-                                <span className="email-outgoing-badge">&#8593;&ensp;Inviata</span>
-                                <span className="email-direction-label">Da:&ensp;<strong>{item.user?.firstName} {item.user?.lastName}</strong></span>
-                                <span className="email-direction-label">A:&ensp;<strong>{item.toEmails?.join(', ')}</strong></span>
-                              </>
-                            ) : item.isEmailReply ? (
-                              <>
-                                {isNdrContent(item.content)
-                                  ? <span className="email-ndr-badge">&#9888;&ensp;Bounce</span>
-                                  : <span className="email-reply-badge">&#8595;&ensp;Ricevuta</span>
-                                }
-                                <span className="email-direction-label">Da:&ensp;<strong>{item.fromEmail}</strong></span>
-                              </>
-                            ) : (
-                              <>
-                                <strong>{item.user.firstName} {item.user.lastName}</strong>
-                                {item.user.department && (
-                                  <span className="user-department">{item.user.department}</span>
-                                )}
-                              </>
-                            )}
-                            <span className="timeline-date">
-                              {item.date.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                            </span>
-                            {user.role === 'ADMIN' && (
-                              <button
-                                onClick={() => handleDeleteComment(item.id)}
-                                style={{
-                                  marginLeft: '10px',
-                                  padding: '2px 8px',
-                                  backgroundColor: '#ef4444',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  cursor: 'pointer',
-                                  fontSize: '11px'
-                                }}
-                                title="Delete comment (ADMIN only)"
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                          <div
-                            className="timeline-text"
-                            dangerouslySetInnerHTML={{
-                              __html: item.isEmailReply
-                                ? cleanEmailReplyContent(item.content, item.fromEmail)
-                                : item.content
-                            }}
-                          />
-                          {/* Show attachments linked to this comment */}
-                          {item.attachments && item.attachments.length > 0 && (
-                            <div className="comment-attachments">
-                              {item.attachments.map((att: any) => (
-                                <FilePreview
-                                  key={att.id}
-                                  att={att}
-                                  onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(att.id) : undefined}
-                                />
-                              ))}
+            <div className="conv-list">
+              {timeline.length > 0 ? timeline.map((item) => {
+                const isNdr    = item.isEmailReply && isNdrContent(item.content);
+                const cardType = item.type === 'file-group' ? 'files'
+                  : item.isOutgoingEmail ? 'email-out'
+                  : isNdr            ? 'email-ndr'
+                  : item.isEmailReply    ? 'email-in'
+                  : 'internal';
+
+                const authorName = item.user
+                  ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim()
+                  : '';
+                const initials = authorName.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+
+                // Separate real images from signature images (only filter for emails)
+                const atts: any[] = item.attachments || [];
+                const isEmailItem = item.isEmailReply || item.isOutgoingEmail;
+                const realImages = atts.filter((a: any) =>
+                  a.mimeType?.startsWith('image/') && !(isEmailItem && isSignatureImage(a))
+                );
+                const otherFiles = atts.filter((a: any) => !a.mimeType?.startsWith('image/'));
+
+                const fmtDate = (d: Date) => d.toLocaleString('it-IT', {
+                  day: '2-digit', month: 'short', year: '2-digit',
+                  hour: '2-digit', minute: '2-digit',
+                });
+
+                return (
+                  <div key={`${item.type}-${item.id}`} className={`conv-card type-${cardType}`}>
+
+                    {/* ── Meta row ── */}
+                    <div className="conv-meta">
+                      {cardType === 'email-in' ? (
+                        <>
+                          <span className="conv-badge conv-badge-in">↓ Ricevuta</span>
+                          <span className="conv-meta-email">{item.fromEmail}</span>
+                        </>
+                      ) : cardType === 'email-out' ? (
+                        <>
+                          <span className="conv-badge conv-badge-out">↑ Inviata</span>
+                          <span className="conv-meta-email">
+                            {authorName}{item.toEmails?.length > 0 ? ` → ${item.toEmails.join(', ')}` : ''}
+                          </span>
+                        </>
+                      ) : cardType === 'email-ndr' ? (
+                        <>
+                          <span className="conv-badge conv-badge-ndr">⚠ Bounce</span>
+                          <span className="conv-meta-email">{item.fromEmail}</span>
+                        </>
+                      ) : cardType === 'files' ? (
+                        <>
+                          <span className="conv-meta-author">📎 Allegati</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="conv-avatar" style={{ background: getAvatarColor(authorName) }}>{initials}</div>
+                          <span className="conv-meta-author">{authorName}</span>
+                          {item.user?.department && <span className="conv-meta-dept">{item.user.department}</span>}
+                        </>
+                      )}
+                      <span className="conv-meta-time">{fmtDate(item.date)}</span>
+                      {user.role === 'ADMIN' && item.type === 'comment' && (
+                        <button className="conv-meta-delete" onClick={() => handleDeleteComment(item.id)} title="Elimina">✕</button>
+                      )}
+                    </div>
+
+                    {/* ── Body ── */}
+                    {item.type === 'comment' && (
+                      <div
+                        className="conv-body"
+                        dangerouslySetInnerHTML={{
+                          __html: item.isEmailReply
+                            ? cleanEmailReplyContent(item.content, item.fromEmail)
+                            : item.content,
+                        }}
+                      />
+                    )}
+
+                    {/* ── File-group body ── */}
+                    {item.type === 'file-group' && (
+                      <div className="conv-files" style={{ padding: '10px 12px' }}>
+                        {item.files.map((f: any) => (
+                          f.mimeType?.startsWith('image/') ? (
+                            <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
+                                <img src={`${UPLOADS_URL}/${f.filePath}`} alt={f.fileName} className="conv-img-thumb" />
+                              </a>
+                              {user.role === 'ADMIN' && (
+                                <button className="conv-file-chip-del" onClick={() => handleDeleteAttachment(f.id)}>✕ {f.fileName}</button>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </>
-                    ) : item.type === 'file-group' ? (
+                          ) : (
+                            <ConvFileChip key={f.id} att={f} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined} />
+                          )
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ── Comment attachments ── */}
+                    {item.type === 'comment' && (realImages.length > 0 || otherFiles.length > 0) && (
                       <>
-                        <div className="timeline-icon">📎</div>
-                        <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
-                          <div className="timeline-header">
-                            <strong>Allegati</strong>
-                            <span className="timeline-date">
-                              {item.date.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                            </span>
-                          </div>
-                          <div style={{ marginTop: '8px' }}>
-                            {item.files.map((f: any) => (
-                              <FilePreview
-                                key={f.id}
-                                att={f}
-                                onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined}
-                              />
+                        {realImages.length > 0 && (
+                          <div className="conv-img-grid">
+                            {realImages.map((a: any) => (
+                              <div key={a.id} style={{ position: 'relative', display: 'inline-block' }}>
+                                <a href={`${UPLOADS_URL}/${a.filePath}`} target="_blank" rel="noopener noreferrer">
+                                  <img src={`${UPLOADS_URL}/${a.filePath}`} alt={a.fileName} className="conv-img-thumb" />
+                                </a>
+                                {user.role === 'ADMIN' && (
+                                  <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Elimina">✕</button>
+                                )}
+                              </div>
                             ))}
                           </div>
-                        </div>
+                        )}
+                        {otherFiles.length > 0 && (
+                          <div className="conv-files">
+                            {otherFiles.map((a: any) => (
+                              <ConvFileChip key={a.id} att={a} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(a.id) : undefined} />
+                            ))}
+                          </div>
+                        )}
                       </>
-                    ) : null}
+                    )}
                   </div>
-                ))
-              ) : (
-                <p className="no-activity">No activity</p>
+                );
+              }) : (
+                <div className="conv-no-activity">Nessuna attività</div>
               )}
             </div>
 
