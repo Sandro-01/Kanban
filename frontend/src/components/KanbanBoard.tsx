@@ -1321,27 +1321,18 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         <div className="timeline-icon">📎</div>
                         <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
-                            <strong>Attachments{isEmailTicket ? ' from email' : ''}</strong>
-                            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>
-                              ({item.files.length} file)
-                            </span>
+                            <strong>Allegati</strong>
                             <span className="timeline-date">
-                              {item.date.toLocaleString('en-GB')}
+                              {item.date.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
                             {item.files.map((f: any) => (
                               <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                                  {f.mimeType?.startsWith('image/') ? (
-                                    <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
-                                      <img
-                                        src={`${UPLOADS_URL}/${f.filePath}`}
-                                        alt={f.fileName}
-                                        style={{ maxWidth: '120px', maxHeight: '80px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}
-                                      />
-                                    </a>
-                                  ) : null}
+                                  <span style={{ flexShrink: 0, fontSize: '14px' }}>
+                                    {f.mimeType?.startsWith('image/') ? '🖼️' : f.mimeType?.includes('pdf') ? '📄' : '📎'}
+                                  </span>
                                   <a
                                     href={`${UPLOADS_URL}/${f.filePath}`}
                                     target="_blank"
@@ -1352,7 +1343,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                     {f.fileName}
                                   </a>
                                   <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>
-                                    ({(f.fileSize / 1024).toFixed(1)} KB)
+                                    {(f.fileSize / 1024).toFixed(1)} KB
                                   </span>
                                 </div>
                                 {user.role === 'ADMIN' && (
