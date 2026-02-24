@@ -36,7 +36,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
         setSearchParams({}, { replace: true });
       }
     }
-  }, [searchParams, tickets]);
+  }, [searchParams, tickets, setSearchParams]);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -264,7 +264,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [showEmoji, setShowEmoji] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -603,8 +603,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     // ── NDR / bounce detection (Microsoft Exchange, Office 365, Gmail) ──────
     if (isNdrContent(cleaned)) {
       const recipientMatch =
-        cleaned.match(/message to\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i) ||
-        cleaned.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\s+wasn'?t found/i);
+        cleaned.match(/message to\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i) ||
+        cleaned.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\s+wasn'?t found/i);
       const recipient = recipientMatch ? recipientMatch[1] : '';
       const codeMatch = cleaned.match(/(5\d{2}\s+5\.\d+\.\d+)/);
       const code = codeMatch ? codeMatch[1] : '550 5.1.10';
