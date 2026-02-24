@@ -679,6 +679,16 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     for (const pattern of notifCutPatterns) {
       cleaned = cleaned.replace(pattern, '');
     }
+    // ── Strip backend-generated email artifacts ────────────────────────────
+    // 1. "Name 🖇/📎 Email originale completa in allegato (PDF)" system notice
+    cleaned = cleaned.replace(/[^\n]*Email originale completa in allegato[^\n]*/gi, '');
+    // 2. "**Allegati:** ![img](url) …" section — shown separately as chips
+    cleaned = cleaned.replace(/\*{0,2}Allegati:?\*{0,2}[\s\S]*$/im, '');
+    cleaned = cleaned.replace(/!\[[^\]]*\]\([^)]+\)/g, ''); // stray markdown images
+    // 3. Lone markdown separators
+    cleaned = cleaned.replace(/^[-─*]{3,}$/gm, '');
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    // ──────────────────────────────────────────────────────────────────────
     // Remove name + title signatures (e.g. "Sandro Sellaro\nIT Specialist")
     const lines = cleaned.trim().split('\n');
     const jobTitlePattern = /^(IT|HR|Sales|Marketing|Account|Project|Product|Business|Chief|Senior|Junior|Lead|Head|Director|Manager|Specialist|Consultant|Engineer|Developer|Analyst|Coordinator|Assistant|Administrator|Responsabile|Direttore|Tecnico|Commerciale|Amministratore|Addetto)\b/i;
@@ -726,6 +736,15 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
 
     let result = lines.join('\n').trim();
+
+    // ── Markdown → HTML (only when content is plain text, not already HTML) ─
+    if (!/<[a-z][^>]*>/i.test(result)) {
+      result = result
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')  // bold
+        .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')               // italic
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')                // [text](url) → text
+        .replace(/\n/g, '<br>');                                 // line breaks
+    }
 
     // ── Collapse quoted reply blocks ──────────────────────────────────────
     // 1. HTML <blockquote> (Gmail, Apple Mail, Thunderbird, standard)
