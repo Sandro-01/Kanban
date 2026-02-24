@@ -256,6 +256,76 @@ const EMOJI_LIST = [
   '🗓️','🚀','⏰','🔍','💬','📌','🏷️','🗂️','✏️','🖊️',
 ];
 
+// File preview card used in Activity / Conversation
+const FilePreview: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDelete }) => {
+  const url = `${UPLOADS_URL}/${att.filePath}`;
+  const name: string = att.fileName || '';
+  const mime: string = att.mimeType || '';
+  const sizeKB = att.fileSize ? (att.fileSize / 1024).toFixed(1) : null;
+
+  const isImage = mime.startsWith('image/');
+  const isPdf   = mime.includes('pdf') || /\.pdf$/i.test(name);
+  const isWord  = mime.includes('word') || /\.(doc|docx)$/i.test(name);
+  const isExcel = mime.includes('excel') || mime.includes('spreadsheet') || /\.(xls|xlsx)$/i.test(name);
+  const isPpt   = mime.includes('presentation') || mime.includes('powerpoint') || /\.(ppt|pptx)$/i.test(name);
+
+  const docColor = isWord ? '#2b579a' : isExcel ? '#217346' : isPpt ? '#c43e1c' : '#64748b';
+  const docLabel = isWord ? 'W' : isExcel ? 'X' : isPpt ? 'P' : name.split('.').pop()?.toUpperCase()?.slice(0, 3) ?? '?';
+
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      {isImage ? (
+        <>
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={url}
+              alt={name}
+              style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'block' }}
+            />
+          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" download style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {name}{sizeKB ? ` · ${sizeKB} KB` : ''}
+            </a>
+            {onDelete && (
+              <button onClick={onDelete} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }} title="Delete file (ADMIN only)">🗑️</button>
+            )}
+          </div>
+        </>
+      ) : isPdf ? (
+        <>
+          <embed src={url} type="application/pdf" width="100%" height="220px" style={{ border: '1px solid #e2e8f0', borderRadius: '4px', display: 'block' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" download style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {name}{sizeKB ? ` · ${sizeKB} KB` : ''}
+            </a>
+            {onDelete && (
+              <button onClick={onDelete} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }} title="Delete file (ADMIN only)">🗑️</button>
+            )}
+          </div>
+        </>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" download style={{ textDecoration: 'none', minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', cursor: 'pointer' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: docColor, color: 'white', fontWeight: 900, fontSize: '12px', flexShrink: 0, letterSpacing: '-0.02em' }}>
+                {docLabel}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                {sizeKB && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>{sizeKB} KB</div>}
+              </div>
+            </div>
+          </a>
+          {onDelete && (
+            <button onClick={onDelete} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', flexShrink: 0 }} title="Delete file (ADMIN only)">🗑️</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Ticket modal component
 const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUpdate, onMove }) => {
   const [comment, setComment] = useState('');
@@ -1229,89 +1299,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">
-                              {/* Show inline images (screenshots, photos) */}
-                              {item.attachments
-                                .filter((att: any) => att.mimeType && att.mimeType.startsWith('image/'))
-                                .map((att: any) => (
-                                  <div key={att.id} style={{ marginBottom: '8px', position: 'relative' }}>
-                                    <a
-                                      href={`${UPLOADS_URL}/${att.filePath}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <img
-                                        src={`${UPLOADS_URL}/${att.filePath}`}
-                                        alt={att.fileName}
-                                        style={{
-                                          maxWidth: '100%',
-                                          maxHeight: '400px',
-                                          borderRadius: '6px',
-                                          border: '1px solid #e2e8f0',
-                                          cursor: 'pointer',
-                                        }}
-                                      />
-                                    </a>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                                        {att.fileName} ({(att.fileSize / 1024).toFixed(1)} KB)
-                                      </span>
-                                      {user.role === 'ADMIN' && (
-                                        <button
-                                          onClick={() => handleDeleteAttachment(att.id)}
-                                          style={{
-                                            padding: '2px 8px',
-                                            backgroundColor: '#ef4444',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '3px',
-                                            cursor: 'pointer',
-                                            fontSize: '11px'
-                                          }}
-                                          title="Delete file (ADMIN only)"
-                                        >
-                                          🗑️
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              {/* Show other attachments as download links */}
-                              {item.attachments
-                                .filter((att: any) => !att.mimeType || !att.mimeType.startsWith('image/'))
-                                .map((att: any) => (
-                                  <div key={att.id} className="timeline-file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div>
-                                      <a
-                                        href={`${UPLOADS_URL}/${att.filePath}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        download
-                                      >
-                                        📎 {att.fileName}
-                                      </a>
-                                      <span className="file-size">
-                                        ({(att.fileSize / 1024).toFixed(1)} KB)
-                                      </span>
-                                    </div>
-                                    {user.role === 'ADMIN' && (
-                                      <button
-                                        onClick={() => handleDeleteAttachment(att.id)}
-                                        style={{
-                                          padding: '2px 8px',
-                                          backgroundColor: '#ef4444',
-                                          color: 'white',
-                                          border: 'none',
-                                          borderRadius: '3px',
-                                          cursor: 'pointer',
-                                          fontSize: '11px'
-                                        }}
-                                        title="Delete file (ADMIN only)"
-                                      >
-                                        🗑️
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
+                              {item.attachments.map((att: any) => (
+                                <FilePreview
+                                  key={att.id}
+                                  att={att}
+                                  onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(att.id) : undefined}
+                                />
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1326,36 +1320,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               {item.date.toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                          <div style={{ marginTop: '8px' }}>
                             {item.files.map((f: any) => (
-                              <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                                  <span style={{ flexShrink: 0, fontSize: '14px' }}>
-                                    {f.mimeType?.startsWith('image/') ? '🖼️' : f.mimeType?.includes('pdf') ? '📄' : '📎'}
-                                  </span>
-                                  <a
-                                    href={`${UPLOADS_URL}/${f.filePath}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    download
-                                    style={{ fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                                  >
-                                    {f.fileName}
-                                  </a>
-                                  <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>
-                                    {(f.fileSize / 1024).toFixed(1)} KB
-                                  </span>
-                                </div>
-                                {user.role === 'ADMIN' && (
-                                  <button
-                                    onClick={() => handleDeleteAttachment(f.id)}
-                                    style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', flexShrink: 0 }}
-                                    title="Delete file (ADMIN only)"
-                                  >
-                                    🗑️
-                                  </button>
-                                )}
-                              </div>
+                              <FilePreview
+                                key={f.id}
+                                att={f}
+                                onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined}
+                              />
                             ))}
                           </div>
                         </div>
