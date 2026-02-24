@@ -318,26 +318,6 @@
   border: 2px solid #000000;
 }
 
-.move-section {
-  margin: 20px 0;
-  padding: 15px;
-  background: #F5F0EB;
-  border-radius: 0;
-  border: 2px solid #000000;
-}
-
-.move-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.move-buttons .btn.active {
-  background: #000000;
-  color: #FFE600;
-  border-color: #000000;
-}
 
 .attachments-section,
 .upload-section,

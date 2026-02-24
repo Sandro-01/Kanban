@@ -708,34 +708,64 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         <div className="modal-header">
           <div>
             <h2>{ticket.title}</h2>
-            <select
-              className={`badge badge-${ticket.priority.toLowerCase()}`}
-              value={ticket.priority}
-              onChange={async (e) => {
-                const newPriority = e.target.value;
-                try {
-                  await ticketsApi.update(ticket.id, { priority: newPriority });
-                  setTicket({ ...ticket, priority: newPriority });
-                  onUpdate();
-                } catch (err) {
-                  console.error('Error updating priority:', err);
-                }
-              }}
-              style={{
-                cursor: 'pointer',
-                border: '1px solid transparent',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                fontSize: '12px',
-                fontWeight: '600',
-                appearance: 'auto' as any
-              }}
-            >
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
-              <option value="CRITICAL">CRITICAL</option>
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+              <select
+                className={`badge badge-${ticket.priority.toLowerCase()}`}
+                value={ticket.priority}
+                onChange={async (e) => {
+                  const newPriority = e.target.value;
+                  try {
+                    await ticketsApi.update(ticket.id, { priority: newPriority });
+                    setTicket({ ...ticket, priority: newPriority });
+                    onUpdate();
+                  } catch (err) {
+                    console.error('Error updating priority:', err);
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  border: '1px solid transparent',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  appearance: 'auto' as any
+                }}
+              >
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="CRITICAL">CRITICAL</option>
+              </select>
+              <select
+                value={ticket.status}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+                  if (newStatus !== ticket.status) {
+                    onMove(ticket.id, newStatus);
+                    onClose();
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  border: '2px solid #000000',
+                  borderRadius: '0',
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  background: '#F5F0EB',
+                  color: '#0A0A0A',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  appearance: 'auto' as any
+                }}
+              >
+                <option value="OPEN">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="WAITING">Waiting</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {user.role === 'ADMIN' && (
@@ -928,26 +958,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               )}
             </div>
           )}
-
-          {/* Move ticket */}
-          <div className="move-section">
-            <strong>Move to:</strong>
-            <div className="move-buttons">
-              {['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED'].map((status) => (
-                <button
-                  key={status}
-                  className={`btn btn-secondary ${ticket.status === status ? 'active' : ''}`}
-                  onClick={() => {
-                    onMove(ticket.id, status);
-                    onClose();
-                  }}
-                  disabled={ticket.status === status}
-                >
-                  {status.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Assignments */}
           <div className="assignments-section">
