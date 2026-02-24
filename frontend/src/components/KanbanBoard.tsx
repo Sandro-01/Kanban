@@ -203,6 +203,16 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                                 📎 {ticket.attachments.length} file
                               </div>
                             )}
+
+                            {/* Email source badge */}
+                            {!!(ticket.emailThreadId || ticket.externalContacts?.length > 0) && (
+                              <div className="card-email-source">
+                                <span className="card-email-icon">✉</span>
+                                <span className="card-email-addr">
+                                  {ticket.externalContacts?.[0]?.email || 'via email'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </Draggable>
@@ -785,7 +795,33 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       break;
     }
 
-    return lines.join('\n').trim();
+    let result = lines.join('\n').trim();
+
+    // ── Collapse quoted reply blocks ──────────────────────────────────────
+    // 1. HTML <blockquote> (Gmail, Apple Mail, Thunderbird, standard)
+    //    Wrap each top-level blockquote in a <details> toggle.
+    //    We replace iteratively to avoid greedy regex issues with nesting.
+    result = result.replace(
+      /(<blockquote\b[^>]*>[\s\S]*?<\/blockquote>)/gi,
+      '<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>$1</details>'
+    );
+    // 2. Gmail wrapper div (contains "On date, person wrote:" + blockquote inside)
+    result = result.replace(
+      /(<div\b[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*?<\/div>)/gi,
+      (m) => `<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>${m}</details>`
+    );
+    // 3. "On … wrote:" / "Il … ha scritto:" orphan line preceding a details block
+    result = result.replace(
+      /(<p[^>]*>(?:On|Il)\s.{10,200}?(?:wrote:|ha scritto:)\s*<\/p>\s*)(<details class="email-quote")/gi,
+      '$2'
+    );
+    // 4. Outlook-style text separator  ─────────────
+    result = result.replace(
+      /((?:_{8,}|-{8,})\s*(?:<br\s*\/?>)?\s*(?:Da:|From:|De:).+)/i,
+      '<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>$1</details>'
+    );
+
+    return result;
   };
 
   // Create unified timeline with both comments and files

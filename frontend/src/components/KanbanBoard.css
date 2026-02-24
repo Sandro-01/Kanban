@@ -204,6 +204,36 @@
   color: #666666;
 }
 
+/* ── Email source badge on Kanban card ───────────────────────────────────── */
+.card-email-source {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 4px 7px;
+  background: #fffef0;
+  border: 1.5px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.card-email-icon {
+  font-size: 11px;
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+.card-email-addr {
+  font-size: 10px;
+  color: #92400e;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+}
+
 .empty-column {
   text-align: center;
   padding: 40px 20px;
@@ -989,6 +1019,54 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+/* ── Collapsible email quote toggle ─────────────────────────────────────── */
+.email-quote {
+  margin: 8px 0 0;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.email-quote-sum {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  user-select: none;
+  list-style: none;
+  background: #f1f5f9;
+  border-bottom: 1px solid transparent;
+  transition: background 0.1s;
+}
+
+.email-quote-sum::-webkit-details-marker { display: none; }
+.email-quote-sum::marker               { display: none; }
+
+.email-quote[open] .email-quote-sum {
+  border-bottom-color: #e2e8f0;
+  background: #e8edf4;
+  color: #334155;
+}
+
+.email-quote-sum:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.email-quote .email-quote-body,
+.email-quote blockquote,
+.email-quote > div {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #64748b;
+  border-left: 3px solid #cbd5e1;
+  margin: 8px 10px;
+  background: transparent;
 }
 
 /* Unified Form / Composer */
