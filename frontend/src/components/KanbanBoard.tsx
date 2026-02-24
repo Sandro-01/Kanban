@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor, { RichTextEditorHandle } from './RichTextEditor';
@@ -19,24 +19,20 @@ const COLUMNS = [
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   const [tickets, setTickets] = useState<any[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [loading, setLoading] = useState(true);
   const isDragging = useRef(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // Auto-apri ticket se arriva dalla notifica (?ticketId=...)
+  // Auto-naviga al ticket se arriva dalla notifica (?ticketId=...)
   useEffect(() => {
     const ticketId = searchParams.get('ticketId');
-    if (ticketId && tickets.length > 0) {
-      const ticket = tickets.find(t => t.id === ticketId);
-      if (ticket) {
-        setSelectedTicket(ticket);
-        setSearchParams({}, { replace: true });
-      }
+    if (ticketId) {
+      navigate(`/tickets/${ticketId}`, { replace: true });
     }
-  }, [searchParams, tickets, setSearchParams]);
+  }, [searchParams, navigate]);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -154,7 +150,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             className={`ticket-card ${isOverdue(ticket) ? 'overdue' : ''} ${
                               snapshot.isDragging ? 'dragging' : ''
                             }`}
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => { if (!isDragging.current) navigate(`/tickets/${ticket.id}`); }}
                           >
                             <div className="ticket-header">
                               <span className="ticket-id">#{ticket.id.substring(0, 8)}</span>
@@ -236,16 +232,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
           ))}
         </div>
       </DragDropContext>
-
-      {selectedTicket && (
-        <TicketModal
-          ticket={selectedTicket}
-          user={user}
-          onClose={() => setSelectedTicket(null)}
-          onUpdate={loadTickets}
-          onMove={handleMoveTicket}
-        />
-      )}
 
       {showNewTicket && (
         <NewTicketModal

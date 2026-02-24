@@ -15,6 +15,7 @@ import TicketArchive from './components/TicketArchive';
 import EmailSettings from './components/EmailSettings';
 import KnowledgeBase from './components/KnowledgeBase';
 import Header from './components/Header';
+import TicketDetail from './components/TicketDetail';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ user: any; allowedRoles?: string[]; allowedDepartments?: string[]; children: React.ReactElement }> = ({
@@ -83,6 +84,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/board" element={<KanbanBoard user={user} />} />
+          <Route path="/tickets/:id" element={<TicketDetail user={user} />} />
           <Route path="/archivio" element={<TicketArchive user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
           <Route path="/kb" element={<KnowledgeBase user={user} />} />
