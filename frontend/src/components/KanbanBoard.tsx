@@ -758,7 +758,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const getTimeline = () => {
     const items: any[] = [];
 
-    // Add comments with their attachments
+    // Add comments with a mutable attachments array (we may push email-linked files into it)
     if (ticket.comments) {
       ticket.comments.forEach((c: any) => {
         items.push({
@@ -771,15 +771,43 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
           isOutgoingEmail: c.isOutgoingEmail || false,
           fromEmail: c.fromEmail || null,
           toEmails: c.toEmails || [],
-          attachments: c.attachments || [],
+          attachments: [...(c.attachments || [])],   // mutable copy
         });
       });
     }
 
-    // Add standalone files — one timeline entry per file (not grouped)
     if (ticket.attachments) {
       const standaloneFiles = ticket.attachments.filter((att: any) => !att.commentId);
+
       standaloneFiles.forEach((att: any) => {
+        const name: string = att.fileName || '';
+
+        // ── Drop email artifacts ─────────────────────────────────────────
+        // 1. Signature / inline images (logo, image001, Outlook-xxx, ATT00…)
+        if (isSignatureImage(att)) return;
+        // 2. Auto-generated "Email-originale" PDFs saved by the mailer
+        if (/email.?originale|original.?email|email_originale/i.test(name)) return;
+
+        // ── For email tickets: associate with the nearest email comment ───
+        // Zendesk / Freshdesk model: attachments from the same email live
+        // inside the email message card, not as separate cards.
+        if (isEmailTicket) {
+          const attTime = new Date(att.createdAt || 0).getTime();
+          const emailItems = items.filter(i => i.isEmailReply || i.isOutgoingEmail);
+          let nearest: any = null;
+          let nearestDiff = Infinity;
+          emailItems.forEach(i => {
+            const diff = Math.abs(i.date.getTime() - attTime);
+            if (diff < nearestDiff) { nearest = i; nearestDiff = diff; }
+          });
+          // Within 60 s → treat as part of that email message
+          if (nearest && nearestDiff < 60_000) {
+            nearest.attachments.push(att);
+            return;
+          }
+        }
+
+        // ── Truly standalone (manually uploaded) → own card ─────────────
         items.push({
           type: 'file',
           id: att.id,
@@ -790,7 +818,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       });
     }
 
-    // Sort chronologically oldest → newest (Jira/Linear style)
+    // Sort chronologically oldest → newest
     return items.sort((a, b) => a.date.getTime() - b.date.getTime());
   };
 
