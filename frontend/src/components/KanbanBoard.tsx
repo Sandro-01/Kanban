@@ -275,13 +275,14 @@ function getAvatarColor(name: string): string {
   return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
 }
 
-/** Rileva immagini firma email (Outlook inline, ATT*, image001, logo piccoli < 20 KB) */
+/** Rileva immagini firma email (Outlook inline CID, ATT*, image001…) */
 function isSignatureImage(att: any): boolean {
   const name: string = att.fileName || '';
-  const size: number = att.fileSize || 0;
+  // CID inline images auto-named by email clients (image001.png, Outlook-abc.jpg, ATT00001.gif)
   if (/^(image\d+|Outlook-[A-Za-z0-9]+|ATT\d+)\.(png|jpg|jpeg|gif|bmp)$/i.test(name)) return true;
+  // Common signature asset names
   if (/^(logo|signature|sign|firma)\.(png|jpg|jpeg|gif)$/i.test(name)) return true;
-  if (size > 0 && size < 20480 && (att.mimeType || '').startsWith('image/')) return true;
+  // NOTE: size-based filter removed — it was incorrectly dropping real user attachments
   return false;
 }
 
@@ -295,7 +296,7 @@ const ConvFileChip: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDe
     : mime.includes('word') ? '📝' : mime.includes('excel') || mime.includes('spreadsheet') ? '📊' : '📎';
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <a href={url} target="_blank" rel="noopener noreferrer" download className="conv-file-chip">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="conv-file-chip">
         <span>{icon}</span>
         <span>{name}{sizeKB ? ` · ${sizeKB} KB` : ''}</span>
       </a>
