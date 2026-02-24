@@ -1312,16 +1312,43 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             <div className="conv-list">
               {timeline.length > 0 ? timeline.map((item) => {
                 const isNdr    = item.isEmailReply && isNdrContent(item.content);
-                const cardType = item.type === 'file-group' ? 'files'
+                const cardType: string = item.type === 'file-group' ? 'files'
                   : item.isOutgoingEmail ? 'email-out'
-                  : isNdr            ? 'email-ndr'
-                  : item.isEmailReply    ? 'email-in'
+                  : isNdr              ? 'email-ndr'
+                  : item.isEmailReply  ? 'email-in'
                   : 'internal';
 
                 const authorName = item.user
                   ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim()
                   : '';
-                const initials = authorName.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+
+                // Primary label: for incoming/NDR emails show the from address; otherwise show author name
+                const primaryLabel = (cardType === 'email-in' || cardType === 'email-ndr')
+                  ? (item.fromEmail || 'Email')
+                  : cardType === 'files'
+                  ? 'Allegati'
+                  : authorName || 'Sistema';
+
+                // Sub-line: recipient for emails, department for internal notes
+                const subLabel = cardType === 'email-in'
+                  ? `A: ${ticket.externalContacts?.[0]?.email || 'support'}`
+                  : cardType === 'email-out'
+                  ? `A: ${(item.toEmails || []).join(', ')}`
+                  : cardType === 'email-ndr'
+                  ? 'Delivery failure notice'
+                  : item.user?.department || '';
+
+                // Initials: handle email addresses (john.doe@acme.com → JD)
+                const computeInitials = (label: string) => {
+                  if (label.includes('@')) {
+                    const local = label.split('@')[0];
+                    const parts = local.split(/[._-]/);
+                    return parts.slice(0, 2).map((p: string) => (p[0] || '').toUpperCase()).join('') || '?';
+                  }
+                  return label.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+                };
+                const initials = computeInitials(primaryLabel);
+                const avatarBg = getAvatarColor(primaryLabel);
 
                 // Separate real images from signature images (only filter for emails)
                 const atts: any[] = item.attachments || [];
@@ -1336,103 +1363,93 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   hour: '2-digit', minute: '2-digit',
                 });
 
-                return (
-                  <div key={`${item.type}-${item.id}`} className={`conv-card type-${cardType}`}>
+                const processedContent = item.isEmailReply
+                  ? cleanEmailReplyContent(item.content, item.fromEmail)
+                  : item.content;
 
-                    {/* ── Meta row ── */}
-                    <div className="conv-meta">
-                      {cardType === 'email-in' ? (
-                        <>
-                          <span className="conv-badge conv-badge-in">↓ Ricevuta</span>
-                          <span className="conv-meta-email">{item.fromEmail}</span>
-                        </>
-                      ) : cardType === 'email-out' ? (
-                        <>
-                          <span className="conv-badge conv-badge-out">↑ Inviata</span>
-                          <span className="conv-meta-email">
-                            {authorName}{item.toEmails?.length > 0 ? ` → ${item.toEmails.join(', ')}` : ''}
-                          </span>
-                        </>
-                      ) : cardType === 'email-ndr' ? (
-                        <>
-                          <span className="conv-badge conv-badge-ndr">⚠ Bounce</span>
-                          <span className="conv-meta-email">{item.fromEmail}</span>
-                        </>
-                      ) : cardType === 'files' ? (
-                        <>
-                          <span className="conv-meta-author">📎 Allegati</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="conv-avatar" style={{ background: getAvatarColor(authorName) }}>{initials}</div>
-                          <span className="conv-meta-author">{authorName}</span>
-                          {item.user?.department && <span className="conv-meta-dept">{item.user.department}</span>}
-                        </>
-                      )}
-                      <span className="conv-meta-time">{fmtDate(item.date)}</span>
-                      {user.role === 'ADMIN' && item.type === 'comment' && (
-                        <button className="conv-meta-delete" onClick={() => handleDeleteComment(item.id)} title="Elimina">✕</button>
-                      )}
+                return (
+                  <div key={`${item.type}-${item.id}`} className={`conv-msg conv-msg--${cardType}`}>
+
+                    {/* ── Avatar ── */}
+                    <div className="conv-msg-avatar" style={{ background: avatarBg }}>
+                      {initials}
                     </div>
 
-                    {/* ── Body ── */}
-                    {item.type === 'comment' && (
-                      <div
-                        className="conv-body"
-                        dangerouslySetInnerHTML={{
-                          __html: item.isEmailReply
-                            ? cleanEmailReplyContent(item.content, item.fromEmail)
-                            : item.content,
-                        }}
-                      />
-                    )}
+                    {/* ── Card ── */}
+                    <div className="conv-msg-card">
 
-                    {/* ── File-group body ── */}
-                    {item.type === 'file-group' && (
-                      <div className="conv-files" style={{ padding: '10px 12px' }}>
-                        {item.files.map((f: any) => (
-                          f.mimeType?.startsWith('image/') ? (
-                            <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
-                                <img src={`${UPLOADS_URL}/${f.filePath}`} alt={f.fileName} className="conv-img-thumb" />
-                              </a>
-                              {user.role === 'ADMIN' && (
-                                <button className="conv-file-chip-del" onClick={() => handleDeleteAttachment(f.id)}>✕ {f.fileName}</button>
-                              )}
-                            </div>
-                          ) : (
-                            <ConvFileChip key={f.id} att={f} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined} />
-                          )
-                        ))}
+                      {/* Header */}
+                      <div className="conv-msg-head">
+                        <div className="conv-msg-sender-col">
+                          <span className="conv-msg-primary">{primaryLabel}</span>
+                          {subLabel && <span className="conv-msg-sub">{subLabel}</span>}
+                        </div>
+                        <div className="conv-msg-right-col">
+                          {cardType === 'email-in'  && <span className="conv-dir conv-dir--in">↓ Ricevuta</span>}
+                          {cardType === 'email-out' && <span className="conv-dir conv-dir--out">↑ Inviata</span>}
+                          {cardType === 'email-ndr' && <span className="conv-dir conv-dir--ndr">⚠ Bounce</span>}
+                          {cardType === 'internal'  && <span className="conv-dir conv-dir--note">Nota interna</span>}
+                          <span className="conv-msg-time" title={item.date.toLocaleString('it-IT')}>
+                            {fmtDate(item.date)}
+                          </span>
+                          {user.role === 'ADMIN' && item.type === 'comment' && (
+                            <button
+                              className="conv-msg-del"
+                              onClick={() => handleDeleteComment(item.id)}
+                              title="Elimina"
+                            >✕</button>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    {/* ── Comment attachments ── */}
-                    {item.type === 'comment' && (realImages.length > 0 || otherFiles.length > 0) && (
-                      <>
-                        {realImages.length > 0 && (
-                          <div className="conv-img-grid">
-                            {realImages.map((a: any) => (
-                              <div key={a.id} style={{ position: 'relative', display: 'inline-block' }}>
-                                <a href={`${UPLOADS_URL}/${a.filePath}`} target="_blank" rel="noopener noreferrer">
-                                  <img src={`${UPLOADS_URL}/${a.filePath}`} alt={a.fileName} className="conv-img-thumb" />
+                      {/* Body */}
+                      {item.type === 'comment' && (
+                        <div
+                          className="conv-msg-body"
+                          dangerouslySetInnerHTML={{ __html: processedContent }}
+                        />
+                      )}
+
+                      {/* File-group body */}
+                      {item.type === 'file-group' && (
+                        <div className="conv-msg-atts">
+                          {item.files.map((f: any) => (
+                            f.mimeType?.startsWith('image/') ? (
+                              <div key={f.id} className="conv-att-img-wrap">
+                                <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
+                                  <img src={`${UPLOADS_URL}/${f.filePath}`} alt={f.fileName} className="conv-img-thumb" />
                                 </a>
                                 {user.role === 'ADMIN' && (
-                                  <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Elimina">✕</button>
+                                  <button className="conv-img-del" onClick={() => handleDeleteAttachment(f.id)}>✕</button>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                        {otherFiles.length > 0 && (
-                          <div className="conv-files">
-                            {otherFiles.map((a: any) => (
-                              <ConvFileChip key={a.id} att={a} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(a.id) : undefined} />
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
+                            ) : (
+                              <ConvFileChip key={f.id} att={f} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined} />
+                            )
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Comment attachments */}
+                      {item.type === 'comment' && (realImages.length > 0 || otherFiles.length > 0) && (
+                        <div className="conv-msg-atts">
+                          {realImages.map((a: any) => (
+                            <div key={a.id} className="conv-att-img-wrap">
+                              <a href={`${UPLOADS_URL}/${a.filePath}`} target="_blank" rel="noopener noreferrer">
+                                <img src={`${UPLOADS_URL}/${a.filePath}`} alt={a.fileName} className="conv-img-thumb" />
+                              </a>
+                              {user.role === 'ADMIN' && (
+                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Elimina">✕</button>
+                              )}
+                            </div>
+                          ))}
+                          {otherFiles.map((a: any) => (
+                            <ConvFileChip key={a.id} att={a} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(a.id) : undefined} />
+                          ))}
+                        </div>
+                      )}
+
+                    </div>
                   </div>
                 );
               }) : (
