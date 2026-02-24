@@ -126,15 +126,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
         </div>
       </div>
 
-      <div className="alert alert-info" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div>
-          <strong>Drag &amp; Drop Active</strong>
-          <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>
-            Drag tickets between columns to update their status.
-          </p>
-        </div>
-      </div>
-
       <DragDropContext onDragStart={() => { isDragging.current = true; }} onDragEnd={handleDragEnd}>
         <div className="kanban-board">
           {COLUMNS.map((column) => (

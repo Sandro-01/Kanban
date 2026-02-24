@@ -29,7 +29,10 @@
   border-radius: 0;
   padding: 16px;
   min-height: 500px;
+  max-height: calc(100vh - 180px);
   border-right: 2px solid #000000;
+  display: flex;
+  flex-direction: column;
 }
 
 .kanban-column:last-child {
@@ -67,6 +70,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* Ticket Card */
