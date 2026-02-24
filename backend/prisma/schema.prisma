@@ -20,6 +20,7 @@ model User {
   role          UserRole @default(USER)
   department    String?
   status        UserStatus @default(ACTIVE)
+  allowedPages  String[] @default([])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

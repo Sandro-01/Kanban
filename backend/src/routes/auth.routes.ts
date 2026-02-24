@@ -86,7 +86,8 @@ router.post('/login', auditLog('LOGIN', 'User'), async (req: Request, res: Respo
         lastName: user.lastName,
         role: user.role,
         department: user.department,
-        status: user.status
+        status: user.status,
+        allowedPages: user.allowedPages ?? []
       }
     });
   } catch (error: any) {
@@ -107,6 +108,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         role: true,
         department: true,
         status: true,
+        allowedPages: true,
         createdAt: true
       }
     });

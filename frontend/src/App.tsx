@@ -17,23 +17,35 @@ import KnowledgeBase from './components/KnowledgeBase';
 import Header from './components/Header';
 import TicketDetail from './components/TicketDetail';
 
-// Protected route component
-const ProtectedRoute: React.FC<{ user: any; allowedRoles?: string[]; allowedDepartments?: string[]; children: React.ReactElement }> = ({
+// Check if a user has access to a given page path
+const userCanAccessPage = (user: any, path: string): boolean => {
+  if (user.role === 'ADMIN') return true;
+  if (!user.allowedPages || user.allowedPages.length === 0) return true; // no restriction = all allowed
+  return user.allowedPages.includes(path);
+};
+
+// Protected route component — checks role, department AND allowedPages
+const ProtectedRoute: React.FC<{
+  user: any;
+  allowedRoles?: string[];
+  allowedDepartments?: string[];
+  requiredPage?: string;
+  children: React.ReactElement;
+}> = ({
   user,
   allowedRoles = [],
   allowedDepartments = [],
+  requiredPage,
   children
 }) => {
-  // Check if user has required role
   const hasRole = allowedRoles.length === 0 || allowedRoles.includes(user.role);
-  // Check if user has required department
   const hasDepartment = allowedDepartments.length === 0 || (user.department && allowedDepartments.includes(user.department));
+  const hasPageAccess = !requiredPage || userCanAccessPage(user, requiredPage);
 
-  if (hasRole || hasDepartment) {
+  if ((hasRole || hasDepartment) && hasPageAccess) {
     return children;
   }
 
-  // If not authorized, redirect to dashboard with error message
   return (
     <div className="page">
       <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
@@ -83,11 +95,31 @@ function App() {
         <Header user={user} onLogout={handleLogout} />
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
-          <Route path="/board" element={<KanbanBoard user={user} />} />
-          <Route path="/tickets/:id" element={<TicketDetail user={user} />} />
-          <Route path="/archivio" element={<TicketArchive user={user} />} />
-          <Route path="/sla" element={<SLAMetrics user={user} />} />
-          <Route path="/kb" element={<KnowledgeBase user={user} />} />
+          <Route path="/board" element={
+            <ProtectedRoute user={user} requiredPage="/board">
+              <KanbanBoard user={user} />
+            </ProtectedRoute>
+          } />
+          <Route path="/tickets/:id" element={
+            <ProtectedRoute user={user} requiredPage="/board">
+              <TicketDetail user={user} />
+            </ProtectedRoute>
+          } />
+          <Route path="/archivio" element={
+            <ProtectedRoute user={user} requiredPage="/archivio">
+              <TicketArchive user={user} />
+            </ProtectedRoute>
+          } />
+          <Route path="/sla" element={
+            <ProtectedRoute user={user} requiredPage="/sla">
+              <SLAMetrics user={user} />
+            </ProtectedRoute>
+          } />
+          <Route path="/kb" element={
+            <ProtectedRoute user={user} requiredPage="/kb">
+              <KnowledgeBase user={user} />
+            </ProtectedRoute>
+          } />
 
           {/* Onboarding - ADMIN, HR, IT, Amministrazione */}
           <Route
@@ -97,6 +129,7 @@ function App() {
                 user={user}
                 allowedRoles={['ADMIN']}
                 allowedDepartments={['HR', 'IT', 'Amministrazione']}
+                requiredPage="/onboarding"
               >
                 <Onboarding user={user} />
               </ProtectedRoute>
@@ -111,6 +144,7 @@ function App() {
                 user={user}
                 allowedRoles={['ADMIN']}
                 allowedDepartments={['HR', 'IT', 'Amministrazione']}
+                requiredPage="/offboarding"
               >
                 <Offboarding user={user} />
               </ProtectedRoute>

@@ -142,10 +142,20 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     return `${Math.floor(seconds / 86400)}d ago`;
   };
 
+  // allowedPages: empty array = all pages allowed (backward compatible)
+  const hasPage = (path: string) =>
+    user.role === 'ADMIN' ||
+    !user.allowedPages ||
+    user.allowedPages.length === 0 ||
+    user.allowedPages.includes(path);
+
   const isPersonale = user.role === 'ADMIN' ||
     user.department === 'HR' ||
     user.department === 'IT' ||
     user.department === 'Amministrazione';
+
+  const showPersonnelMenu =
+    (hasPage('/onboarding') || hasPage('/offboarding')) && isPersonale;
 
   return (
     <header className="header">
@@ -154,13 +164,13 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <h1 className="logo">Kanban ISO</h1>
           <nav className="nav" ref={dropdownRef}>
             <Link to="/" className="nav-link">Dashboard</Link>
-            <Link to="/board" className="nav-link">Board</Link>
-            <Link to="/archivio" className="nav-link">Archive</Link>
-            <Link to="/sla" className="nav-link">SLA</Link>
-            <Link to="/kb" className="nav-link">Knowledge Base</Link>
+            {hasPage('/board')    && <Link to="/board"    className="nav-link">Board</Link>}
+            {hasPage('/archivio') && <Link to="/archivio" className="nav-link">Archive</Link>}
+            {hasPage('/sla')      && <Link to="/sla"      className="nav-link">SLA</Link>}
+            {hasPage('/kb')       && <Link to="/kb"       className="nav-link">Knowledge Base</Link>}
 
             {/* Dropdown Personnel */}
-            {isPersonale && (
+            {showPersonnelMenu && (
               <div className="nav-dropdown">
                 <button
                   className="nav-link nav-dropdown-trigger"
@@ -170,8 +180,8 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                 </button>
                 {openDropdown === 'personale' && (
                   <div className="nav-dropdown-menu">
-                    <Link to="/onboarding" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Onboarding</Link>
-                    <Link to="/offboarding" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Offboarding</Link>
+                    {hasPage('/onboarding')  && <Link to="/onboarding"  className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Onboarding</Link>}
+                    {hasPage('/offboarding') && <Link to="/offboarding" className="nav-dropdown-item" onClick={() => setOpenDropdown(null)}>Offboarding</Link>}
                   </div>
                 )}
               </div>

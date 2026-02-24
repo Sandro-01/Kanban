@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import './UserManagement.css';
 
+const PAGE_OPTIONS = [
+  { path: '/board',       label: 'Board (Kanban)' },
+  { path: '/archivio',    label: 'Archivio' },
+  { path: '/sla',         label: 'SLA Metrics' },
+  { path: '/kb',          label: 'Knowledge Base' },
+  { path: '/onboarding',  label: 'Onboarding' },
+  { path: '/offboarding', label: 'Offboarding' },
+];
+
 interface User {
   id: string;
   email: string;
@@ -10,6 +19,7 @@ interface User {
   role: 'ADMIN' | 'USER';
   department: string | null;
   status: 'ACTIVE' | 'INACTIVE';
+  allowedPages: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +40,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
     lastName: '',
     role: 'USER' as 'ADMIN' | 'USER',
     department: '',
+    allowedPages: [] as string[],
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -59,6 +70,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
         lastName: user.lastName,
         role: user.role,
         department: user.department || '',
+        allowedPages: user.allowedPages || [],
       });
     } else {
       setEditingUser(null);
@@ -69,6 +81,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
         lastName: '',
         role: 'USER',
         department: '',
+        allowedPages: PAGE_OPTIONS.map(p => p.path), // default: all pages allowed
       });
     }
     setShowModal(true);
@@ -192,6 +205,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
               <th>Email</th>
               <th>Role</th>
               <th>Department</th>
+              <th>Pages</th>
               <th>Status</th>
               <th>Created on</th>
               <th>Actions</th>
@@ -212,6 +226,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                   </span>
                 </td>
                 <td>{getDepartmentBadge(u.department)}</td>
+                <td style={{ fontSize: 11, color: '#64748b' }}>
+                  {u.role === 'ADMIN'
+                    ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>All</span>
+                    : (u.allowedPages && u.allowedPages.length > 0)
+                      ? u.allowedPages.map(p => PAGE_OPTIONS.find(o => o.path === p)?.label || p).join(', ')
+                      : <span style={{ color: '#94a3b8' }}>All</span>
+                  }
+                </td>
                 <td>
                   <span className={`status-badge status-${u.status.toLowerCase()}`}>
                     {u.status}
@@ -344,6 +366,38 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
                   </select>
                 </div>
               </div>
+
+              {/* Page access — only relevant for USER role */}
+              {formData.role === 'USER' && (
+                <div className="form-group">
+                  <label className="label" style={{ marginBottom: 8 }}>
+                    Accesso pagine
+                    <span style={{ fontWeight: 400, marginLeft: 6, color: '#64748b', fontSize: 11 }}>
+                      (vuoto = accesso a tutte)
+                    </span>
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 12px', border: '2px solid #000', background: '#fafafa' }}>
+                    {PAGE_OPTIONS.map(opt => {
+                      const checked = formData.allowedPages.includes(opt.path);
+                      return (
+                        <label key={opt.path} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const next = checked
+                                ? formData.allowedPages.filter(p => p !== opt.path)
+                                : [...formData.allowedPages, opt.path];
+                              setFormData({ ...formData, allowedPages: next });
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="alert alert-danger">

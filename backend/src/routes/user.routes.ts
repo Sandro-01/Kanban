@@ -22,6 +22,7 @@ router.get(
           role: true,
           department: true,
           status: true,
+          allowedPages: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -59,6 +60,7 @@ router.get(
           role: true,
           department: true,
           status: true,
+          allowedPages: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -83,7 +85,7 @@ router.post(
   auditLog('CREATE_USER', 'User'),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { email, password, firstName, lastName, role, department } = req.body;
+      const { email, password, firstName, lastName, role, department, allowedPages } = req.body;
 
       // Validate required fields
       if (!email || !password || !firstName || !lastName) {
@@ -114,6 +116,7 @@ router.post(
           role: role || 'USER',
           department: department || null,
           status: 'ACTIVE',
+          allowedPages: Array.isArray(allowedPages) ? allowedPages : [],
         },
         select: {
           id: true,
@@ -123,6 +126,7 @@ router.post(
           role: true,
           department: true,
           status: true,
+          allowedPages: true,
           createdAt: true,
         },
       });
@@ -143,7 +147,7 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { email, password, firstName, lastName, role, department, status } = req.body;
+      const { email, password, firstName, lastName, role, department, status, allowedPages } = req.body;
 
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
@@ -174,6 +178,7 @@ router.put(
       if (role) updateData.role = role;
       if (department !== undefined) updateData.department = department || null;
       if (status) updateData.status = status;
+      if (Array.isArray(allowedPages)) updateData.allowedPages = allowedPages;
 
       // Hash password if provided
       if (password) {
@@ -192,6 +197,7 @@ router.put(
           role: true,
           department: true,
           status: true,
+          allowedPages: true,
           createdAt: true,
           updatedAt: true,
         },
