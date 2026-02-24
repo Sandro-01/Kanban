@@ -577,11 +577,20 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       return { userIds, emails };
     };
 
-    const { userIds: mentionedUserIds, emails: mentionedEmails } = parseMentions(comment);
+    const { userIds: mentionedUserIds, emails: rawMentionedEmails } = parseMentions(comment);
+
+    // If a mentioned email belongs to an internal user, treat it as a user assignment
+    const resolvedFromEmail = rawMentionedEmails
+      .map(email => allUsers.find(u => (u.email || '').toLowerCase() === email.toLowerCase()))
+      .filter(Boolean)
+      .map((u: any) => u.id as string);
+    const mentionedEmails = rawMentionedEmails.filter(
+      email => !allUsers.some(u => (u.email || '').toLowerCase() === email.toLowerCase())
+    );
 
     const hasComment = comment.replace(/<[^>]*>/g, '').trim();
     const hasFiles = files.length > 0;
-    const allAssignedUsers = Array.from(new Set([...selectedUsers, ...mentionedUserIds]));
+    const allAssignedUsers = Array.from(new Set([...selectedUsers, ...mentionedUserIds, ...resolvedFromEmail]));
     const usersChanged = JSON.stringify([...allAssignedUsers].sort()) !== JSON.stringify([...initialUsers].sort());
     const deptsChanged = JSON.stringify([...selectedDepartments].sort()) !== JSON.stringify([...initialDepartments].sort());
     const hasAssignments = usersChanged || deptsChanged;
@@ -1587,7 +1596,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     return full.includes(q) || spaced.includes(q) || (u.email || '').toLowerCase().includes(q);
                   })
                   .slice(0, 8);
-                const showEmail = isEmailQ;
+                // Show "add external" only if the typed email doesn't match any internal user
+                const emailMatchesInternalUser = isEmailQ && allUsers.some(u => (u.email || '').toLowerCase() === q);
+                const showEmail = isEmailQ && !emailMatchesInternalUser;
                 if (!matchedUsers.length && !showEmail) return null;
                 return (
                   <div style={{
