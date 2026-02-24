@@ -112,6 +112,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         allowedPages: true,
         avatarColor: true,
         avatarUrl: true,
+        avatarConfig: true,
         createdAt: true
       } as any
     });

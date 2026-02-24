@@ -68,6 +68,7 @@ const USER_SELECT = {
   allowedPages: true,
   avatarColor: true,
   avatarUrl: true,
+  avatarConfig: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -230,6 +231,54 @@ router.put(
         select: USER_SELECT,
       });
 
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// ── PUT /users/:id/avatar-config  (own user or Admin) ────────────────────────
+router.put(
+  '/:id/avatar-config',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
+      const { config } = req.body;
+      if (!config || typeof config !== 'object') {
+        return res.status(400).json({ error: 'Configurazione avatar non valida' });
+      }
+      const user = await userRepo.update({
+        where: { id },
+        data: { avatarConfig: JSON.stringify(config) },
+        select: USER_SELECT,
+      });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// ── DELETE /users/:id/avatar-config  (own user or Admin) ─────────────────────
+router.delete(
+  '/:id/avatar-config',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
+      const user = await userRepo.update({
+        where: { id },
+        data: { avatarConfig: null },
+        select: USER_SELECT,
+      });
       res.json(user);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

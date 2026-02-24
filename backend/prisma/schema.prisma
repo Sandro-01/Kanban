@@ -23,6 +23,7 @@ model User {
   allowedPages  String[] @default([])
   avatarColor   String?  // Colore sfondo avatar (hex), assegnato alla creazione
   avatarUrl     String?  // Percorso relativo foto profilo, es. "avatars/userid-123.jpg"
+  avatarConfig  String?  // JSON config avatar cartoon (react-nice-avatar)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

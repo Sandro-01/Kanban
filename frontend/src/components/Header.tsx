@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications as notifApi, users as usersApi } from '../services/api';
 import UserAvatar from './UserAvatar';
+import AvatarCreator from './AvatarCreator';
 import './Header.css';
 
 // Inline SVG icons — thin stroke, Off-White minimal style
@@ -58,16 +59,60 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
   const [notifList, setNotifList] = useState<any[]>([]);
   const [showPanel, setShowPanel] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showAvatarCreator, setShowAvatarCreator] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Close avatar menu on outside click
+  useEffect(() => {
+    if (!showAvatarMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setShowAvatarMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAvatarMenu]);
+
   const handleAvatarUpload = async (file: File) => {
+    setShowAvatarMenu(false);
     try {
       const res = await usersApi.uploadAvatar(user.id, file);
-      onUserUpdate?.({ ...user, avatarUrl: res.data.avatarUrl, avatarColor: res.data.avatarColor });
+      onUserUpdate?.({ ...user, avatarUrl: res.data.avatarUrl, avatarConfig: null });
     } catch (err) {
       console.error('Avatar upload failed:', err);
+    }
+  };
+
+  const handleAvatarSaveConfig = async (config: object) => {
+    try {
+      const res = await usersApi.saveAvatarConfig(user.id, config);
+      onUserUpdate?.({ ...user, avatarConfig: res.data.avatarConfig, avatarUrl: null });
+      setShowAvatarCreator(false);
+    } catch (err) {
+      console.error('Avatar config save failed:', err);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setShowAvatarCreator(false);
+    setShowAvatarMenu(false);
+    try {
+      if (user.avatarUrl) {
+        const res = await usersApi.removeAvatar(user.id);
+        onUserUpdate?.({ ...user, avatarUrl: res.data.avatarUrl });
+      }
+      if (user.avatarConfig) {
+        const res = await usersApi.removeAvatarConfig(user.id);
+        onUserUpdate?.({ ...user, avatarConfig: res.data.avatarConfig });
+      }
+    } catch (err) {
+      console.error('Avatar remove failed:', err);
     }
   };
 
@@ -265,12 +310,47 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
             )}
           </div>
 
-          <UserAvatar
-            user={user}
-            className="header-avatar"
-            editable
-            onUpload={handleAvatarUpload}
-          />
+          {/* ── Avatar + dropdown menu ── */}
+          <div ref={avatarMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <UserAvatar
+              user={user}
+              className="header-avatar"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setShowAvatarMenu(prev => !prev)}
+            />
+            {showAvatarMenu && (
+              <div className="header-avatar-menu">
+                <label className="header-avatar-menu-item">
+                  📷 Carica foto
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      if (e.target.files?.[0]) handleAvatarUpload(e.target.files[0]);
+                      e.currentTarget.value = '';
+                    }}
+                  />
+                </label>
+                <button
+                  className="header-avatar-menu-item"
+                  onClick={() => { setShowAvatarMenu(false); setShowAvatarCreator(true); }}
+                >
+                  🎨 Crea avatar
+                </button>
+                {(user.avatarUrl || user.avatarConfig) && (
+                  <button
+                    className="header-avatar-menu-item header-avatar-menu-item--danger"
+                    onClick={handleAvatarRemove}
+                  >
+                    🗑 Rimuovi
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           <span className="user-badge">
             {user.firstName} {user.lastName}
             <span className="role-badge">
@@ -280,6 +360,16 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
           <button onClick={onLogout} className="btn btn-secondary">
             Logout
           </button>
+
+          {/* ── Avatar Creator modal ── */}
+          {showAvatarCreator && (
+            <AvatarCreator
+              initialConfig={user.avatarConfig}
+              onSave={handleAvatarSaveConfig}
+              onRemove={handleAvatarRemove}
+              onClose={() => setShowAvatarCreator(false)}
+            />
+          )}
         </div>
       </div>
     </header>

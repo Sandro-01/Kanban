@@ -120,6 +120,9 @@ export const users = {
     return api.put(`/users/${id}/avatar`, formData);
   },
   removeAvatar: (id: string) => api.delete(`/users/${id}/avatar`),
+  saveAvatarConfig: (id: string, config: object) =>
+    api.put(`/users/${id}/avatar-config`, { config }),
+  removeAvatarConfig: (id: string) => api.delete(`/users/${id}/avatar-config`),
 };
 
 // Email Config (Admin)

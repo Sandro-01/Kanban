@@ -133,6 +133,41 @@
   transform: scale(1.08);
 }
 
+/* ── Avatar dropdown menu ────────────────────────────────────────────────── */
+.header-avatar-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0 #000000;
+  min-width: 160px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-avatar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0A0A0A;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #F0EBE4;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+.header-avatar-menu-item:last-child { border-bottom: none; }
+.header-avatar-menu-item:hover { background: #FFE600; }
+.header-avatar-menu-item--danger:hover { background: #fee2e2; color: #ef4444; }
+
 .user-badge {
   display: flex;
   align-items: center;

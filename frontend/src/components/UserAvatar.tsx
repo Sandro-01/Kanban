@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
+import ReactNiceAvatar from 'react-nice-avatar';
 import { UPLOADS_URL } from '../services/api';
 
-// Palette identica a quella del backend — stessa funzione hash → stesso colore
+// Palette identica al backend — stesso hash → stesso colore
 const AVATAR_PALETTE = [
   '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
   '#10b981', '#06b6d4', '#eab308', '#84cc16', '#f43f5e',
@@ -19,15 +20,18 @@ export interface AvatarUser {
   email?: string;
   avatarColor?: string | null;
   avatarUrl?: string | null;
+  avatarConfig?: string | null;   // JSON string from react-nice-avatar
 }
 
 interface UserAvatarProps {
   user: AvatarUser;
-  /** CSS class applied to the root element (handles size/font/display) */
+  /** CSS class applied to the root element (handles size/font/display via CSS) */
   className?: string;
-  /** Extra inline styles (merged on top of className rules) */
+  /** Extra inline styles merged on top */
   style?: React.CSSProperties;
-  /** If true, a file-picker opens on click and calls onUpload */
+  /** Generic click handler (used by Header dropdown) */
+  onClick?: () => void;
+  /** If true, a file-picker opens on click (for uploading a real photo) */
   editable?: boolean;
   onUpload?: (file: File) => void;
 }
@@ -36,6 +40,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   user,
   className,
   style,
+  onClick,
   editable,
   onUpload,
 }) => {
@@ -52,7 +57,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const bg = user.avatarColor || getAvatarColor(nameForColor);
 
-  const handleClick = editable ? () => inputRef.current?.click() : undefined;
+  const handleClick = onClick || (editable ? () => inputRef.current?.click() : undefined);
 
   const fileInput = editable ? (
     <input
@@ -67,6 +72,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     />
   ) : null;
 
+  // ── Priority 1: real photo ─────────────────────────────────────────────
   if (user.avatarUrl) {
     return (
       <div
@@ -85,6 +91,25 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     );
   }
 
+  // ── Priority 2: cartoon avatar config ─────────────────────────────────
+  if (user.avatarConfig) {
+    let config: any = {};
+    try { config = JSON.parse(user.avatarConfig); } catch { /* ignore */ }
+    return (
+      <div
+        className={className}
+        style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
+        onClick={handleClick}
+        title={editable ? 'Clicca per cambiare foto' : undefined}
+      >
+        {/* ReactNiceAvatar fills the container; we set width/height to 100% */}
+        <ReactNiceAvatar style={{ width: '100%', height: '100%' }} shape="circle" {...config} />
+        {fileInput}
+      </div>
+    );
+  }
+
+  // ── Priority 3: coloured initials ─────────────────────────────────────
   return (
     <div
       className={className}
