@@ -71,12 +71,23 @@ router.post('/suggest-response', authenticate, async (req: AuthRequest, res) => 
       kbArticles = kbResults;
     } catch { /* KB non ancora disponibile */ }
 
-    const response = await suggestResponse(
+    const rawResponse = await suggestResponse(
       tickets[0].title,
       tickets[0].description,
       recentComments,
       kbArticles.length > 0 ? kbArticles : undefined
     );
+
+    // Converte plain text con \n\n in HTML <p> per il RichTextEditor
+    const response = rawResponse
+      ? rawResponse
+          .split(/\n\n+/)
+          .map(para => {
+            const inner = para.trim().replace(/\n/g, '<br>');
+            return `<p>${inner}</p>`;
+          })
+          .join('')
+      : null;
 
     res.json({ response });
   } catch (error: any) {

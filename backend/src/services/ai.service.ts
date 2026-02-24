@@ -153,6 +153,28 @@ Rispondi SOLO in formato JSON (nessun altro testo):
 }
 
 /**
+ * Rilevamento lingua semplice basato su parole chiave frequenti.
+ * Ritorna 'en', 'de', o 'it'.
+ */
+function detectLanguage(text: string): 'it' | 'en' | 'de' {
+  const lower = text.toLowerCase();
+  const enWords = ['the', 'is', 'are', 'have', 'has', 'please', 'thank', 'can', 'will', 'would', 'this', 'that', 'with', 'you', 'your', 'not', 'we', 'our', 'be', 'do'];
+  const deWords = ['ich', 'sie', 'haben', 'sind', 'und', 'das', 'der', 'die', 'mit', 'bitte', 'danke', 'nicht', 'wird', 'für', 'bei', 'auch', 'ein', 'eine', 'wir', 'können'];
+  const enCount = enWords.filter(w => new RegExp(`\\b${w}\\b`).test(lower)).length;
+  const deCount = deWords.filter(w => new RegExp(`\\b${w}\\b`).test(lower)).length;
+  if (deCount > enCount && deCount >= 2) return 'de';
+  if (enCount >= 2) return 'en';
+  return 'it';
+}
+
+const LANG_NAMES: Record<string, string> = { it: 'ITALIANO', en: 'INGLESE', de: 'TEDESCO' };
+const LANG_CLOSING: Record<string, string> = {
+  it: 'Rimango a disposizione per qualsiasi ulteriore informazione.',
+  en: 'Please do not hesitate to contact us if you need further assistance.',
+  de: 'Für weitere Fragen stehen wir Ihnen gerne zur Verfügung.',
+};
+
+/**
  * Suggerisci una risposta per un commento/email su un ticket
  */
 export async function suggestResponse(
@@ -161,6 +183,14 @@ export async function suggestResponse(
   recentComments: { author: string; content: string; isEmail: boolean }[],
   kbArticles?: { title: string; content: string }[]
 ): Promise<string | null> {
+  // Rileva lingua dall'ultimo messaggio (preferendo email esterne)
+  const lastEmail   = [...recentComments].reverse().find(c => c.isEmail);
+  const lastAny     = recentComments[recentComments.length - 1];
+  const langSource  = lastEmail || lastAny;
+  const lang        = langSource ? detectLanguage(langSource.content) : 'it';
+  const langName    = LANG_NAMES[lang];
+  const closing     = LANG_CLOSING[lang];
+
   const commentsText = recentComments
     .slice(-5)
     .map(c => `[${c.isEmail ? 'EMAIL' : 'COMMENTO'} da ${c.author}]: ${c.content}`)
@@ -172,16 +202,15 @@ export async function suggestResponse(
 
   const systemPrompt = `Sei un operatore IT di supporto per un'azienda di packaging.
 
-LINGUA: Rileva la lingua usata nell'ultimo messaggio o nella conversazione e rispondi NELLA STESSA LINGUA.
-Lingue supportate: italiano, inglese, tedesco. Se la lingua non è chiara, usa l'italiano.
+LINGUA OBBLIGATORIA: Devi rispondere ESCLUSIVAMENTE in ${langName}. Non usare nessun'altra lingua. Ignora la lingua del titolo o della descrizione del ticket — conta solo la lingua rilevata nei messaggi recenti.
 
-FORMATTAZIONE — segui queste regole rigorosamente:
-- Dividi il testo in paragrafi separati da una riga vuota (non scrivere tutto di seguito).
+FORMATTAZIONE HTML — il testo verrà inserito in un editor HTML, quindi:
+- Scrivi ogni paragrafo separato da una riga vuota (il sistema convertirà in <p>).
 - Inizia con un breve saluto/apertura (1 riga).
-- Poi uno o più paragrafi distinti per il contenuto della risposta.
-- Chiudi con un paragrafo di chiusura cortese (es. "Rimango a disposizione per ulteriori informazioni.").
-- Usa elenchi puntati (con "-") se ci sono più passi o informazioni elencabili.
-- Non usare markdown pesante (niente **, #, etc.), solo testo semplice con righe vuote tra i paragrafi.
+- Poi uno o più paragrafi per il contenuto della risposta (un'idea per paragrafo).
+- Chiudi con: "${closing}"
+- Se ci sono passi o elenchi, usa trattini ("- elemento") uno per riga.
+- Nessun markdown (**bold**, # titoli), solo testo semplice con righe vuote tra paragrafi.
 
 Se ci sono articoli KB pertinenti, usali come riferimento.
 NON inventare soluzioni tecniche specifiche se non hai informazioni sufficienti.
@@ -189,11 +218,11 @@ Scrivi solo il testo della risposta, senza virgolette o prefissi.`;
 
   const userMsg = `Ticket: ${ticketTitle}
 Descrizione: ${ticketDescription}
-${commentsText ? `\nConversazione recente:\n${commentsText}` : ''}${kbContext}
+${commentsText ? `\nConversazione recente (l'ultimo messaggio determina la lingua di risposta):\n${commentsText}` : ''}${kbContext}
 
-Scrivi una risposta appropriata:`;
+Scrivi una risposta in ${langName}:`;
 
-  return callAI(systemPrompt, userMsg, 512);
+  return callAI(systemPrompt, userMsg, 600);
 }
 
 /**
