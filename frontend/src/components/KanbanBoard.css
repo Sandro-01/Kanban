@@ -799,7 +799,7 @@
 }
 
 .timeline-list {
-  max-height: 400px;
+  max-height: 700px;
   overflow-y: auto;
   margin: 15px 0;
   padding: 0;
