@@ -360,7 +360,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   // Auto-scroll conversation to the latest message whenever the ticket opens
   // or a new comment/attachment is added (after send/refresh)
   useEffect(() => {
-    convEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    convEndRef.current?.scrollIntoView();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket.id, (ticket.comments || []).length, (ticket.attachments || []).length]);
 
