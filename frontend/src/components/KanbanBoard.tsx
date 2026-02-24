@@ -682,6 +682,23 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const getTimeline = () => {
     const items: any[] = [];
 
+    // For email tickets, add the original email as the oldest conversation item
+    if (isEmailTicket && hasSubstantialDescription(ticket.description || '')) {
+      const standaloneFiles = ticket.attachments?.filter((att: any) => !att.commentId) || [];
+      items.push({
+        type: 'comment',
+        id: 'original-email-description',
+        date: new Date(ticket.createdAt),
+        fromEmail: emailSender,
+        content: ticket.description || '',
+        isEmailReply: true,
+        isOriginalEmail: true,
+        isOutgoingEmail: false,
+        toEmails: [],
+        attachments: standaloneFiles,
+      });
+    }
+
     // Add comments with their attachments
     if (ticket.comments) {
       ticket.comments.forEach((c: any) => {
@@ -700,9 +717,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       });
     }
 
-    // Add only standalone files (files not linked to any comment)
-    // Group them into a single timeline entry to avoid clutter
-    if (ticket.attachments) {
+    // Add standalone files only for non-email tickets
+    if (!isEmailTicket && ticket.attachments) {
       const standaloneFiles = ticket.attachments.filter((att: any) => !att.commentId);
       if (standaloneFiles.length > 0) {
         const earliest = standaloneFiles.reduce((min: any, att: any) =>
@@ -812,43 +828,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
         <div className="ticket-modal-content">
           <div className="ticket-info">
-            {isEmailTicket ? (
-              <div className="email-description-container">
-                <div className="email-description-header">
-                  <div className="email-description-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
-                  </div>
-                  <div className="email-description-meta">
-                    <span className="email-description-label">Received via email</span>
-                    {emailSender && (
-                      <span className="email-description-sender">Da: {emailSender}</span>
-                    )}
-                  </div>
-                </div>
-                {hasSubstantialDescription(ticket.description || '') && (
-                  isHtmlDescription(ticket.description || '') ? (
-                    <iframe
-                      className="email-description-iframe"
-                      srcDoc={buildEmailSrcdoc(ticket.description || '')}
-                      sandbox="allow-same-origin"
-                      onLoad={handleIframeLoad}
-                      title="Email content"
-                    />
-                  ) : (
-                    <div
-                      className="email-description-text"
-                      dangerouslySetInnerHTML={{
-                        __html: renderDescriptionMarkdown(
-                          (ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').trim()
-                        )
-                      }}
-                    />
-                  )
-                )}
-              </div>
-            ) : (
+            {!isEmailTicket && (
               <>
                 <p><strong>Description:</strong></p>
                 <div
@@ -1218,14 +1198,25 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               </button>
                             )}
                           </div>
-                          <div
-                            className="timeline-text"
-                            dangerouslySetInnerHTML={{
-                              __html: item.isEmailReply
-                                ? cleanEmailReplyContent(item.content, item.fromEmail)
-                                : item.content
-                            }}
-                          />
+                          {item.isOriginalEmail && isHtmlDescription(item.content) ? (
+                            <iframe
+                              className="email-description-iframe"
+                              srcDoc={buildEmailSrcdoc(item.content)}
+                              sandbox="allow-same-origin"
+                              onLoad={handleIframeLoad}
+                              title="Email content"
+                              style={{ width: '100%', border: 'none', minHeight: '100px', display: 'block' }}
+                            />
+                          ) : (
+                            <div
+                              className="timeline-text"
+                              dangerouslySetInnerHTML={{
+                                __html: item.isEmailReply
+                                  ? cleanEmailReplyContent(item.content, item.fromEmail)
+                                  : item.content
+                              }}
+                            />
+                          )}
                           {/* Show attachments linked to this comment */}
                           {item.attachments && item.attachments.length > 0 && (
                             <div className="comment-attachments">
