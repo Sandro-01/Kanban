@@ -472,6 +472,15 @@
   line-height: 1.5;
 }
 
+.comment-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #C8C0B8;
+}
+
 /* Attachments */
 .detail-attachments {
   display: flex;

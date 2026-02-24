@@ -359,38 +359,63 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                 <div className="detail-section">
                   <label>Comments ({selectedTicket.comments.length})</label>
                   <div className="detail-comments">
-                    {selectedTicket.comments.map((c: any) => (
-                      <div className="detail-comment" key={c.id}>
-                        <div className="comment-meta">
-                          <strong>{c.user?.firstName} {c.user?.lastName}</strong>
-                          <span>{formatDateTime(c.createdAt)}</span>
+                    {selectedTicket.comments.map((c: any) => {
+                      const commentAttachments = (selectedTicket.attachments || []).filter(
+                        (a: any) => a.commentId === c.id
+                      );
+                      return (
+                        <div className="detail-comment" key={c.id}>
+                          <div className="comment-meta">
+                            <strong>{c.user?.firstName} {c.user?.lastName}</strong>
+                            <span>{formatDateTime(c.createdAt)}</span>
+                          </div>
+                          <p>{c.content}</p>
+                          {commentAttachments.length > 0 && (
+                            <div className="comment-attachments">
+                              {commentAttachments.map((a: any) => (
+                                <a
+                                  key={a.id}
+                                  href={`${UPLOADS_URL}/${a.filePath}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="attachment-link"
+                                >
+                                  📎 {a.fileName}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <p>{c.content}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Attachments */}
-              {selectedTicket.attachments?.length > 0 && (
-                <div className="detail-section">
-                  <label>Attachments ({selectedTicket.attachments.length})</label>
-                  <div className="detail-attachments">
-                    {selectedTicket.attachments.map((a: any) => (
-                      <a
-                        key={a.id}
-                        href={`${UPLOADS_URL}/${a.filePath}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="attachment-link"
-                      >
-                        📎 {a.fileName}
-                      </a>
-                    ))}
+              {/* Standalone attachments (not linked to any comment) */}
+              {(() => {
+                const standalone = (selectedTicket.attachments || []).filter(
+                  (a: any) => !a.commentId
+                );
+                return standalone.length > 0 ? (
+                  <div className="detail-section">
+                    <label>Attachments ({standalone.length})</label>
+                    <div className="detail-attachments">
+                      {standalone.map((a: any) => (
+                        <a
+                          key={a.id}
+                          href={`${UPLOADS_URL}/${a.filePath}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="attachment-link"
+                        >
+                          📎 {a.fileName}
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
 
               {/* History */}
               <div className="detail-section">
