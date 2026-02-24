@@ -1019,6 +1019,25 @@
   display: inline-block;
 }
 
+/* Single-file body padding */
+.conv-msg-file-preview {
+  padding: 10px 12px;
+}
+.conv-msg-file-preview .conv-att-img-wrap {
+  display: block;
+}
+.conv-msg-file-preview .conv-img-thumb {
+  max-width: 100%;
+  max-height: 280px;
+  display: block;
+}
+
+/* 3-letter file-type avatars need smaller font */
+.conv-msg--files .conv-msg-avatar {
+  font-size: 9px;
+  letter-spacing: -0.03em;
+}
+
 /* ── Meta row (top of each card) ─────────────────────────────────────────── */
 .conv-meta {
   display: flex;

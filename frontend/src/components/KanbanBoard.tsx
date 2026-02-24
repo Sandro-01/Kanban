@@ -776,21 +776,18 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       });
     }
 
-    // Add only standalone files (files not linked to any comment)
-    // Group them into a single timeline entry to avoid clutter
+    // Add standalone files — one timeline entry per file (not grouped)
     if (ticket.attachments) {
       const standaloneFiles = ticket.attachments.filter((att: any) => !att.commentId);
-      if (standaloneFiles.length > 0) {
-        const earliest = standaloneFiles.reduce((min: any, att: any) =>
-          new Date(att.createdAt || 0) < new Date(min.createdAt || 0) ? att : min, standaloneFiles[0]);
+      standaloneFiles.forEach((att: any) => {
         items.push({
-          type: 'file-group',
-          id: 'standalone-files',
-          date: new Date(earliest.createdAt || Date.now()),
-          user: earliest.uploadedBy,
-          files: standaloneFiles,
+          type: 'file',
+          id: att.id,
+          date: new Date(att.createdAt || Date.now()),
+          user: att.uploadedBy,
+          file: att,
         });
-      }
+      });
     }
 
     // Sort chronologically oldest → newest (Jira/Linear style)
@@ -1242,7 +1239,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             <div className="conv-list">
               {timeline.length > 0 ? timeline.map((item) => {
                 const isNdr    = item.isEmailReply && isNdrContent(item.content);
-                const cardType: string = item.type === 'file-group' ? 'files'
+                const cardType: string = item.type === 'file' ? 'files'
                   : item.isOutgoingEmail ? 'email-out'
                   : isNdr              ? 'email-ndr'
                   : item.isEmailReply  ? 'email-in'
@@ -1252,23 +1249,39 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim()
                   : '';
 
-                // Primary label: for incoming/NDR emails show the from address; otherwise show author name
+                // File type helper (for standalone file cards)
+                const getFileTypeInfo = (file: any) => {
+                  const mime: string = file?.mimeType || '';
+                  const name: string = file?.fileName || '';
+                  if (mime.startsWith('image/'))                              return { label: 'IMG', bg: '#0ea5e9' };
+                  if (mime.includes('pdf')  || /\.pdf$/i.test(name))          return { label: 'PDF', bg: '#ef4444' };
+                  if (mime.includes('word') || /\.(doc|docx)$/i.test(name))   return { label: 'DOC', bg: '#2b579a' };
+                  if (mime.includes('excel') || mime.includes('spreadsheet') || /\.(xls|xlsx)$/i.test(name))
+                                                                               return { label: 'XLS', bg: '#217346' };
+                  if (mime.includes('presentation') || /\.(ppt|pptx)$/i.test(name)) return { label: 'PPT', bg: '#c43e1c' };
+                  const ext = name.split('.').pop()?.toUpperCase()?.slice(0, 3) || 'FILE';
+                  return { label: ext, bg: '#8b5cf6' };
+                };
+
+                // Primary label: for incoming/NDR emails show the from address; for files show filename
                 const primaryLabel = (cardType === 'email-in' || cardType === 'email-ndr')
                   ? (item.fromEmail || 'Email')
                   : cardType === 'files'
-                  ? 'Allegati'
+                  ? (item.file?.fileName || 'Allegato')
                   : authorName || 'Sistema';
 
-                // Sub-line: recipient for emails, department for internal notes
+                // Sub-line: recipient for emails, file size for files, department for internal notes
                 const subLabel = cardType === 'email-in'
                   ? `A: ${ticket.externalContacts?.[0]?.email || 'support'}`
                   : cardType === 'email-out'
                   ? `A: ${(item.toEmails || []).join(', ')}`
                   : cardType === 'email-ndr'
                   ? 'Delivery failure notice'
+                  : cardType === 'files'
+                  ? (item.file?.fileSize ? `${(item.file.fileSize / 1024).toFixed(1)} KB` : '')
                   : item.user?.department || '';
 
-                // Initials: handle email addresses (john.doe@acme.com → JD)
+                // Initials / avatar
                 const computeInitials = (label: string) => {
                   if (label.includes('@')) {
                     const local = label.split('@')[0];
@@ -1277,8 +1290,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   }
                   return label.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
                 };
-                const initials = computeInitials(primaryLabel);
-                const avatarBg = getAvatarColor(primaryLabel);
+                const fileTypeInfo = cardType === 'files' ? getFileTypeInfo(item.file) : null;
+                const initials = fileTypeInfo ? fileTypeInfo.label : computeInitials(primaryLabel);
+                const avatarBg  = fileTypeInfo ? fileTypeInfo.bg  : getAvatarColor(primaryLabel);
 
                 // Separate real images from signature images (only filter for emails)
                 const atts: any[] = item.attachments || [];
@@ -1340,24 +1354,24 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         />
                       )}
 
-                      {/* File-group body */}
-                      {item.type === 'file-group' && (
-                        <div className="conv-msg-atts">
-                          {item.files.map((f: any) => (
-                            f.mimeType?.startsWith('image/') ? (
-                              <div key={f.id} className="conv-att-img-wrap">
-                                <a href={`${UPLOADS_URL}/${f.filePath}`} target="_blank" rel="noopener noreferrer">
-                                  <img src={`${UPLOADS_URL}/${f.filePath}`} alt={f.fileName} className="conv-img-thumb" />
-                                </a>
-                                {user.role === 'ADMIN' && (
-                                  <button className="conv-img-del" onClick={() => handleDeleteAttachment(f.id)}>✕</button>
-                                )}
-                              </div>
-                            ) : (
-                              <ConvFileChip key={f.id} att={f} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(f.id) : undefined} />
-                            )
-                          ))}
-                        </div>
+                      {/* Single file body */}
+                      {item.type === 'file' && (
+                        item.file?.mimeType?.startsWith('image/') ? (
+                          <div className="conv-msg-file-preview">
+                            <div className="conv-att-img-wrap">
+                              <a href={`${UPLOADS_URL}/${item.file.filePath}`} target="_blank" rel="noopener noreferrer">
+                                <img src={`${UPLOADS_URL}/${item.file.filePath}`} alt={item.file.fileName} className="conv-img-thumb" />
+                              </a>
+                              {user.role === 'ADMIN' && (
+                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(item.file.id)} title="Elimina">✕</button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="conv-msg-file-preview">
+                            <ConvFileChip att={item.file} onDelete={user.role === 'ADMIN' ? () => handleDeleteAttachment(item.file.id) : undefined} />
+                          </div>
+                        )
                       )}
 
                       {/* Comment attachments */}
