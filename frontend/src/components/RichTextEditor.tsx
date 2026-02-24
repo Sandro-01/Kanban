@@ -7,6 +7,8 @@ interface RichTextEditorProps {
   minHeight?: number;
   /** Called when images are pasted/dropped from clipboard */
   onPasteFiles?: (files: File[]) => void;
+  /** Remove outer border/radius (used when the parent provides its own container styling) */
+  borderless?: boolean;
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -15,6 +17,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = 'Scrivi qui...',
   minHeight = 120,
   onPasteFiles,
+  borderless = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
@@ -104,7 +107,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   return (
-    <div style={{ border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+    <div style={borderless ? { overflow: 'hidden', background: '#fff' } : { border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
       {/* Toolbar */}
       <div style={{
         display: 'flex',

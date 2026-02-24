@@ -1358,79 +1358,69 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
             {/* Unified form for comment and file */}
             <div className="unified-form">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>Add Comment and/or File (cannot be deleted after sending):</strong>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await aiApi.suggestResponse(ticket.id);
-                      if (res.data.response) setComment(res.data.response);
-                      else alert('AI not available or not configured');
-                    } catch { alert('AI error'); }
-                  }}
-                  style={{
-                    background: '#F5F0EB', border: '2px solid #000000', borderRadius: '0',
-                    padding: '4px 10px', fontSize: '11px', cursor: 'pointer', color: '#000000',
-                    fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
-                  }}
-                  title="Generate AI-suggested response"
-                >
-                  AI Suggest
-                </button>
-              </div>
               <RichTextEditor
                 value={comment}
                 onChange={setComment}
-                placeholder="Write a comment (optional)... You can paste screenshots with Ctrl+V"
+                placeholder="Write a comment... (Ctrl+V to paste images)"
                 minHeight={80}
+                borderless
                 onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
               />
-              <div className="file-input-wrapper">
-                <input
-                  type="file"
-                  id="file-upload"
-                  multiple
-                  onChange={(e) => {
-                    const selected = e.target.files ? Array.from(e.target.files) : [];
-                    setFiles(prev => [...prev, ...selected]);
-                    e.target.value = '';
-                  }}
-                />
-                <label htmlFor="file-upload" className="file-label">
-                  {files.length > 0
-                    ? `📎 ${files.length} file(s) selected`
-                    : '📎 Attach file (optional)'}
-                </label>
-                {files.length > 0 && (
-                  <div className="selected-files-list">
-                    {files.map((f, i) => (
-                      <span key={i} className="selected-file-tag">
-                        {f.name}
-                        <button
-                          className="clear-file-btn"
-                          onClick={() => {
-                            setFiles(prev => prev.filter((_, idx) => idx !== i));
-                          }}
-                          type="button"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+              <div className="composer-bottom-bar">
+                <div className="composer-left">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const selected = e.target.files ? Array.from(e.target.files) : [];
+                      setFiles(prev => [...prev, ...selected]);
+                      e.target.value = '';
+                    }}
+                  />
+                  <label htmlFor="file-upload" className="composer-icon-btn" title="Attach file">
+                    📎
+                  </label>
+                  {files.length > 0 && (
+                    <div className="selected-files-list">
+                      {files.map((f, i) => (
+                        <span key={i} className="selected-file-tag">
+                          {f.name}
+                          <button
+                            className="clear-file-btn"
+                            onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            type="button"
+                          >✕</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="composer-right">
+                  <button
+                    type="button"
+                    className="composer-ai-btn"
+                    onClick={async () => {
+                      try {
+                        const res = await aiApi.suggestResponse(ticket.id);
+                        if (res.data.response) setComment(res.data.response);
+                        else alert('AI not available or not configured');
+                      } catch { alert('AI error'); }
+                    }}
+                    title="Generate AI-suggested response"
+                  >
+                    AI Suggest
+                  </button>
+                  <button
+                    className="composer-send-btn"
+                    onClick={handleSubmit}
+                    disabled={!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
+                  >
+                    {(selectedUsers.length > 0 || selectedDepartments.length > 0) ? 'Send ↗ (with assignment)' : 'Send ↗'}
+                  </button>
+                </div>
               </div>
-              <button
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
-                style={{
-                  opacity: (!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
-                }}
-              >
-                Send {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(with assignment)'}
-              </button>
             </div>
           </div>
         </div>
