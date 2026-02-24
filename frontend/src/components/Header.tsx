@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { notifications as notifApi } from '../services/api';
+import { notifications as notifApi, users as usersApi } from '../services/api';
+import UserAvatar from './UserAvatar';
 import './Header.css';
 
 // Inline SVG icons — thin stroke, Off-White minimal style
@@ -49,9 +50,10 @@ const IconAI = () => (
 interface HeaderProps {
   user: any;
   onLogout: () => void;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifList, setNotifList] = useState<any[]>([]);
   const [showPanel, setShowPanel] = useState(false);
@@ -59,6 +61,15 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      const res = await usersApi.uploadAvatar(user.id, file);
+      onUserUpdate?.({ ...user, avatarUrl: res.data.avatarUrl, avatarColor: res.data.avatarColor });
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    }
+  };
 
   const loadCount = useCallback(async () => {
     try {
@@ -254,6 +265,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             )}
           </div>
 
+          <UserAvatar
+            user={user}
+            className="header-avatar"
+            editable
+            onUpload={handleAvatarUpload}
+          />
           <span className="user-badge">
             {user.firstName} {user.lastName}
             <span className="role-badge">

@@ -21,6 +21,8 @@ model User {
   department    String?
   status        UserStatus @default(ACTIVE)
   allowedPages  String[] @default([])
+  avatarColor   String?  // Colore sfondo avatar (hex), assegnato alla creazione
+  avatarUrl     String?  // Percorso relativo foto profilo, es. "avatars/userid-123.jpg"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

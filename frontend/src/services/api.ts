@@ -114,6 +114,12 @@ export const sla = {
 // Users
 export const users = {
   getAll: () => api.get('/users'),
+  uploadAvatar: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.put(`/users/${id}/avatar`, formData);
+  },
+  removeAvatar: (id: string) => api.delete(`/users/${id}/avatar`),
 };
 
 // Email Config (Admin)

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor, { RichTextEditorHandle } from './RichTextEditor';
+import UserAvatar, { getAvatarColor } from './UserAvatar';
 import './KanbanBoard.css';
 
 const EMOJI_LIST = [
@@ -11,12 +12,6 @@ const EMOJI_LIST = [
   '🗓️','🚀','⏰','🔍','💬','📌','🏷️','🗂️','✏️','🖊️',
 ];
 
-const AVATAR_PALETTE = ['#3b82f6','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#64748b'];
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
-}
 
 function isSignatureImage(att: any): boolean {
   const name: string = att.fileName || '';
@@ -864,9 +859,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
               <div className="assignments-chips">
                 {ticket.assignments.map((assignment: any) => (
                   <div className="assignment-chip" key={assignment.id}>
-                    <span className="avatar user-avatar">
-                      {getInitials(assignment.user.firstName, assignment.user.lastName)}
-                    </span>
+                    <UserAvatar user={assignment.user} className="avatar" />
                     <span className="chip-info">
                       <span className="chip-name">{assignment.user.firstName} {assignment.user.lastName}</span>
                       {assignment.user.department && <span className="chip-dept">{assignment.user.department}</span>}
@@ -950,9 +943,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                               className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
                               onClick={() => !isDisabled && handleUserSelection(u.id)}
                             >
-                              <div className="avatar-sm" style={{ background: isSelected ? '#000000' : '#D0C8BF' }}>
-                                {getInitials(u.firstName, u.lastName)}
-                              </div>
+                              <UserAvatar user={u} className="avatar-sm" />
                               <div className="item-info">
                                 <div className="item-name">{u.firstName} {u.lastName}</div>
                                 {u.department && <div className="item-dept">{u.department}</div>}
@@ -1085,7 +1076,9 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
               };
               const fileTypeInfo = cardType === 'files' ? getFileTypeInfo(item.file) : null;
               const initials = computeInitials(primaryLabel);
-              const avatarBg  = fileTypeInfo ? fileTypeInfo.bg : getAvatarColor(primaryLabel);
+              const avatarBg  = fileTypeInfo
+                ? fileTypeInfo.bg
+                : (item.user?.avatarColor || getAvatarColor(primaryLabel));
 
               const atts: any[] = item.attachments || [];
               const isEmailItem = item.isEmailReply || item.isOutgoingEmail;
@@ -1108,9 +1101,15 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
 
               return (
                 <div key={`${item.type}-${item.id}`} className={`conv-msg conv-msg--${cardType}`}>
-                  <div className="conv-msg-avatar" style={{ background: avatarBg }}>
-                    {initials}
-                  </div>
+                  {item.user?.avatarUrl ? (
+                    <div className="conv-msg-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                      <img src={`${UPLOADS_URL}/${item.user.avatarUrl}`} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  ) : (
+                    <div className="conv-msg-avatar" style={{ background: avatarBg }}>
+                      {initials}
+                    </div>
+                  )}
                   <div className="conv-msg-card">
                     <div className="conv-msg-head">
                       <div className="conv-msg-sender-col">

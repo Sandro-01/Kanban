@@ -109,6 +109,9 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         role: true,
         department: true,
         status: true,
+        allowedPages: true,
+        avatarColor: true,
+        avatarUrl: true,
         createdAt: true
       } as any
     });

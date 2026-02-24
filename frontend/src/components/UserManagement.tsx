@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import api from '../services/api';
+import api, { users as usersApi } from '../services/api';
+import UserAvatar from './UserAvatar';
 import './UserManagement.css';
 
 const PAGE_OPTIONS = [
@@ -20,6 +21,8 @@ interface User {
   department: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   allowedPages: string[];
+  avatarColor: string | null;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,6 +144,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
     }
   };
 
+  const handleAvatarUpload = async (userId: string, file: File) => {
+    try {
+      await usersApi.uploadAvatar(userId, file);
+      loadUsers();
+    } catch (error: any) {
+      setError(error.response?.data?.error || error.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleAvatarRemove = async (userId: string) => {
+    try {
+      await usersApi.removeAvatar(userId);
+      loadUsers();
+    } catch (error: any) {
+      setError(error.response?.data?.error || error.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const getDepartmentBadge = (department: string | null) => {
     if (!department) return null;
 
@@ -215,9 +238,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ user }) => {
             {users.map((u) => (
               <tr key={u.id} className={u.status === 'INACTIVE' ? 'inactive' : ''}>
                 <td>
-                  <strong>
-                    {u.firstName} {u.lastName}
-                  </strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <UserAvatar
+                        user={u}
+                        className="um-avatar"
+                        editable
+                        onUpload={(file) => handleAvatarUpload(u.id, file)}
+                      />
+                      {u.avatarUrl && (
+                        <button
+                          className="um-avatar-del"
+                          onClick={() => handleAvatarRemove(u.id)}
+                          title="Rimuovi foto"
+                        >×</button>
+                      )}
+                    </div>
+                    <strong>{u.firstName} {u.lastName}</strong>
+                  </div>
                 </td>
                 <td>{u.email}</td>
                 <td>

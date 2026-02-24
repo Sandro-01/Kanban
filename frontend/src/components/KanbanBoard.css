@@ -691,9 +691,7 @@
   flex-shrink: 0;
 }
 
-.assignment-chip .avatar.user-avatar {
-  background: #000000;
-}
+/* user-avatar colour is now supplied via inline style by UserAvatar component */
 
 .assignment-chip .avatar.dept-avatar {
   background: #FFE600;

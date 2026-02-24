@@ -85,6 +85,11 @@ function App() {
     setUser(null);
   };
 
+  const handleUserUpdate = (updatedUser: any) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
@@ -92,7 +97,7 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Header user={user} onLogout={handleLogout} />
+        <Header user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/board" element={

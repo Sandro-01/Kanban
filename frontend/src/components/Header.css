@@ -110,6 +110,29 @@
   gap: 12px;
 }
 
+/* ── Avatar circoletto in header ─────────────────────────────────────────── */
+.header-avatar {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid #FFE600;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.header-avatar:hover {
+  border-color: #fff;
+  transform: scale(1.08);
+}
+
 .user-badge {
   display: flex;
   align-items: center;
