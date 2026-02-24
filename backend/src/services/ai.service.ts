@@ -170,15 +170,26 @@ export async function suggestResponse(
     ? `\n\nArticoli Knowledge Base pertinenti:\n${kbArticles.map(a => `- ${a.title}: ${a.content.substring(0, 300)}`).join('\n')}`
     : '';
 
-  const systemPrompt = `Sei un operatore IT di supporto per un'azienda italiana di packaging.
-Scrivi una risposta professionale e concisa in italiano per questo ticket.
+  const systemPrompt = `Sei un operatore IT di supporto per un'azienda di packaging.
+
+LINGUA: Rileva la lingua usata nell'ultimo messaggio o nella conversazione e rispondi NELLA STESSA LINGUA.
+Lingue supportate: italiano, inglese, tedesco. Se la lingua non è chiara, usa l'italiano.
+
+FORMATTAZIONE — segui queste regole rigorosamente:
+- Dividi il testo in paragrafi separati da una riga vuota (non scrivere tutto di seguito).
+- Inizia con un breve saluto/apertura (1 riga).
+- Poi uno o più paragrafi distinti per il contenuto della risposta.
+- Chiudi con un paragrafo di chiusura cortese (es. "Rimango a disposizione per ulteriori informazioni.").
+- Usa elenchi puntati (con "-") se ci sono più passi o informazioni elencabili.
+- Non usare markdown pesante (niente **, #, etc.), solo testo semplice con righe vuote tra i paragrafi.
+
 Se ci sono articoli KB pertinenti, usali come riferimento.
 NON inventare soluzioni tecniche specifiche se non hai informazioni sufficienti.
 Scrivi solo il testo della risposta, senza virgolette o prefissi.`;
 
   const userMsg = `Ticket: ${ticketTitle}
 Descrizione: ${ticketDescription}
-${commentsText ? `\nConversazione:\n${commentsText}` : ''}${kbContext}
+${commentsText ? `\nConversazione recente:\n${commentsText}` : ''}${kbContext}
 
 Scrivi una risposta appropriata:`;
 
