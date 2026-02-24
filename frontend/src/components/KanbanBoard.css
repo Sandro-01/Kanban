@@ -68,8 +68,8 @@
 
 .ticket-detail-body {
   flex: 1;
-  padding: 24px 28px;
-  max-width: 860px;
+  padding: 24px 40px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
 }
