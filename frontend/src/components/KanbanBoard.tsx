@@ -172,11 +172,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             <p className="ticket-description">
                               {(() => {
                                 const clean = (ticket.description || '')
-                                  .replace(/<[^>]*>/g, '')
+                                  .replace(/<[^>]*>/g, '')          // strip HTML tags
+                                  .replace(/&nbsp;/gi, ' ')         // decode entities
+                                  .replace(/&amp;/gi, '&')
+                                  .replace(/&lt;/gi, '<')
+                                  .replace(/&gt;/gi, '>')
+                                  .replace(/&quot;/gi, '"')
+                                  .replace(/&#\d+;/g, '')
                                   .replace(/\[ONBOARDING_ID:[^\]]+\]/g, '')
                                   .replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '')
                                   .replace(/\*\*/g, '')
                                   .replace(/^---$/gm, '')
+                                  .replace(/\s+/g, ' ')             // collapse whitespace
                                   .trim();
                                 return clean.substring(0, 100) + (clean.length > 100 ? '...' : '');
                               })()}
@@ -969,7 +976,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
         <div className="ticket-modal-content">
           <div className="ticket-info">
-            {isEmailTicket ? (
+            {isEmailTicket && !isHtmlDescription(ticket.description || '') ? (
               <div className="email-description-container">
                 <div className="email-description-header">
                   <div className="email-description-icon">
@@ -1005,7 +1012,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   )
                 )}
               </div>
-            ) : (
+            ) : !isEmailTicket ? (
               <>
                 <p><strong>Description:</strong></p>
                 <div
@@ -1020,7 +1027,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   }}
                 />
               </>
-            )}
+            ) : null /* HTML email ticket: body shown as first item in conversation */}
 
             <div className="ticket-details">
               <div>
