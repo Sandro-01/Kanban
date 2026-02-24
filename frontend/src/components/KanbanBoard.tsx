@@ -532,6 +532,40 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     });
   };
 
+  // Remove a single user assignment (available to all users)
+  const handleRemoveUser = async (userId: string) => {
+    try {
+      await ticketsApi.unassignUser(ticket.id, userId);
+      await refreshTicket();
+      onUpdate();
+    } catch (err) {
+      console.error('Error removing user assignment:', err);
+    }
+  };
+
+  // Remove a department assignment (available to all users)
+  const handleRemoveDepartment = async (dept: string) => {
+    try {
+      const remaining = (ticket.assignedDepartments || []).filter((d: string) => d !== dept);
+      await ticketsApi.assignDepartments(ticket.id, remaining);
+      await refreshTicket();
+      onUpdate();
+    } catch (err) {
+      console.error('Error removing department assignment:', err);
+    }
+  };
+
+  // Remove an external contact (available to all users)
+  const handleRemoveExternalContact = async (email: string) => {
+    try {
+      await ticketsApi.removeExternalContact(ticket.id, email);
+      await refreshTicket();
+      onUpdate();
+    } catch (err) {
+      console.error('Error removing external contact:', err);
+    }
+  };
+
   // Helper: get initials for avatar
   const getInitials = (firstName: string, lastName: string) => {
     return `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase();
@@ -1231,6 +1265,11 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         <span className="chip-name">{assignment.user.firstName} {assignment.user.lastName}</span>
                         {assignment.user.department && <span className="chip-dept">{assignment.user.department}</span>}
                       </span>
+                      <button
+                        className="chip-remove"
+                        title="Rimuovi"
+                        onClick={() => handleRemoveUser(assignment.userId)}
+                      >×</button>
                     </div>
                   ))}
                 </div>
@@ -1244,6 +1283,11 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         <span className="chip-name">{dept}</span>
                         <span className="chip-dept">Department</span>
                       </span>
+                      <button
+                        className="chip-remove"
+                        title="Rimuovi"
+                        onClick={() => handleRemoveDepartment(dept)}
+                      >×</button>
                     </div>
                   ))}
                 </div>
@@ -1257,6 +1301,11 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         <span className="chip-name" style={{ fontSize: 12 }}>{email}</span>
                         <span className="chip-dept">Esterno</span>
                       </span>
+                      <button
+                        className="chip-remove"
+                        title="Rimuovi"
+                        onClick={() => handleRemoveExternalContact(email)}
+                      >×</button>
                     </div>
                   ))}
                 </div>
