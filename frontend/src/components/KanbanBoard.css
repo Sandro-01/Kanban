@@ -145,6 +145,26 @@
   margin-bottom: 20px;
 }
 
+.ticket-description-html {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--dark);
+  word-break: break-word;
+}
+
+.ticket-description-html p { margin: 0.4em 0; }
+.ticket-description-html a { color: var(--primary); text-decoration: underline; }
+.ticket-description-html ul,
+.ticket-description-html ol { padding-left: 1.4em; margin: 0.4em 0; }
+.ticket-description-html img { max-width: 100%; border-radius: 6px; margin: 4px 0; }
+.ticket-description-html blockquote {
+  border-left: 3px solid var(--border);
+  margin: 0.4em 0 0.4em 0;
+  padding-left: 0.8em;
+  color: var(--secondary);
+}
+
 .ticket-details {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

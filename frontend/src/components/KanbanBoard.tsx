@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { tickets as ticketsApi } from '../services/api';
 import './KanbanBoard.css';
 
+// Strip HTML tags to get plain text (for card preview)
+const stripHtml = (html: string): string => {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+};
+
 interface KanbanBoardProps {
   user: any;
 }
@@ -106,8 +113,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                   <h4 className="ticket-title">{ticket.title}</h4>
 
                   <p className="ticket-description">
-                    {ticket.description.substring(0, 100)}
-                    {ticket.description.length > 100 ? '...' : ''}
+                    {(() => { const t = stripHtml(ticket.description); return t.substring(0, 100) + (t.length > 100 ? '...' : ''); })()}
                   </p>
 
                   <div className="ticket-footer">
@@ -210,7 +216,10 @@ const TicketModal: React.FC<any> = ({ ticket, user, onClose, onUpdate, onMove })
         <div className="ticket-modal-content">
           <div className="ticket-info">
             <p><strong>Descrizione:</strong></p>
-            <p>{ticket.description}</p>
+            <div
+              className="ticket-description-html"
+              dangerouslySetInnerHTML={{ __html: ticket.description }}
+            />
 
             <div className="ticket-details">
               <div>
