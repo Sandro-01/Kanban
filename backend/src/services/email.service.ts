@@ -1,37 +1,76 @@
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
+import { getSmtpConfig, getCompanyName, getCompanyLogoUrl } from './config.service';
+import {
+  buildEmailHtml, infoTable, messageBlock, attachmentsList,
+  callToAction, priorityBadge, sanitizeHtmlForEmail,
+} from '../utils/emailTemplate';
 
 const prisma = new PrismaClient();
 
-// Configurazione transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Crea transporter SMTP dinamicamente dalla config DB (con fallback env)
+async function getTransporter() {
+  const smtp = await getSmtpConfig();
+  return nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: {
+      user: smtp.user,
+      pass: smtp.password,
+    },
+  });
+}
 
 /**
- * Invia email
+ * Invia email (usa Graph API se configurato, altrimenti SMTP)
  */
 export async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  ticketId?: string
+  ticketId?: string,
+  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[]
 ) {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to,
-      subject,
-      html
-    });
+    // Usa Graph API se Azure AD è configurato
+    if (process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET) {
+      const { sendEmailViaGraph } = await import('./graphEmail.service');
+      // Converti allegati in formato Graph API (base64)
+      let graphAttachments: { name: string; contentBytes: string; contentType: string }[] | undefined;
+      if (fileAttachments && fileAttachments.length > 0) {
+        const uploadDir = path.join(__dirname, '../../../uploads');
+        graphAttachments = fileAttachments.map(att => {
+          const fullPath = path.join(uploadDir, att.filePath);
+          const content = fs.readFileSync(fullPath);
+          return {
+            name: att.fileName,
+            contentBytes: content.toString('base64'),
+            contentType: att.mimeType,
+          };
+        });
+      }
+      await sendEmailViaGraph([to], subject, html, graphAttachments);
+    } else {
+      // SMTP con allegati
+      const uploadDir = path.join(__dirname, '../../../uploads');
+      const nodemailerAttachments = fileAttachments?.map(att => ({
+        filename: att.fileName,
+        path: path.join(uploadDir, att.filePath),
+        contentType: att.mimeType,
+      }));
+      const smtp = await getSmtpConfig();
+      const transport = await getTransporter();
+      await transport.sendMail({
+        from: smtp.from,
+        to,
+        subject,
+        html,
+        attachments: nodemailerAttachments,
+      });
+    }
 
     await prisma.emailLog.create({
       data: {
@@ -45,8 +84,9 @@ export async function sendEmail(
       }
     });
 
-    return info;
+    console.log(`✅ Email inviata a: ${to}`);
   } catch (error: any) {
+    console.error(`❌ Errore invio email a ${to}:`, error.message);
     await prisma.emailLog.create({
       data: {
         ticketId,
@@ -63,268 +103,69 @@ export async function sendEmail(
   }
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * Email address helpers
- * ────────────────────────────────────────────────────────────────────────── */
-
 /**
- * Extracts the plain email address from strings like "Name Surname <email@domain.com>".
- * Falls back to trimming the raw string if no angle-bracket format is found.
+ * Replaces cid: references in HTML body with actual file URLs.
+ * Returns { html, cidMap } where cidMap maps cid → filePath.
  */
-function extractEmailAddress(raw: string): string {
-  const match = raw.match(/<([^>]+)>/);
-  return match ? match[1].trim().toLowerCase() : raw.trim().toLowerCase();
-}
-
-/**
- * Extracts a display name from "Name <email>" format; falls back to the local part.
- */
-function extractDisplayName(raw: string): string {
-  const match = raw.match(/^(.+?)\s*</);
-  if (match) return match[1].trim();
-  return raw.split('@')[0];
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Email quote stripping
- * Removes quoted original message from a reply email body (HTML or plain text).
- * ────────────────────────────────────────────────────────────────────────── */
-
-function stripHtmlQuotes(html: string): string {
-  let result = html;
-
-  // Outlook OWA reply/forward wrapper
-  result = result.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
-  // Gmail quote div
-  result = result.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
-  // Yahoo quoted
-  result = result.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
-  // Outlook blockquote (with border-left style)
-  result = result.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
-  // Outlook desktop separator div (border-top style, contains Da:/From: headers)
-  result = result.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
-  // HR separator + everything after (handles <hr>, <hr/>, <hr tabindex="-1"> etc.)
-  result = result.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
-  // Strip email signature: HTML tables and inline images (Outlook signatures are always tables with logo)
-  result = result.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
-  result = result.replace(/<img[^>]*\/?>/gi, '');
-
-  // Strip remaining HTML tags
-  result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  result = result.replace(/<[^>]+>/g, ' ');
-  // Decode HTML entities
-  result = result
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-
-  // Normalise whitespace
-  result = result.replace(/[ \t]+/g, ' ');
-  result = result.replace(/\n{3,}/g, '\n\n');
-
-  // Second pass: apply plain-text stripping to catch any remaining quoted lines (Da:, From:, > ...)
-  result = stripPlainTextQuotes(result);
-
-  return result.trim();
-}
-
-function stripPlainTextQuotes(text: string): string {
-  const lines = text.split('\n');
-  const resultLines: string[] = [];
-
-  // Patterns that mark the beginning of quoted/forwarded content
-  const quoteSeparatorRe = [
-    /^-{3,}/,                                   // --- or -----
-    /^_{3,}/,                                   // ___
-    /^Da:\s/i,                                  // Italian Outlook: Da: ...
-    /^From:\s/i,                                // English: From: ...
-    /^De:\s/i,                                  // French: De: ...
-    /^Von:\s/i,                                 // German: Von: ...
-    /^Il\s.+\sha\s+scritto:/i,                  // Italian Gmail: "Il ... ha scritto:"
-    /^On\s.+,\s*.+\s+wrote:/i,                 // English Gmail: "On ..., ... wrote:"
-    /^Le\s.+,\s*.+\s+a\s+écrit\s*:/i,          // French Gmail
-    /^Am\s.+schrieb\s+.+:/i,                   // German Gmail
-    /^\s*>\s*On\s/i,                            // "> On ... wrote:"
-  ];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Skip lines that are pure quoted content (start with >)
-    if (/^>/.test(line)) continue;
-
-    // Check if this line opens a quoted block
-    let isQuoteStart = false;
-    for (const re of quoteSeparatorRe) {
-      if (re.test(line.trim())) { isQuoteStart = true; break; }
-    }
-    if (isQuoteStart) break; // Everything from here is quoted — stop
-
-    resultLines.push(line);
-  }
-
-  // Trim trailing blank lines
-  while (resultLines.length > 0 && resultLines[resultLines.length - 1].trim() === '') {
-    resultLines.pop();
-  }
-
-  return resultLines.join('\n').trim();
-}
-
-/**
- * Converts HTML to plain text without any quote/forward stripping.
- * Used as a fallback when a forwarded email has no new text before the forward marker.
- */
-function htmlToPlainText(html: string): string {
-  let result = html;
-  result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  result = result.replace(/<br\s*\/?>/gi, '\n');
-  result = result.replace(/<\/p>/gi, '\n');
-  result = result.replace(/<[^>]+>/g, ' ');
-  result = result
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  result = result.replace(/[ \t]+/g, ' ');
-  result = result.replace(/\n{3,}/g, '\n\n');
-  return result.trim();
-}
-
-/**
- * Strips quoted / forwarded content from an inbound email body.
- * Accepts both HTML and plain-text bodies.
- *
- * If stripping removes all content (e.g. a pure forward with no new text),
- * falls back to a plain-text conversion of the full raw body so the ticket
- * description is never left empty.
- */
-/**
- * Alias used by ticket.routes to clean an inbound email body before storing it.
- */
-export function cleanEmailBodyForDescription(body: string): string {
-  return stripEmailQuotes(body);
-}
-
-export function stripEmailQuotes(body: string): string {
-  if (!body) return '';
-  const isHtml = /<html|<body|<div|<p[^>]*>|<br/i.test(body);
-  const cleaned = isHtml ? stripHtmlQuotes(body) : stripPlainTextQuotes(body);
-
-  // Pure forward with no new text typed before it → entire content was stripped.
-  // Fall back to full plain-text conversion so we preserve the forwarded message.
-  if (!cleaned.trim()) {
-    return isHtml ? htmlToPlainText(body) : body.trim();
-  }
-
-  return cleaned;
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Inbound email processing
- * Either adds a comment to an existing ticket (reply) or creates a new one.
- * ────────────────────────────────────────────────────────────────────────── */
-
-/**
- * Extracts a ticket short-ID (first 8 chars) from a subject like:
- *   "Re: Support request - Ticket #a1b2c3d4 - ..."
- *   "Re: Ticket #a1b2c3d4 creato"
- */
-function extractTicketIdFromSubject(subject: string): string | null {
-  const match = subject.match(/ticket\s*#([a-f0-9-]{8,})/i);
-  return match ? match[1].toLowerCase() : null;
-}
-
-/**
- * Processes an inbound email:
- *  - If the subject contains a known ticket ID → adds a comment to that ticket
- *  - Otherwise → creates a new ticket
- */
-export async function processInboundEmail(
-  from: string,
-  subject: string,
-  rawBody: string,
-  attachments: any[]
-) {
-  const cleanedBody = stripEmailQuotes(rawBody);
-  const shortId = extractTicketIdFromSubject(subject);
-
-  if (shortId) {
-    // Find the ticket whose UUID starts with this short ID
-    const ticket = await prisma.ticket.findFirst({
-      where: { id: { startsWith: shortId } }
-    });
-
-    if (ticket) {
-      return await addInboundComment(ticket.id, from, cleanedBody);
-    }
-  }
-
-  // No matching ticket → create a new one
-  return await createTicketFromEmail(from, subject, cleanedBody, attachments);
-}
-
-/**
- * Adds an inbound email reply as a comment on an existing ticket.
- */
-async function addInboundComment(ticketId: string, fromRaw: string, body: string) {
-  const fromEmail = extractEmailAddress(fromRaw);
-  // Find or create the sender as a user
-  let user = await prisma.user.findUnique({ where: { email: fromEmail } });
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        email: fromEmail,
-        password: '',
-        firstName: extractDisplayName(fromRaw),
-        lastName: 'External',
-        role: 'USER'
-      }
-    });
-  }
-
-  const comment = await (prisma.comment as any).create({
-    data: {
-      ticketId,
-      userId: user.id,
-      content: body,
-      isEmailReply: true,
-      fromEmail,
-    },
-    include: {
-      user: { select: { id: true, email: true, firstName: true, lastName: true } }
-    }
+function replaceCidRefs(html: string, cidMap: Map<string, string>): string {
+  return html.replace(/src=["']cid:([^"']+)["']/gi, (_match, cid) => {
+    // Try exact CID, then the part before @ (some clients include domain)
+    const url = cidMap.get(cid) || cidMap.get(cid.split('@')[0]);
+    return url ? `src="${url}"` : `src="cid:${cid}"`;
   });
-
-  return comment;
 }
 
 /**
- * Crea ticket da email (nuova richiesta in arrivo)
+ * Lightweight server-side HTML sanitization: removes scripts, event handlers
+ * and javascript: hrefs. DOMPurify on the client handles the final pass.
+ */
+function sanitizeIncomingHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+}
+
+/**
+ * Crea ticket da email
  */
 export async function createTicketFromEmail(
-  fromRaw: string,
+  from: string,
   subject: string,
   body: string,
+  htmlBody: string | null,  // full HTML body from email (may contain cid: refs)
   attachments: any[],
-  messageId?: string
+  emailMessageId?: string,
+  ccRecipients: string[] = []  // To/CC recipients to include in externalContacts
 ) {
-  const from = extractEmailAddress(fromRaw);
+  // Deduplicazione: controlla se esiste già un ticket per questo messaggio email
+  if (emailMessageId) {
+    try {
+      const existing: any[] = await (prisma as any).$queryRawUnsafe(
+        `SELECT id FROM "Ticket" WHERE "emailMessageId" = $1 LIMIT 1`,
+        emailMessageId
+      );
+      if (existing.length > 0) {
+        console.log(`⚠️ Ticket già esistente per emailMessageId ${emailMessageId}, skip`);
+        return existing[0];
+      }
+    } catch {
+      // Campo emailMessageId non ancora presente nel DB
+    }
+  }
 
   // Trova o crea utente
   let user = await prisma.user.findUnique({ where: { email: from } });
 
   if (!user) {
+    // Crea utente temporaneo
     user = await prisma.user.create({
       data: {
         email: from,
-        password: '',
-        firstName: extractDisplayName(fromRaw),
+        password: '', // Richiederà reset password
+        firstName: from.split('@')[0],
         lastName: 'Email User',
         role: 'USER'
       }
@@ -370,82 +211,263 @@ export async function createTicketFromEmail(
     slaHours = 24;
   }
 
-  // Crea ticket
-  const ticket = await prisma.ticket.create({
-    data: {
-      title: subject,
-      description: body,
-      boardId: board.id,
-      columnId: column.id,
-      createdById: user.id,
-      priority,
-      slaHours,
-      dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
-      emailThreadId: from
-    }
-  });
+  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
 
-  // Save email attachments to disk and DB
+  // ── Save attachments first so we can build the cid→URL map ────────────────
+  const cidMap = new Map<string, string>(); // cid → full URL
   if (attachments && attachments.length > 0) {
-    const uploadsDir = path.join(__dirname, '../../../uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-    for (const att of attachments) {
+    for (const attachment of attachments) {
       try {
-        const filename = att.filename || att.name || 'attachment';
-        const content = att.content || att.data;
-        const mimeType = att.type || att.contentType || att.content_type || 'application/octet-stream';
+        if (!attachment.content) continue;
+        const fileName = attachment.filename || `attachment-${Date.now()}`;
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        fs.writeFileSync(filePath, attachment.content);
 
-        if (!content) continue;
+        // Build cid map BEFORE ticket creation so HTML can reference the URLs
+        if (attachment.cid) {
+          const fileUrl = `${baseUrl}/uploads/${uniqueFileName}`;
+          cidMap.set(attachment.cid, fileUrl);
+          cidMap.set(attachment.cid.split('@')[0], fileUrl); // also map local part
+        }
 
-        const uniqueName = `${Date.now()}-${filename}`;
-        const filePath = path.join(uploadsDir, uniqueName);
-        const buffer = Buffer.isBuffer(content)
-          ? content
-          : Buffer.from(content as string, 'base64');
-
-        fs.writeFileSync(filePath, buffer);
-
-        await prisma.attachment.create({
-          data: {
-            ticketId: ticket.id,
-            fileName: filename,
-            filePath,
-            fileSize: buffer.length,
-            mimeType
-          }
-        });
-      } catch (attErr) {
-        console.error('Errore salvataggio allegato email:', attErr);
+        // Store temporarily; we create DB records after the ticket exists
+        (attachment as any)._uniqueFileName = uniqueFileName;
+        (attachment as any)._fileName = fileName;
+        console.log(`   ✅ Allegato salvato: ${fileName}`);
+      } catch (err) {
+        console.error(`   ❌ Errore salvataggio allegato ${attachment.filename}:`, err);
       }
     }
   }
 
-  // Invia conferma (non-blocking: il ticket è già creato)
+  // ── Build description: prefer HTML body (with cid refs replaced) ───────────
+  let description: string;
+  if (htmlBody && htmlBody.trim()) {
+    const processedHtml = sanitizeIncomingHtml(replaceCidRefs(htmlBody, cidMap));
+    description = processedHtml;
+  } else {
+    description = cleanEmailBodyForDescription(body);
+  }
+
+  // Crea ticket
+  const smtp = await getSmtpConfig();
+  const emailDomain = smtp.from.includes('@') ? smtp.from.split('@')[1] : 'kanban.local';
+  const emailThreadId = `ticket-${Date.now()}@${emailDomain}`;
+  const ticketData: any = {
+    title: subject,
+    description,
+    boardId: board.id,
+    columnId: column.id,
+    createdById: user.id,
+    priority,
+    slaHours,
+    dueDate: new Date(Date.now() + slaHours * 60 * 60 * 1000),
+    emailThreadId,
+    externalContacts: Array.from(new Set([from, ...ccRecipients].map(e => e.toLowerCase()))),
+  };
+
+  // Aggiungi emailMessageId se presente (richiede migrazione DB)
+  if (emailMessageId) {
+    ticketData.emailMessageId = emailMessageId;
+  }
+
+  const ticket = await prisma.ticket.create({ data: ticketData });
+
+  // ── Create DB attachment records now that we have the ticket ID ───────────
+  for (const attachment of (attachments || [])) {
+    try {
+      const uniqueFileName = (attachment as any)._uniqueFileName;
+      const fileName = (attachment as any)._fileName;
+      if (!uniqueFileName) continue;
+
+      const isInline = !!attachment.cid;
+      await prisma.attachment.create({
+        data: {
+          ticketId: ticket.id,
+          uploadedById: user.id,
+          fileName,
+          filePath: uniqueFileName,
+          fileSize: attachment.size || attachment.content.length,
+          mimeType: attachment.contentType || 'application/octet-stream',
+          isInline,
+          contentId: attachment.cid || null,
+        } as any,
+      });
+    } catch (err) {
+      console.error(`   ❌ Errore record DB allegato:`, err);
+    }
+  }
+
+  // Registra nella history
+  await prisma.ticketHistory.create({
+    data: {
+      ticketId: ticket.id,
+      field: 'created',
+      newValue: `Ticket creato da email di ${from}`,
+      changedBy: user.id
+    }
+  });
+
+  // Invia conferma con [Ticket #ID] per tracciamento risposte (non bloccante)
   try {
+    const companyName = await getCompanyName();
+    const logoUrl = await getCompanyLogoUrl();
+
+    const confirmBody = [
+      `<p style="margin:0 0 24px;font-size:14px;color:#000000;line-height:1.75;">La tua richiesta è stata presa in carico. Di seguito i dettagli:</p>`,
+      infoTable([
+        { label: 'Ticket', value: `#${ticket.id.substring(0, 8)}` },
+        { label: 'Oggetto', value: subject },
+        { label: 'Priorità', value: priority, highlight: true },
+        { label: 'SLA', value: `${slaHours} ore` },
+        { label: 'Scadenza', value: ticket.dueDate.toLocaleString('it-IT') },
+      ]),
+      callToAction('<strong>Rispondi a questa email</strong> per aggiungere aggiornamenti al ticket.'),
+    ].join('');
+
     await sendEmail(
-      fromRaw,
-      `Re: ${subject} - Ticket #${ticket.id.substring(0, 8)} creato`,
-      `
-        <h2>Ticket creato con successo</h2>
-        <p>Il tuo ticket è stato registrato nel sistema.</p>
-        <ul>
-          <li><strong>ID:</strong> ${ticket.id}</li>
-          <li><strong>Priorità:</strong> ${priority}</li>
-          <li><strong>SLA:</strong> ${slaHours} ore</li>
-          <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
-        </ul>
-        <p>Riceverai aggiornamenti via email.</p>
-      `,
+      from,
+      `[Ticket #${ticket.id.substring(0, 8)}] Re: ${subject}`,
+      buildEmailHtml({
+        companyName,
+        logoUrl,
+        heading: 'Richiesta ricevuta',
+        subheading: `Ticket #${ticket.id.substring(0, 8)}`,
+        body: confirmBody,
+        footerRef: `Ref: #${ticket.id.substring(0, 8)}`,
+      }),
       ticket.id
     );
-  } catch (mailErr) {
-    console.error('Errore invio conferma email:', mailErr);
+  } catch (err: any) {
+    console.warn(`⚠️ Email di conferma non inviata a ${from}: ${err.message}`);
   }
 
   return ticket;
+}
+
+// ── Inbound email helpers ─────────────────────────────────────────────────
+
+function extractEmailAddress(raw: string): string {
+  const match = raw.match(/<([^>]+)>/);
+  return match ? match[1].trim().toLowerCase() : raw.trim().toLowerCase();
+}
+
+function extractDisplayName(raw: string): string {
+  const match = raw.match(/^(.+?)\s*</);
+  if (match) return match[1].trim();
+  return raw.split('@')[0];
+}
+
+function extractTicketIdFromSubject(subject: string): string | null {
+  const match = subject.match(/ticket\s*#([a-f0-9-]{8,})/i);
+  return match ? match[1].toLowerCase() : null;
+}
+
+function stripPlainTextQuotes(text: string): string {
+  const lines = text.split('\n');
+  const resultLines: string[] = [];
+  const quoteSeparatorRe = [
+    /^-{3,}/, /^_{3,}/,
+    /^Da:\s/i, /^From:\s/i, /^De:\s/i, /^Von:\s/i,
+    /^Il\s.+\sha\s+scritto:/i,
+    /^On\s.+,\s*.+\s+wrote:/i,
+    /^Le\s.+,\s*.+\s+a\s+écrit\s*:/i,
+    /^Am\s.+schrieb\s+.+:/i,
+    /^\s*>\s*On\s/i,
+  ];
+  for (const line of lines) {
+    if (/^>/.test(line)) continue;
+    let isQuoteStart = false;
+    for (const re of quoteSeparatorRe) { if (re.test(line.trim())) { isQuoteStart = true; break; } }
+    if (isQuoteStart) break;
+    resultLines.push(line);
+  }
+  while (resultLines.length > 0 && resultLines[resultLines.length - 1].trim() === '') resultLines.pop();
+  return resultLines.join('\n').trim();
+}
+
+function stripHtmlQuotes(html: string): string {
+  let result = html;
+  result = result.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
+  result = result.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
+  result = result.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
+  result = result.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
+  result = result.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
+  result = result.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
+  result = result.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+  result = result.replace(/<img[^>]*\/?>/gi, '');
+  result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  result = result.replace(/<[^>]+>/g, ' ');
+  result = result.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  result = result.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n');
+  result = stripPlainTextQuotes(result);
+  return result.trim();
+}
+
+export function stripEmailQuotes(body: string): string {
+  if (!body) return '';
+  const isHtml = /<html|<body|<div|<p[^>]*>|<br/i.test(body);
+  const cleaned = isHtml ? stripHtmlQuotes(body) : stripPlainTextQuotes(body);
+  if (!cleaned.trim()) {
+    let fallback = body;
+    if (isHtml) {
+      fallback = body.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    return fallback;
+  }
+  return cleaned;
+}
+
+export function cleanEmailBodyForDescription(body: string): string {
+  return stripEmailQuotes(body);
+}
+
+/**
+ * Processa email in arrivo: aggiorna ticket esistente o ne crea uno nuovo
+ */
+export async function processInboundEmail(
+  from: string,
+  subject: string,
+  rawBody: string,
+  attachments: any[]
+) {
+  const cleanedBody = stripEmailQuotes(rawBody);
+  const shortId = extractTicketIdFromSubject(subject);
+
+  if (shortId) {
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: { startsWith: shortId } }
+    });
+    if (ticket) {
+      return await addInboundComment(ticket.id, from, cleanedBody);
+    }
+  }
+
+  return await createTicketFromEmail(from, subject, cleanedBody, null, attachments);
+}
+
+async function addInboundComment(ticketId: string, fromRaw: string, body: string) {
+  const fromEmail = extractEmailAddress(fromRaw);
+  let user = await prisma.user.findUnique({ where: { email: fromEmail } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: fromEmail,
+        password: '',
+        firstName: extractDisplayName(fromRaw),
+        lastName: 'External',
+        role: 'USER'
+      }
+    });
+  }
+  return await (prisma.comment as any).create({
+    data: { ticketId, userId: user.id, content: body, isEmailReply: true, fromEmail },
+    include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } }
+  });
 }
 
 /**
@@ -455,6 +477,11 @@ export async function createTicketFromEmail(
 export async function startEmailListener() {
   console.log('📧 Email listener configurato per: ' + process.env.EMAIL_USER);
   console.log('⚠️  Per produzione, configurare webhook email (SendGrid, Mailgun, etc.)');
+
+  // Questo è un placeholder - in produzione si userebbe:
+  // - IMAP listener
+  // - Webhook da SendGrid/Mailgun
+  // - AWS SES
 }
 
 /**
@@ -464,7 +491,7 @@ export async function notifyTicketUpdate(
   ticketId: string,
   updateType: string,
   details: string,
-  attachments?: any[],
+  fileAttachments?: { fileName: string; filePath: string; mimeType: string }[],
   authorName?: string
 ) {
   const ticket = await prisma.ticket.findUnique({
@@ -477,20 +504,55 @@ export async function notifyTicketUpdate(
 
   if (!ticket) return;
 
-  const recipients = [ticket.createdBy.email];
+  // Raccogli tutti i destinatari (senza duplicati)
+  const recipientSet = new Set<string>();
+  recipientSet.add(ticket.createdBy.email);
   if (ticket.assignedTo) {
-    recipients.push(ticket.assignedTo.email);
+    recipientSet.add(ticket.assignedTo.email);
+  }
+  // Includi contatti esterni (chi ha creato il ticket via email)
+  if (ticket.externalContacts && ticket.externalContacts.length > 0) {
+    ticket.externalContacts.forEach((email: string) => recipientSet.add(email));
   }
 
-  const subject = `Ticket #${ticket.id.substring(0, 8)} - ${updateType}`;
-  const html = `
-    <h2>Aggiornamento Ticket</h2>
-    <p><strong>Titolo:</strong> ${ticket.title}</p>
-    <p><strong>Aggiornamento:</strong> ${details}</p>
-    <p><a href="${process.env.APP_URL}/tickets/${ticket.id}">Visualizza ticket</a></p>
-  `;
+  // Colori per tipo aggiornamento
+  const typeColors: Record<string, string> = {
+    'Nuovo commento': '#2563eb',
+    'Nuovo allegato': '#7c3aed',
+    'Assegnazione': '#d97706',
+  };
+  const accentColor = typeColors[updateType] || '#2563eb';
 
-  for (const email of recipients) {
-    await sendEmail(email, subject, html, ticketId);
+  const companyName = await getCompanyName();
+  const logoUrl = await getCompanyLogoUrl();
+  const attachFileNames = fileAttachments?.map(a => a.fileName) || [];
+
+  const notifBody = [
+    `<p style="margin:0 0 4px;font-size:9px;font-weight:800;color:#888888;text-transform:uppercase;letter-spacing:2px;">Oggetto ticket</p>`,
+    `<p style="margin:0 0 24px;font-size:16px;font-weight:800;color:#000000;letter-spacing:-0.2px;">${ticket.title}</p>`,
+    messageBlock(sanitizeHtmlForEmail(details), { author: authorName, accentColor }),
+    attachmentsList(attachFileNames),
+    callToAction('<strong>Rispondi a questa email</strong> per aggiungere un commento al ticket.', accentColor),
+  ].join('');
+
+  const subject = `[Ticket #${ticket.id.substring(0, 8)}] ${ticket.title} - ${updateType}`;
+  const html = buildEmailHtml({
+    companyName,
+    logoUrl,
+    heading: updateType,
+    subheading: `Ticket #${ticket.id.substring(0, 8)}`,
+    accentColor,
+    body: notifBody,
+    footerRef: `Ref: #${ticket.id.substring(0, 8)}`,
+  });
+
+  for (const email of recipientSet) {
+    try {
+      await sendEmail(email, subject, html, ticketId, fileAttachments);
+    } catch (err: any) {
+      console.error(`⚠️ Notifica non inviata a ${email}: ${err.message}`);
+    }
   }
 }
+
+

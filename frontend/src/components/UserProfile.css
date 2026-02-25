@@ -1,22 +1,23 @@
-/* ── Profile Page ─────────────────────────────────────────────────────────── */
+/* ── Profile Page — Off-White™ Style ────────────────────────────────────── */
 .up-page {
   min-height: calc(100vh - 64px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 40px 20px 80px;
-  background: var(--bg, #0a0a0a);
+  background: #FAFAF8;
 }
 
 .up-card {
   width: 100%;
   max-width: 640px;
-  background: var(--surface, #111);
-  border: 1px solid var(--border, #1e293b);
-  border-radius: 20px;
+  background: #fff;
+  border: 2px solid #000;
+  border-radius: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 6px 6px 0 #000;
 }
 
 /* ── Avatar Section ── */
@@ -25,8 +26,8 @@
   flex-direction: column;
   align-items: center;
   padding: 40px 32px 28px;
-  border-bottom: 1px solid var(--border, #1e293b);
-  background: linear-gradient(160deg, #1e1e2e 0%, #0f0f1a 100%);
+  border-bottom: 2px solid #000;
+  background: #000;
 }
 
 .up-avatar-wrap {
@@ -37,49 +38,48 @@
 .up-avatar-circle {
   width: 110px;
   height: 110px;
-  border-radius: 50%;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 3px solid #FFE600;
+  box-shadow: 4px 4px 0 #FFE600;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .up-avatar-circle:hover {
-  transform: scale(1.04);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #FFE600;
 }
 
 .up-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
 }
 
 .up-avatar-initials {
   font-size: 42px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -1px;
+  font-weight: 800;
+  color: #000;
+  letter-spacing: -2px;
   user-select: none;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .up-avatar-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(255, 230, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 26px;
   opacity: 0;
   transition: opacity 0.2s;
-  border-radius: 50%;
 }
 
 .up-avatar-circle:hover .up-avatar-overlay {
@@ -88,31 +88,35 @@
 
 .up-remove-photo {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ef4444;
-  color: white;
-  border: none;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  background: #FFE600;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 0;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-  transition: transform 0.15s;
+  transition: background 0.15s;
 }
 
 .up-remove-photo:hover {
-  transform: scale(1.15);
+  background: #000;
+  color: #FFE600;
 }
 
 .up-avatar-hint {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 10px;
+  color: #666;
   margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
 }
 
 /* ── Color Picker ── */
@@ -124,27 +128,28 @@
 }
 
 .up-color-label {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 9px;
+  color: #888;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em;
+  font-weight: 800;
 }
 
 .up-color-swatches {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .up-color-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: transform 0.1s, border-color 0.1s;
 }
 
 .up-color-swatch:hover {
@@ -152,32 +157,39 @@
 }
 
 .up-color-swatch.selected {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+  border-color: #FFE600;
+  box-shadow: 2px 2px 0 #FFE600;
   transform: scale(1.18);
 }
 
 /* ── Form Section ── */
 .up-form {
   padding: 32px;
+  background: #FAFAF8;
 }
 
 .up-name {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text, #f1f5f9);
+  font-size: 24px;
+  font-weight: 900;
+  color: #000;
   margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .up-dept {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 11px;
+  color: #555;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
 }
 
 .up-divider {
-  height: 1px;
-  background: var(--border, #1e293b);
+  height: 2px;
+  background: #000;
   margin: 20px 0;
 }
 
@@ -204,16 +216,26 @@
 }
 
 .up-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 800;
+  color: #000;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .up-field .input {
   width: 100%;
   box-sizing: border-box;
+  border-radius: 0;
+  border: 2px solid #000;
+  font-weight: 600;
+}
+
+.up-field .input:focus {
+  border-color: #000;
+  box-shadow: 3px 3px 0 #FFE600;
+  outline: none;
 }
 
 .up-actions {
@@ -224,11 +246,13 @@
 
 .up-save-btn {
   min-width: 160px;
-  font-size: 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  border-radius: 0;
 }
 
 @media (max-width: 540px) {
-  .up-row {
-    grid-template-columns: 1fr;
-  }
+  .up-row { grid-template-columns: 1fr; }
 }

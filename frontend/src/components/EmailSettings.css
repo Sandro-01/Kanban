@@ -1,106 +1,218 @@
 .email-settings-page {
-  max-width: 900px;
+  padding: 32px 28px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
-.settings-section {
-  background: var(--surface, #1e1e2e);
-  border: 1px solid var(--border, #333);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.settings-section-header {
-  margin-bottom: 1.25rem;
-}
-
-.settings-section-header h2 {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.email-settings-page h2 {
+  margin-bottom: 6px;
+  color: #0A0A0A;
+  font-size: 24px;
+  font-weight: 900;
   text-transform: uppercase;
-  margin: 0 0 0.25rem 0;
-  color: var(--text-primary, #fff);
+  letter-spacing: 0.06em;
 }
 
-.settings-section-header p {
-  font-size: 0.78rem;
-  color: var(--text-muted, #888);
-  margin: 0;
+.email-settings-page .page-subtitle {
+  color: #666666;
+  font-size: 12px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.settings-grid-2 {
+.config-section {
+  background: #FFFFFF;
+  border-radius: 0;
+  border: 2px solid #000000;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.config-section h3 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #0A0A0A;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.config-section .section-desc {
+  color: #666666;
+  font-size: 12px;
+  margin: 0 0 20px 0;
+  letter-spacing: 0.02em;
+}
+
+.config-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 16px;
 }
 
-.form-group {
+.config-field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 4px;
 }
 
-.form-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+.config-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.config-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0A0A0A;
   text-transform: uppercase;
-  color: var(--text-muted, #888);
+  letter-spacing: 0.08em;
 }
 
-.form-label-optional {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.68rem;
+.config-field input,
+.config-field select {
+  padding: 9px 12px;
+  border: 2px solid #000000;
+  border-radius: 0;
+  font-size: 13px;
+  color: #0A0A0A;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  transition: box-shadow 0.15s;
+  background: #FFFFFF;
 }
 
-.form-input {
-  background: var(--bg, #0d0d1a);
-  border: 1px solid var(--border, #333);
-  border-radius: 4px;
-  padding: 0.55rem 0.75rem;
-  color: var(--text-primary, #fff);
-  font-size: 0.85rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
+.config-field input:focus,
+.config-field select:focus {
   outline: none;
-  border-color: var(--accent, #6c63ff);
+  border-color: #000000;
+  box-shadow: 3px 3px 0 #FFE600;
 }
 
-.form-select {
-  cursor: pointer;
-  appearance: auto;
-}
-
-.settings-actions {
+.config-actions {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-test {
+  background: #F5F0EB;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 9px 20px;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-test:hover {
+  background: #FFE600;
+  border-color: #000000;
+}
+
+.btn-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .test-result {
-  font-size: 0.82rem;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 600;
+  border-left: 5px solid #000000;
 }
 
-.test-result.ok   { color: #4caf82; }
-.test-result.fail { color: #e05c5c; }
+.test-result.test-success {
+  background: #F5F0EB;
+  color: #000000;
+  border: 2px solid #000000;
+  border-left: 5px solid #000000;
+}
 
-.settings-save-bar {
+.test-result.test-error {
+  background: #fff0f0;
+  color: #c00000;
+  border: 2px solid #c00000;
+  border-left: 5px solid #c00000;
+}
+
+/* Status Banner */
+.email-status-banner {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-radius: 0;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-@media (max-width: 600px) {
-  .settings-grid-2 {
+.email-status-banner.status-active {
+  background: #000000;
+  border: 2px solid #000000;
+  color: #FFE600;
+}
+
+.email-status-banner.status-inactive {
+  background: #FFE600;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 0;
+  display: inline-block;
+}
+
+.status-dot.dot-active {
+  background: #FFE600;
+  box-shadow: none;
+}
+
+.status-dot.dot-inactive {
+  background: #000000;
+}
+
+.status-detail {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.config-field input:disabled {
+  background: #F5F0EB;
+  color: #999999;
+  cursor: not-allowed;
+  border-color: #D0C8BF;
+}
+
+.env-fallback-note {
+  background: #FFE600;
+  border: 2px solid #000000;
+  color: #000000;
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .config-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -73,12 +73,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 
   const getPriorityColor = (priority: string) => {
     const colors: any = {
-      CRITICAL: '#ef4444',
-      HIGH: '#f59e0b',
-      MEDIUM: '#3b82f6',
-      LOW: '#10b981',
+      CRITICAL: '#000000',
+      HIGH: '#333333',
+      MEDIUM: '#FFE600',
+      LOW: '#D0C8BF',
     };
-    return colors[priority] || '#64748b';
+    return colors[priority] || '#D0C8BF';
   };
 
   const getTicketsForColumn = (status: string) => {

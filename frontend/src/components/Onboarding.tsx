@@ -24,7 +24,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       const response = await onboardingApi.getAll();
       setOnboardings(response.data);
     } catch (error) {
-      console.error('Errore caricamento onboarding:', error);
+      console.error('Error loading onboarding:', error);
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       const response = await usersApi.getAll();
       setAllUsers(response.data);
     } catch (error) {
-      console.error('Errore caricamento utenti:', error);
+      console.error('Error loading users:', error);
     }
   };
 
@@ -66,35 +66,35 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
       setEditingInfo(false);
       loadOnboardings();
     } catch (error: any) {
-      console.error('Errore aggiornamento info:', error);
-      alert(error.response?.data?.error || 'Errore durante l\'aggiornamento');
+      console.error('Error updating info:', error);
+      alert(error.response?.data?.error || 'Error during update');
     }
   };
 
   if (loading) {
-    return <div className="loading">Caricamento...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Onboarding</h1>
-        <p>Gestisci i processi di onboarding per nuovi dipendenti</p>
-        {/* Solo HR e ADMIN possono creare nuovi onboarding */}
+        <p>Manage onboarding processes for new employees</p>
+        {/* Only HR and ADMIN can create new onboardings */}
         {(user.role === 'ADMIN' || user.department === 'HR') && (
           <button
             className="btn btn-primary"
             onClick={() => setShowNewForm(true)}
             style={{ marginLeft: 'auto' }}
           >
-            + Nuovo Onboarding
+            + New Onboarding
           </button>
         )}
       </div>
 
       <div className="alert alert-info">
-        <strong>ISO 9001 Compliance:</strong> Tutti i processi di onboarding sono tracciati e auditati.
-        Le checklist garantiscono l'uniformità del processo.
+        <strong>ISO 9001 Compliance:</strong> All onboarding processes are tracked and audited.
+        Checklists ensure process uniformity.
       </div>
 
       <div className="process-grid">
@@ -121,13 +121,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                 </span>
               </div>
               <div className="info-row">
-                <span>📅 Inizio:</span>
-                <span>{new Date(onb.startDate).toLocaleDateString('it-IT')}</span>
+                <span>📅 Start:</span>
+                <span>{new Date(onb.startDate).toLocaleDateString('en-GB')}</span>
               </div>
               {onb.expectedEndDate && (
                 <div className="info-row">
-                  <span>⏰ Scadenza:</span>
-                  <span>{new Date(onb.expectedEndDate).toLocaleDateString('it-IT')}</span>
+                  <span>⏰ Deadline:</span>
+                  <span>{new Date(onb.expectedEndDate).toLocaleDateString('en-GB')}</span>
                 </div>
               )}
             </div>
@@ -136,8 +136,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
         {onboardings.length === 0 && (
           <div className="empty-state">
-            <h3>Nessun onboarding attivo</h3>
-            <p>I processi di onboarding appariranno qui</p>
+            <h3>No active onboarding</h3>
+            <p>Onboarding processes will appear here</p>
           </div>
         )}
       </div>
@@ -156,7 +156,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     {selectedOnboarding.status}
                   </span>
                 </div>
-                {/* Solo il Manager assegnato, HR e ADMIN possono aggiungere dotazioni */}
+                {/* Only the assigned Manager, HR and ADMIN can add equipment */}
                 {selectedOnboarding.status === 'PENDING_EQUIPMENT' &&
                   (user.role === 'ADMIN' ||
                     user.department === 'HR' ||
@@ -168,28 +168,28 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     }}
                     style={{ whiteSpace: 'nowrap' }}
                   >
-                    ➕ Aggiungi Dotazioni
+                    ➕ Add Equipment
                   </button>
                 )}
                 {user.role === 'ADMIN' && (
                   <button
                     className="btn"
                     onClick={async () => {
-                      if (window.confirm('Sei sicuro di voler eliminare questo onboarding?')) {
+                      if (window.confirm('Are you sure you want to delete this onboarding?')) {
                         try {
                           await onboardingApi.delete(selectedOnboarding.id);
-                          alert('Onboarding eliminato con successo');
+                          alert('Onboarding deleted successfully');
                           loadOnboardings();
                           setSelectedOnboarding(null);
                         } catch (error) {
-                          console.error('Errore eliminazione:', error);
-                          alert('Errore durante l\'eliminazione');
+                          console.error('Error deleting:', error);
+                          alert('Error during deletion');
                         }
                       }
                     }}
-                    style={{ backgroundColor: '#ef4444', color: 'white', whiteSpace: 'nowrap' }}
+                    style={{ backgroundColor: '#000000', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                   >
-                    🗑️ Elimina
+                    🗑️ Delete
                   </button>
                 )}
               </div>
@@ -200,19 +200,19 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
             <div className="modal-content">
               {selectedOnboarding.status === 'PENDING_EQUIPMENT' && (
-                <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '12px' }}>
-                  <strong>⚠️ In Attesa di Dotazioni</strong><br />
+                <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#FFE600', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
+                  <strong>⚠️ Waiting for Equipment</strong><br />
                   <span style={{ fontSize: '14px' }}>
-                    Le informazioni di base sono state inserite da HR. Il Responsabile deve aggiungere le dotazioni necessarie.
+                    Basic information has been entered by HR. The Manager needs to add the necessary equipment.
                   </span>
                 </div>
               )}
 
               <div className="process-details">
                 <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a202c', margin: 0 }}>
-                      Informazioni di Base
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0A0A0A', margin: 0 }}>
+                      Basic Information
                     </h4>
                     {canEditInfo && !editingInfo && (
                       <button
@@ -220,7 +220,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                         onClick={() => startEditingInfo(selectedOnboarding)}
                         style={{ fontSize: '12px', padding: '4px 10px' }}
                       >
-                        Modifica
+                        Edit
                       </button>
                     )}
                   </div>
@@ -229,11 +229,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     <div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                         <div className="form-group">
-                          <label className="label">Nome *</label>
+                          <label className="label">First Name *</label>
                           <input type="text" className="input" value={editFormData.employeeFirstName} onChange={(e) => setEditFormData({ ...editFormData, employeeFirstName: e.target.value })} required />
                         </div>
                         <div className="form-group">
-                          <label className="label">Cognome *</label>
+                          <label className="label">Last Name *</label>
                           <input type="text" className="input" value={editFormData.employeeLastName} onChange={(e) => setEditFormData({ ...editFormData, employeeLastName: e.target.value })} required />
                         </div>
                       </div>
@@ -242,7 +242,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                         <input type="email" className="input" value={editFormData.employeeEmail} onChange={(e) => setEditFormData({ ...editFormData, employeeEmail: e.target.value })} required />
                       </div>
                       <div className="form-group" style={{ marginBottom: '10px' }}>
-                        <label className="label">Manager Responsabile</label>
+                        <label className="label">Responsible Manager</label>
                         <select className="input" value={editFormData.managerId} onChange={(e) => setEditFormData({ ...editFormData, managerId: e.target.value })}>
                           {allUsers.map((u: any) => (
                             <option key={u.id} value={u.id}>{u.firstName} {u.lastName} {u.department && `(${u.department})`}</option>
@@ -251,32 +251,32 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                         <div className="form-group">
-                          <label className="label">Data Inizio</label>
+                          <label className="label">Start Date</label>
                           <input type="date" className="input" value={editFormData.startDate} onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })} />
                         </div>
                         <div className="form-group">
-                          <label className="label">Data Prevista Fine</label>
+                          <label className="label">Expected End Date</label>
                           <input type="date" className="input" value={editFormData.expectedEndDate} onChange={(e) => setEditFormData({ ...editFormData, expectedEndDate: e.target.value })} />
-                          <span style={{ fontSize: '11px', color: '#6b7280' }}>Lascia vuoto per contratto indeterminato</span>
+                          <span style={{ fontSize: '11px', color: '#666666' }}>Leave blank for permanent contract</span>
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                         <div className="form-group">
-                          <label className="label">Sede</label>
+                          <label className="label">Location</label>
                           <input type="text" className="input" value={editFormData.sede} onChange={(e) => setEditFormData({ ...editFormData, sede: e.target.value })} />
                         </div>
                         <div className="form-group">
-                          <label className="label">Reparto</label>
+                          <label className="label">Department</label>
                           <input type="text" className="input" value={editFormData.department} onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })} />
                         </div>
                         <div className="form-group">
-                          <label className="label">Ruolo/Mansione</label>
+                          <label className="label">Role/Position</label>
                           <input type="text" className="input" value={editFormData.role} onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })} />
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                        <button className="btn btn-secondary" onClick={() => setEditingInfo(false)}>Annulla</button>
-                        <button className="btn btn-primary" onClick={handleSaveInfo}>Salva Modifiche</button>
+                        <button className="btn btn-secondary" onClick={() => setEditingInfo(false)}>Cancel</button>
+                        <button className="btn btn-primary" onClick={handleSaveInfo}>Save Changes</button>
                       </div>
                     </div>
                   ) : (
@@ -290,38 +290,38 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                       </div>
                       {selectedOnboarding.sede && (
                         <div className="detail-item">
-                          <strong>Sede:</strong> {selectedOnboarding.sede}
+                          <strong>Location:</strong> {selectedOnboarding.sede}
                         </div>
                       )}
                       {selectedOnboarding.department && (
                         <div className="detail-item">
-                          <strong>Reparto:</strong> {selectedOnboarding.department}
+                          <strong>Department:</strong> {selectedOnboarding.department}
                         </div>
                       )}
                       {selectedOnboarding.role && (
                         <div className="detail-item">
-                          <strong>Ruolo/Mansione:</strong> {selectedOnboarding.role}
+                          <strong>Role/Position:</strong> {selectedOnboarding.role}
                         </div>
                       )}
                       <div className="detail-item">
-                        <strong>Data Inizio:</strong>{' '}
-                        {new Date(selectedOnboarding.startDate).toLocaleDateString('it-IT')}
+                        <strong>Start Date:</strong>{' '}
+                        {new Date(selectedOnboarding.startDate).toLocaleDateString('en-GB')}
                       </div>
                       {selectedOnboarding.expectedEndDate && (
                         <div className="detail-item">
-                          <strong>Data Prevista Fine:</strong>{' '}
-                          {new Date(selectedOnboarding.expectedEndDate).toLocaleDateString('it-IT')}
+                          <strong>Expected End Date:</strong>{' '}
+                          {new Date(selectedOnboarding.expectedEndDate).toLocaleDateString('en-GB')}
                         </div>
                       )}
                       {!selectedOnboarding.expectedEndDate && (
                         <div className="detail-item">
-                          <strong>Contratto:</strong> Indeterminato
+                          <strong>Contract:</strong> Permanent
                         </div>
                       )}
                       {selectedOnboarding.actualEndDate && (
                         <div className="detail-item">
-                          <strong>Data Effettiva Fine:</strong>{' '}
-                          {new Date(selectedOnboarding.actualEndDate).toLocaleDateString('it-IT')}
+                          <strong>Actual End Date:</strong>{' '}
+                          {new Date(selectedOnboarding.actualEndDate).toLocaleDateString('en-GB')}
                         </div>
                       )}
                     </>
@@ -330,8 +330,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {(selectedOnboarding.computerType || selectedOnboarding.phoneType || selectedOnboarding.needsHeadset || selectedOnboarding.needsWebcam || selectedOnboarding.additionalMonitor) && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '4px' }}>
-                      💻 Dotazioni Hardware
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
+                      💻 Hardware Equipment
                     </h4>
                     {selectedOnboarding.computerType && selectedOnboarding.computerType !== 'Non necessario' && (
                       <div className="detail-item">
@@ -340,16 +340,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
                     )}
                     {selectedOnboarding.phoneType && selectedOnboarding.phoneType !== 'Non necessario' && (
                       <div className="detail-item">
-                        <strong>Telefono:</strong> {selectedOnboarding.phoneType}
+                        <strong>Phone:</strong> {selectedOnboarding.phoneType}
                       </div>
                     )}
                     {(selectedOnboarding.needsHeadset || selectedOnboarding.needsWebcam || selectedOnboarding.additionalMonitor) && (
                       <div className="detail-item">
-                        <strong>Accessori:</strong>{' '}
+                        <strong>Accessories:</strong>{' '}
                         {[
-                          selectedOnboarding.needsHeadset && '🎧 Cuffie',
+                          selectedOnboarding.needsHeadset && '🎧 Headphones',
                           selectedOnboarding.needsWebcam && '📹 Webcam',
-                          selectedOnboarding.additionalMonitor && '🖥️ Schermo aggiuntivo'
+                          selectedOnboarding.additionalMonitor && '🖥️ Additional monitor'
                         ].filter(Boolean).join(', ')}
                       </div>
                     )}
@@ -358,22 +358,22 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {(selectedOnboarding.needsMicrosoft365 || selectedOnboarding.softwareNeeded || selectedOnboarding.systemAccess) && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
-                      🔐 Software e Accessi
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
+                      🔐 Software and Access
                     </h4>
                     {selectedOnboarding.needsMicrosoft365 && (
                       <div className="detail-item">
-                        <strong>Microsoft 365:</strong> ✓ Richiesto
+                        <strong>Microsoft 365:</strong> ✓ Required
                       </div>
                     )}
                     {selectedOnboarding.softwareNeeded && (
                       <div className="detail-item">
-                        <strong>Software Specifici:</strong> {selectedOnboarding.softwareNeeded}
+                        <strong>Specific Software:</strong> {selectedOnboarding.softwareNeeded}
                       </div>
                     )}
                     {selectedOnboarding.systemAccess && (
                       <div className="detail-item">
-                        <strong>Accessi Sistemi:</strong> {selectedOnboarding.systemAccess}
+                        <strong>System Access:</strong> {selectedOnboarding.systemAccess}
                       </div>
                     )}
                   </div>
@@ -381,8 +381,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
 
                 {selectedOnboarding.additionalNotes && (
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #8b5cf6', paddingBottom: '4px' }}>
-                      📝 Note Aggiuntive
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '4px' }}>
+                      📝 Additional Notes
                     </h4>
                     <div className="detail-item" style={{ whiteSpace: 'pre-wrap' }}>
                       {selectedOnboarding.additionalNotes}
@@ -420,17 +420,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ user }) => {
   );
 };
 
-// Modal per creare nuovo onboarding (STEP 1 - HR: Solo informazioni di base)
+// Modal to create new onboarding (STEP 1 - HR: Basic information only)
 const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onCreated }) => {
   const [formData, setFormData] = useState({
-    // Informazioni nuovo dipendente
+    // New employee information
     employeeFirstName: '',
     employeeLastName: '',
     employeeEmail: '',
     managerId: currentUser.id,
     startDate: new Date().toISOString().split('T')[0],
     expectedEndDate: '',
-    // Informazioni dipendente
+    // Employee information
     sede: '',
     department: '',
     role: ''
@@ -440,12 +440,12 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
     e.preventDefault();
     try {
       await onboardingApi.create(formData);
-      alert('Onboarding creato con successo!');
+      alert('Onboarding created successfully!');
       onCreated();
       onClose();
     } catch (error: any) {
-      console.error('Errore creazione onboarding:', error);
-      alert(error.response?.data?.error || 'Errore durante la creazione dell\'onboarding');
+      console.error('Error creating onboarding:', error);
+      alert(error.response?.data?.error || 'Error creating onboarding');
     }
   };
 
@@ -453,24 +453,24 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="modal-header">
-          <h2>Nuovo Onboarding</h2>
+          <h2>New Onboarding</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* SEZIONE: Informazioni di Base */}
+          {/* SECTION: Basic Information */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #3b82f6', paddingBottom: '6px' }}>
-              📋 Informazioni di Base
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
+              📋 Basic Information
             </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
-                <label className="label">Nome *</label>
+                <label className="label">First Name *</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. Marco"
+                  placeholder="e.g. John"
                   value={formData.employeeFirstName}
                   onChange={(e) => setFormData({ ...formData, employeeFirstName: e.target.value })}
                   required
@@ -478,11 +478,11 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               </div>
 
               <div className="form-group">
-                <label className="label">Cognome *</label>
+                <label className="label">Last Name *</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. Rossi"
+                  placeholder="e.g. Smith"
                   value={formData.employeeLastName}
                   onChange={(e) => setFormData({ ...formData, employeeLastName: e.target.value })}
                   required
@@ -495,7 +495,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               <input
                 type="email"
                 className="input"
-                placeholder="es. marco.rossi@europoligrafico.it"
+                placeholder="e.g. john.smith@company.com"
                 value={formData.employeeEmail}
                 onChange={(e) => setFormData({ ...formData, employeeEmail: e.target.value })}
                 required
@@ -503,7 +503,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
             </div>
 
             <div className="form-group">
-              <label className="label">Manager Responsabile *</label>
+              <label className="label">Responsible Manager *</label>
               <select
                 className="input"
                 value={formData.managerId}
@@ -520,7 +520,7 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
-                <label className="label">Data Inizio *</label>
+                <label className="label">Start Date *</label>
                 <input
                   type="date"
                   className="input"
@@ -531,46 +531,46 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
               </div>
 
               <div className="form-group">
-                <label className="label">Data Prevista Completamento</label>
+                <label className="label">Expected Completion Date</label>
                 <input
                   type="date"
                   className="input"
                   value={formData.expectedEndDate}
                   onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
                 />
-                <span style={{ fontSize: '11px', color: '#6b7280' }}>Lascia vuoto per contratto indeterminato</span>
+                <span style={{ fontSize: '11px', color: '#666666' }}>Leave blank for permanent contract</span>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
               <div className="form-group">
-                <label className="label">Sede</label>
+                <label className="label">Location</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. Milano, Roma..."
+                  placeholder="e.g. London, Manchester..."
                   value={formData.sede}
                   onChange={(e) => setFormData({ ...formData, sede: e.target.value })}
                 />
               </div>
 
               <div className="form-group">
-                <label className="label">Reparto</label>
+                <label className="label">Department</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. HR, IT..."
+                  placeholder="e.g. HR, IT..."
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 />
               </div>
 
               <div className="form-group">
-                <label className="label">Ruolo/Mansione</label>
+                <label className="label">Role/Position</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="es. Developer..."
+                  placeholder="e.g. Developer..."
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 />
@@ -579,20 +579,20 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
           </div>
 
           <div className="alert alert-info" style={{ marginBottom: '15px' }}>
-            ℹ️ <strong>Workflow in 2 step:</strong><br />
+            ℹ️ <strong>2-step workflow:</strong><br />
             <span style={{ fontSize: '14px' }}>
-              1. HR crea l'onboarding con le informazioni di base (questo form)<br />
-              2. Il Responsabile aggiungerà successivamente le dotazioni necessarie<br />
-              3. IT riceverà il ticket solo quando le dotazioni saranno definite
+              1. HR creates the onboarding with basic information (this form)<br />
+              2. The Manager will subsequently add the necessary equipment<br />
+              3. IT will receive the ticket only when the equipment has been defined
             </span>
           </div>
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annulla
+              Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Crea Onboarding
+              Create Onboarding
             </button>
           </div>
         </form>
@@ -601,20 +601,20 @@ const NewOnboardingModal: React.FC<any> = ({ allUsers, currentUser, onClose, onC
   );
 };
 
-// Modal per aggiungere dotazioni (STEP 2 - Responsabile)
+// Modal to add equipment (STEP 2 - Manager)
 const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
   const [formData, setFormData] = useState({
-    // Dotazioni hardware
+    // Hardware equipment
     computerType: '',
     phoneType: '',
     needsHeadset: false,
     needsWebcam: false,
     additionalMonitor: false,
-    // Software e accessi
+    // Software and access
     needsMicrosoft365: false,
     softwareNeeded: '',
     systemAccess: '',
-    // Note
+    // Notes
     additionalNotes: ''
   });
 
@@ -622,11 +622,11 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
     e.preventDefault();
     try {
       await onboardingApi.updateEquipment(onboarding.id, formData);
-      alert('Dotazioni aggiunte con successo! Il ticket IT è stato creato automaticamente.');
+      alert('Equipment added successfully! The IT ticket has been created automatically.');
       onUpdated();
     } catch (error: any) {
-      console.error('Errore aggiunta dotazioni:', error);
-      alert(error.response?.data?.error || 'Errore durante l\'aggiunta delle dotazioni');
+      console.error('Error adding equipment:', error);
+      alert(error.response?.data?.error || 'Error adding equipment');
     }
   };
 
@@ -634,22 +634,22 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="modal-header">
-          <h2>Aggiungi Dotazioni - {onboarding.employeeFirstName} {onboarding.employeeLastName}</h2>
+          <h2>Add Equipment - {onboarding.employeeFirstName} {onboarding.employeeLastName}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
-        <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px' }}>
-          <strong>👤 Responsabile</strong><br />
+        <div className="alert" style={{ marginBottom: '20px', backgroundColor: '#F5F0EB', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
+          <strong>👤 Manager</strong><br />
           <span style={{ fontSize: '14px' }}>
-            Compila le dotazioni necessarie per il nuovo dipendente. Una volta salvate, verrà creato automaticamente un ticket per IT.
+            Fill in the necessary equipment for the new employee. Once saved, a ticket will be automatically created for IT.
           </span>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* SEZIONE: Dotazioni Hardware */}
+          {/* SECTION: Hardware Equipment */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '6px' }}>
-              💻 Dotazioni Hardware
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
+              💻 Hardware Equipment
             </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -660,40 +660,40 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
                   value={formData.computerType}
                   onChange={(e) => setFormData({ ...formData, computerType: e.target.value })}
                 >
-                  <option value="">Seleziona...</option>
-                  <option value="Portatile">Portatile</option>
+                  <option value="">Select...</option>
+                  <option value="Portatile">Laptop</option>
                   <option value="Desktop">Desktop</option>
-                  <option value="Non necessario">Non necessario</option>
+                  <option value="Non necessario">Not needed</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="label">Telefono Aziendale</label>
+                <label className="label">Company Phone</label>
                 <select
                   className="input"
                   value={formData.phoneType}
                   onChange={(e) => setFormData({ ...formData, phoneType: e.target.value })}
                 >
-                  <option value="">Seleziona...</option>
-                  <option value="Fisso">Telefono Fisso</option>
-                  <option value="Android">Smartphone Android</option>
-                  <option value="Non necessario">Non necessario</option>
+                  <option value="">Select...</option>
+                  <option value="Fisso">Landline Phone</option>
+                  <option value="Android">Android Smartphone</option>
+                  <option value="Non necessario">Not needed</option>
                 </select>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsHeadset ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsHeadset ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.needsHeadset}
                   onChange={(e) => setFormData({ ...formData, needsHeadset: e.target.checked })}
                   style={{ marginRight: '8px', width: '18px', height: '18px' }}
                 />
-                <span>🎧 Cuffie</span>
+                <span>🎧 Headphones</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsWebcam ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsWebcam ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.needsWebcam}
@@ -703,39 +703,39 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
                 <span>📹 Webcam</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.additionalMonitor ? '#dbeafe' : 'transparent' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.additionalMonitor ? '#FFE600' : 'transparent' }}>
                 <input
                   type="checkbox"
                   checked={formData.additionalMonitor}
                   onChange={(e) => setFormData({ ...formData, additionalMonitor: e.target.checked })}
                   style={{ marginRight: '8px', width: '18px', height: '18px' }}
                 />
-                <span>🖥️ Schermo aggiuntivo</span>
+                <span>🖥️ Additional monitor</span>
               </label>
             </div>
           </div>
 
-          {/* SEZIONE: Software e Accessi */}
+          {/* SECTION: Software and Access */}
           <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '6px' }}>
-              🔐 Software e Accessi
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
+              🔐 Software and Access
             </h3>
 
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: formData.needsMicrosoft365 ? '#dbeafe' : 'transparent', marginBottom: '15px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px', border: '2px solid #000000', borderRadius: '0', backgroundColor: formData.needsMicrosoft365 ? '#FFE600' : 'transparent', marginBottom: '15px' }}>
               <input
                 type="checkbox"
                 checked={formData.needsMicrosoft365}
                 onChange={(e) => setFormData({ ...formData, needsMicrosoft365: e.target.checked })}
                 style={{ marginRight: '10px', width: '20px', height: '20px' }}
               />
-              <span style={{ fontWeight: '500' }}>📦 Pacchetto Microsoft 365</span>
+              <span style={{ fontWeight: '500' }}>📦 Microsoft 365 Package</span>
             </label>
 
             <div className="form-group">
-              <label className="label">Software Specifici</label>
+              <label className="label">Specific Software</label>
               <textarea
                 className="input"
-                placeholder="es. PackWay, HubSpot, ArtiosCAD, AutoCAD..."
+                placeholder="e.g. PackWay, HubSpot, ArtiosCAD, AutoCAD..."
                 value={formData.softwareNeeded}
                 onChange={(e) => setFormData({ ...formData, softwareNeeded: e.target.value })}
                 rows={3}
@@ -744,10 +744,10 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
             </div>
 
             <div className="form-group">
-              <label className="label">Accessi Sistemi</label>
+              <label className="label">System Access</label>
               <textarea
                 className="input"
-                placeholder="es. VPN, cartelle condivise, ERP, CRM, sistemi gestionali..."
+                placeholder="e.g. VPN, shared folders, ERP, CRM, management systems..."
                 value={formData.systemAccess}
                 onChange={(e) => setFormData({ ...formData, systemAccess: e.target.value })}
                 rows={3}
@@ -756,16 +756,16 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
             </div>
           </div>
 
-          {/* SEZIONE: Note Aggiuntive */}
+          {/* SECTION: Additional Notes */}
           <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1a202c', borderBottom: '2px solid #8b5cf6', paddingBottom: '6px' }}>
-              📝 Note Aggiuntive
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0A0A0A', borderBottom: '2px solid #000000', paddingBottom: '6px' }}>
+              📝 Additional Notes
             </h3>
 
             <div className="form-group">
               <textarea
                 className="input"
-                placeholder="Altre richieste o informazioni importanti..."
+                placeholder="Other requests or important information..."
                 value={formData.additionalNotes}
                 onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
                 rows={3}
@@ -774,20 +774,20 @@ const EquipmentModal: React.FC<any> = ({ onboarding, onClose, onUpdated }) => {
             </div>
           </div>
 
-          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#dcfce7', border: '1px solid #10b981', borderRadius: '6px', padding: '12px' }}>
-            <strong>🎫 Ticket Automatico per IT</strong><br />
+          <div className="alert" style={{ marginBottom: '15px', backgroundColor: '#F5F0EB', border: '2px solid #000000', borderRadius: '0', padding: '12px' }}>
+            <strong>🎫 Automatic IT Ticket</strong><br />
             <span style={{ fontSize: '14px' }}>
-              Salvando le dotazioni, verrà creato automaticamente un ticket per il reparto IT con tutti i dettagli.
-              IT riceverà la notifica e potrà preparare tutto per tempo.
+              By saving the equipment, a ticket will be automatically created for the IT department with all the details.
+              IT will receive the notification and can prepare everything in time.
             </span>
           </div>
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annulla
+              Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Salva Dotazioni e Crea Ticket IT
+              Save Equipment and Create IT Ticket
             </button>
           </div>
         </form>
