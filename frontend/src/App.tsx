@@ -15,6 +15,7 @@ import TicketArchive from './components/TicketArchive';
 import EmailSettings from './components/EmailSettings';
 import KnowledgeBase from './components/KnowledgeBase';
 import Header from './components/Header';
+import UserProfile from './components/UserProfile';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ user: any; allowedRoles?: string[]; allowedDepartments?: string[]; children: React.ReactElement }> = ({
@@ -65,6 +66,12 @@ function App() {
     setUser(userData);
   };
 
+  const handleUserUpdate = (updatedUser: any) => {
+    const merged = { ...user, ...updatedUser };
+    localStorage.setItem('user', JSON.stringify(merged));
+    setUser(merged);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -79,7 +86,7 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Header user={user} onLogout={handleLogout} />
+        <Header user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
         <Routes>
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/board" element={<KanbanBoard user={user} />} />
@@ -143,6 +150,12 @@ function App() {
                 <EmailSettings user={user} />
               </ProtectedRoute>
             }
+          />
+
+          {/* User Profile */}
+          <Route
+            path="/profile"
+            element={<UserProfile user={user} onUserUpdate={handleUserUpdate} />}
           />
 
           <Route path="*" element={<Navigate to="/" />} />

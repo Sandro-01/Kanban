@@ -19,9 +19,25 @@ model User {
   lastName      String
   role          UserRole @default(USER)
   department    String?
+  jobTitle      String?
+  phone         String?
+  location      String?
+  bio           String?
   status        UserStatus @default(ACTIVE)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  // Access control
+  allowedPages  String[] @default([])
+
+  // Avatar & customization
+  avatarColor   String?  @default("#4F46E5")
+  avatarUrl     String?
+  avatarConfig  Json?
+
+  // UI preferences
+  theme         String?  @default("dark")
+  language      String?  @default("it")
 
   // Relations
   assignedTickets Ticket[] @relation("AssignedTickets")
@@ -37,6 +53,7 @@ model User {
 
   @@index([email])
   @@index([department])
+  @@index([status])
 }
 
 enum UserRole {

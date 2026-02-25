@@ -335,6 +335,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
                 </label>
                 <button
                   className="header-avatar-menu-item"
+                  onClick={() => { setShowAvatarMenu(false); navigate('/profile'); }}
+                >
+                  👤 Personalizza profilo
+                </button>
+                <button
+                  className="header-avatar-menu-item"
                   onClick={() => { setShowAvatarMenu(false); setShowAvatarCreator(true); }}
                 >
                   🎨 Crea avatar

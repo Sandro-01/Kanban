@@ -1,38 +1,45 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get all users (All authenticated users can see this for ticket assignment)
+const USER_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  department: true,
+  jobTitle: true,
+  phone: true,
+  location: true,
+  bio: true,
+  status: true,
+  allowedPages: true,
+  avatarColor: true,
+  avatarUrl: true,
+  avatarConfig: true,
+  theme: true,
+  language: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+// GET /api/users — all active users (any authenticated user, for ticket assignment)
 router.get(
   '/',
   authenticate,
   async (req: AuthRequest, res: Response) => {
     try {
       const users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        where: {
-          status: 'ACTIVE', // Only show active users
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        select: USER_SELECT,
+        where: { status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
       });
-
       res.json(users);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -40,34 +47,42 @@ router.get(
   }
 );
 
-// Get single user by ID (Admin only)
+// GET /api/users/all — all users regardless of status (admin only)
 router.get(
-  '/:id',
+  '/all',
   authenticate,
   authorize('ADMIN'),
   async (req: AuthRequest, res: Response) => {
     try {
+      const users = await prisma.user.findMany({
+        select: USER_SELECT,
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// GET /api/users/:id — own profile or admin
+router.get(
+  '/:id',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
       const { id } = req.params;
+
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
 
       const user = await prisma.user.findUnique({
         where: { id },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: USER_SELECT,
       });
 
-      if (!user) {
-        return res.status(404).json({ error: 'Utente non trovato' });
-      }
-
+      if (!user) return res.status(404).json({ error: 'Utente non trovato' });
       res.json(user);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -75,7 +90,7 @@ router.get(
   }
 );
 
-// Create new user (Admin only)
+// POST /api/users — create user (admin only)
 router.post(
   '/',
   authenticate,
@@ -85,26 +100,19 @@ router.post(
     try {
       const { email, password, firstName, lastName, role, department } = req.body;
 
-      // Validate required fields
       if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({
           error: 'Email, password, nome e cognome sono obbligatori'
         });
       }
 
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
-      });
-
+      const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         return res.status(400).json({ error: 'Email già registrata' });
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
       const user = await prisma.user.create({
         data: {
           email,
@@ -115,16 +123,7 @@ router.post(
           department: department || null,
           status: 'ACTIVE',
         },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          createdAt: true,
-        },
+        select: USER_SELECT,
       });
 
       res.status(201).json(user);
@@ -134,67 +133,78 @@ router.post(
   }
 );
 
-// Update user (Admin only)
+// PUT /api/users/:id — update profile (own profile or admin)
 router.put(
   '/:id',
   authenticate,
-  authorize('ADMIN'),
   auditLog('UPDATE_USER', 'User'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { email, password, firstName, lastName, role, department, status } = req.body;
 
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id }
-      });
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
 
+      const existingUser = await prisma.user.findUnique({ where: { id } });
       if (!existingUser) {
         return res.status(404).json({ error: 'Utente non trovato' });
       }
 
-      // Check if email is being changed and if it's already in use
-      if (email && email !== existingUser.email) {
-        const emailExists = await prisma.user.findUnique({
-          where: { email }
-        });
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        department,
+        jobTitle,
+        phone,
+        location,
+        bio,
+        avatarColor,
+        avatarUrl,
+        avatarConfig,
+        theme,
+        language,
+        // admin-only fields
+        role,
+        status,
+        allowedPages,
+      } = req.body;
 
-        if (emailExists) {
-          return res.status(400).json({ error: 'Email già in uso' });
+      const data: any = {};
+      if (firstName !== undefined) data.firstName = firstName;
+      if (lastName !== undefined) data.lastName = lastName;
+      if (department !== undefined) data.department = department;
+      if (jobTitle !== undefined) data.jobTitle = jobTitle;
+      if (phone !== undefined) data.phone = phone;
+      if (location !== undefined) data.location = location;
+      if (bio !== undefined) data.bio = bio;
+      if (avatarColor !== undefined) data.avatarColor = avatarColor;
+      if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+      if (avatarConfig !== undefined) data.avatarConfig = avatarConfig;
+      if (theme !== undefined) data.theme = theme;
+      if (language !== undefined) data.language = language;
+
+      // Admin-only fields
+      if (req.user!.role === 'ADMIN') {
+        if (email !== undefined) {
+          if (email !== existingUser.email) {
+            const emailExists = await prisma.user.findUnique({ where: { email } });
+            if (emailExists) return res.status(400).json({ error: 'Email già in uso' });
+          }
+          data.email = email;
         }
+        if (role !== undefined) data.role = role;
+        if (status !== undefined) data.status = status;
+        if (allowedPages !== undefined) data.allowedPages = allowedPages;
+        if (password) data.password = await bcrypt.hash(password, 10);
       }
 
-      // Build update data
-      const updateData: any = {};
-
-      if (email) updateData.email = email;
-      if (firstName) updateData.firstName = firstName;
-      if (lastName) updateData.lastName = lastName;
-      if (role) updateData.role = role;
-      if (department !== undefined) updateData.department = department || null;
-      if (status) updateData.status = status;
-
-      // Hash password if provided
-      if (password) {
-        updateData.password = await bcrypt.hash(password, 10);
-      }
-
-      // Update user
       const user = await prisma.user.update({
         where: { id },
-        data: updateData,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          department: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        data,
+        select: USER_SELECT,
       });
 
       res.json(user);
@@ -204,39 +214,90 @@ router.put(
   }
 );
 
-// Delete user (Admin only)
+// PUT /api/users/:id/avatar-config — save avatar config (own or admin)
+router.put(
+  '/:id/avatar-config',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
+      const { config } = req.body;
+      const user = await prisma.user.update({
+        where: { id },
+        data: { avatarConfig: config as Prisma.InputJsonValue, avatarUrl: null },
+        select: USER_SELECT,
+      });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// DELETE /api/users/:id/avatar — remove avatar (own or admin)
+router.delete(
+  '/:id/avatar',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
+      const user = await prisma.user.update({
+        where: { id },
+        data: { avatarUrl: null, avatarConfig: Prisma.JsonNull },
+        select: USER_SELECT,
+      });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// DELETE /api/users/:id/avatar-config — remove avatar config (own or admin)
+router.delete(
+  '/:id/avatar-config',
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (req.user!.role !== 'ADMIN' && req.user!.id !== id) {
+        return res.status(403).json({ error: 'Accesso negato' });
+      }
+      const user = await prisma.user.update({
+        where: { id },
+        data: { avatarConfig: Prisma.JsonNull, avatarUrl: null },
+        select: USER_SELECT,
+      });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// DELETE /api/users/:id — soft-disable user (admin only)
 router.delete(
   '/:id',
   authenticate,
   authorize('ADMIN'),
-  auditLog('DELETE_USER', 'User'),
+  auditLog('DEACTIVATE_USER', 'User'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id }
-      });
-
-      if (!existingUser) {
-        return res.status(404).json({ error: 'Utente non trovato' });
-      }
-
-      // Prevent deleting yourself
       if (id === req.user!.id) {
-        return res.status(400).json({
-          error: 'Non puoi eliminare il tuo account'
-        });
+        return res.status(400).json({ error: 'Non puoi disattivare il tuo account' });
       }
-
-      // Delete user (soft delete by setting status to INACTIVE)
       await prisma.user.update({
         where: { id },
         data: { status: 'INACTIVE' },
       });
-
-      res.json({ message: 'Utente eliminato con successo' });
+      res.json({ message: 'Utente disattivato' });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
