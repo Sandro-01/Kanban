@@ -335,17 +335,32 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
     let cleaned = content;
 
     if (/^\s*<(html|div|p|table|span|img|h[1-6]|ul|ol|li|br)/i.test(cleaned)) {
-      // Strip quoted/forwarded sections before rendering
+      // 1. Strip quoted/forwarded sections
       cleaned = cleaned.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
       cleaned = cleaned.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
-      return cleaned
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+      // 2. Strip email signature: tables and images (Outlook signatures are always HTML tables with a logo)
+      cleaned = cleaned.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+      cleaned = cleaned.replace(/<img[^>]*\/?>/gi, '');
+      // 3. Strip security-sensitive attributes
+      cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
+      cleaned = cleaned.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
+      cleaned = cleaned.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+      // 4. Convert to plain text so the plain-text signature stripper (name/job title) can run
+      cleaned = cleaned
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(?:p|div|li|tr|h[1-6])>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      // 5. Fall through to the plain-text path below for signature name/job title stripping
     }
 
     if (isNdrContent(cleaned)) {

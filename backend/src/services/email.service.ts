@@ -81,6 +81,9 @@ function stripHtmlQuotes(html: string): string {
   result = result.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
   // HR separator + everything after (handles <hr>, <hr/>, <hr tabindex="-1"> etc.)
   result = result.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
+  // Strip email signature: HTML tables and inline images (Outlook signatures are always tables with logo)
+  result = result.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+  result = result.replace(/<img[^>]*\/?>/gi, '');
 
   // Strip remaining HTML tags
   result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
