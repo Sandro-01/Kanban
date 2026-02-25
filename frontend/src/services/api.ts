@@ -64,6 +64,24 @@ export const sla = {
   getViolations: () => api.get('/sla/violations'),
 };
 
+// Users
+export const users = {
+  getAll: () => api.get('/users'),
+  getAllAdmin: () => api.get('/users/all'),
+  get: (id: string) => api.get(`/users/${id}`),
+  update: (id: string, data: any) => api.put(`/users/${id}`, data),
+  uploadAvatar: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post(`/users/${id}/avatar`, formData);
+  },
+  removeAvatar: (id: string) => api.delete(`/users/${id}/avatar`),
+  saveAvatarConfig: (id: string, config: object) =>
+    api.put(`/users/${id}/avatar-config`, config),
+  removeAvatarConfig: (id: string) => api.delete(`/users/${id}/avatar-config`),
+  deactivate: (id: string) => api.delete(`/users/${id}`),
+};
+
 // Audit
 export const audit = {
   getLogs: (params?: any) => api.get('/audit', { params }),
