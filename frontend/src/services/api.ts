@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace(/\/api$/, '');
 export const UPLOADS_URL = `${BASE_URL}/uploads`;
 
@@ -22,6 +22,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && localStorage.getItem('token')) {
+      // Token scaduto o invalido - esegui logout automatico
       const isLoginRequest = error.config?.url?.includes('/auth/login');
       if (!isLoginRequest) {
         localStorage.removeItem('token');
@@ -72,6 +73,7 @@ export const tickets = {
     api.delete(`/tickets/${id}/assign-users/${userId}`),
   assignDepartments: (id: string, departments: string[]) =>
     api.post(`/tickets/${id}/assign-departments`, { departments }),
+  // Email integration
   addExternalContacts: (id: string, emails: string[]) =>
     api.post(`/tickets/${id}/external-contacts`, { emails }),
   removeExternalContact: (id: string, email: string) =>

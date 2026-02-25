@@ -6,7 +6,9 @@ import fs from 'fs';
 import { authenticate, AuthRequest, authorize } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
-import { notifyTicketUpdate, sendEmail, stripEmailQuotes } from '../services/email.service';
+import { notifyTicketUpdate, cleanEmailBodyForDescription } from '../services/email.service';
+import { sendTicketEmail } from '../services/emailIntegration.service';
+import { notifyComment, notifyAssignment, notifyStatusChange } from '../services/notification.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -34,31 +36,152 @@ const upload = multer({
 // Lista tickets
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { status, priority, boardId } = req.query;
+    const { status, priority, boardId, search, assignedUserId, department, dateFrom, dateTo } = req.query;
+    const currentUser = req.user!;
 
     const where: any = {};
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (boardId) where.boardId = boardId;
 
+    // Text search on title, description, or ticket ID
+    if (search && typeof search === 'string' && search.trim()) {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { title: { contains: search.trim(), mode: 'insensitive' } },
+            { description: { contains: search.trim(), mode: 'insensitive' } },
+            { id: { contains: search.trim(), mode: 'insensitive' } },
+          ]
+        }
+      ];
+    }
+
+    // Filter by assigned user
+    if (assignedUserId && typeof assignedUserId === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { assignments: { some: { userId: assignedUserId } } },
+            { assignedToId: assignedUserId }
+          ]
+        }
+      ];
+    }
+
+    // Filter by assigned department
+    if (department && typeof department === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        { assignedDepartments: { has: department } }
+      ];
+    }
+
+    // Date range filter
+    if (dateFrom && typeof dateFrom === 'string') {
+      where.AND = [
+        ...(where.AND || []),
+        { createdAt: { gte: new Date(dateFrom) } }
+      ];
+    }
+    if (dateTo && typeof dateTo === 'string') {
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      where.AND = [
+        ...(where.AND || []),
+        { createdAt: { lte: endDate } }
+      ];
+    }
+
+    // Visibility rules:
+    // ADMIN can see EVERYTHING
+    // Normal users follow assignment rules
+    if (currentUser.role !== 'ADMIN') {
+      // Visibility rules (user assignment has priority over department):
+      // 1. OPEN tickets with NO assignments → visible to everyone
+      // 2. Assigned to specific users → ONLY those users can see (even if department is also assigned)
+      // 3. Assigned to department WITHOUT user assignment → all users in that department can see
+      where.OR = [
+        // Rule 1: OPEN tickets with NO assignments (visible to all - "bacheca pubblica")
+        {
+          AND: [
+            { status: 'OPEN' },
+            { assignedDepartments: { isEmpty: true } },
+            { assignments: { none: {} } },
+            { assignedToId: null }
+          ]
+        },
+        // Rule 2: Multi-assigned to me
+        { assignments: { some: { userId: currentUser.id } } },
+        // Rule 3: Assigned to my department (only if no user assignments)
+        currentUser.department ? {
+          AND: [
+            { assignedDepartments: { has: currentUser.department } },
+            { assignments: { none: {} } }
+          ]
+        } : {},
+        // Rule 4: Assigned directly to me (legacy single assignment)
+        { assignedToId: currentUser.id },
+        // Rule 5: Tickets I created, ma solo se ancora in OPEN (bacheca pubblica)
+        // Una volta preso in carico da qualcuno, solo l'assegnatario lo vede
+        {
+          AND: [
+            { createdById: currentUser.id },
+            { status: 'OPEN' }
+          ]
+        },
+        // Rule 6: Ticket onboarding creati da me → visibili in QUALSIASI stato
+        // L'HR deve poter seguire l'avanzamento della nuova assunzione
+        {
+          AND: [
+            { createdById: currentUser.id },
+            { category: { in: ['Richiesta Onboarding', 'Onboarding - Dotazioni'] } }
+          ]
+        }
+      ];
+    }
+    // If ADMIN, no OR filter is added, so they see all tickets
+
     const tickets = await prisma.ticket.findMany({
       where,
       include: {
         createdBy: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         assignedTo: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         },
         column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
         attachments: {
-          where: { isDeleted: false }
+          where: { isDeleted: false },
+          include: {
+            uploadedBy: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
         },
         comments: {
           where: { isDeleted: false },
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            },
+            attachments: {
+              where: { isDeleted: false },
+              include: {
+                uploadedBy: {
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                }
+              }
             }
           },
           orderBy: { createdAt: 'asc' }
@@ -68,6 +191,66 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     });
 
     res.json(tickets);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get singolo ticket
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: {
+        createdBy: {
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+        },
+        assignedTo: {
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+        },
+        column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
+        attachments: {
+          where: { isDeleted: false },
+          include: {
+            uploadedBy: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
+        comments: {
+          where: { isDeleted: false },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            },
+            attachments: {
+              where: { isDeleted: false },
+              include: {
+                uploadedBy: {
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                }
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket non trovato' });
+    }
+
+    res.json(ticket);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -125,6 +308,59 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       return res.status(404).json({ error: 'Ticket non trovato' });
     }
 
+    // Ricalcolo SLA: se la priorità cambia, aggiorna slaHours e dueDate
+    if (updates.priority && updates.priority !== oldTicket.priority) {
+      const newSlaHours = getSLAHours(updates.priority);
+      updates.slaHours = newSlaHours;
+      updates.dueDate = new Date(oldTicket.createdAt.getTime() + newSlaHours * 60 * 60 * 1000);
+      console.log(`⏱️ SLA ricalcolato: ticket ${id} priorità ${oldTicket.priority} → ${updates.priority}, SLA ${oldTicket.slaHours}h → ${newSlaHours}h`);
+    }
+
+    // Auto-assegnazione: se lo status cambia da OPEN e il ticket non ha assegnazioni,
+    // assegna automaticamente all'utente che lo sta spostando ("presa in carico")
+    if (
+      updates.status &&
+      updates.status !== 'OPEN' &&
+      oldTicket.status === 'OPEN' &&
+      !oldTicket.assignedToId
+    ) {
+      const hasAssignments = await prisma.ticketAssignment.count({ where: { ticketId: id } });
+      const hasDepartments = oldTicket.assignedDepartments.length > 0;
+
+      if (hasAssignments === 0 && !hasDepartments) {
+        // Nessuna assegnazione: auto-assegna a chi trascina il ticket
+        await prisma.ticketAssignment.create({
+          data: {
+            ticketId: id,
+            userId: req.user!.id,
+            assignedBy: req.user!.id
+          }
+        });
+        console.log(`👤 Auto-assegnazione: ticket ${id} preso in carico da ${req.user!.email}`);
+      }
+    }
+
+    // Rilascio: se il ticket torna a OPEN, rimuovi tutte le assegnazioni
+    // così torna visibile a tutti nella bacheca pubblica
+    // ECCEZIONE: i ticket onboarding mantengono le assegnazioni automatiche (reparto/responsabile)
+    if (
+      updates.status === 'OPEN' &&
+      oldTicket.status !== 'OPEN'
+    ) {
+      const isOnboardingTicket = oldTicket.category === 'Richiesta Onboarding' || oldTicket.category === 'Onboarding - Dotazioni';
+
+      if (isOnboardingTicket) {
+        // Ticket onboarding: mantieni assegnazioni originali (reparto IT, manager)
+        console.log(`🔒 Ticket onboarding ${id} tornato in To Do, assegnazioni mantenute`);
+      } else {
+        const removed = await prisma.ticketAssignment.deleteMany({ where: { ticketId: id } });
+        // Rimuovi anche l'assegnazione diretta legacy
+        updates.assignedToId = null;
+        updates.assignedDepartments = [];
+        console.log(`🔓 Rilascio: ticket ${id} tornato in To Do, rimosse ${removed.count} assegnazioni`);
+      }
+    }
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: updates,
@@ -132,6 +368,13 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
         createdBy: true,
         assignedTo: true,
         column: true,
+        assignments: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        },
         attachments: { where: { isDeleted: false } },
         comments: { where: { isDeleted: false } }
       }
@@ -158,6 +401,12 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
       await notifyTicketUpdate(id, 'Assegnazione', 'Il ticket ti è stato assegnato');
     }
 
+    // In-app notification per cambio stato
+    if (updates.status && updates.status !== oldTicket.status) {
+      const changerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+      notifyStatusChange(id, req.user!.id, changerName, oldTicket.status, updates.status).catch((e: any) => console.error('❌ notifyStatusChange failed:', e.message));
+    }
+
     res.json(ticket);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -168,7 +417,12 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
 router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { content } = req.body;
+    const { content, hasFile } = req.body;
+
+    console.log('📝 Adding comment to ticket:', id);
+    console.log('📝 Content:', content);
+    console.log('📝 User ID:', req.user!.id);
+    console.log('📝 Has file coming:', hasFile);
 
     const comment = await prisma.comment.create({
       data: {
@@ -178,15 +432,34 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
       },
       include: {
         user: {
-          select: { id: true, email: true, firstName: true, lastName: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true }
         }
       }
     });
 
-    await notifyTicketUpdate(id, 'Nuovo commento', content);
+    console.log('✅ Comment created successfully:', comment.id);
+
+    // In-app notification
+    const authorName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+    notifyComment(id, req.user!.id, authorName, content).catch((e: any) => console.error('❌ notifyComment failed:', e.message));
+
+    // Se ci sono file in arrivo, la notifica email verrà inviata dall'endpoint attachments
+    if (!hasFile) {
+      try {
+        await notifyTicketUpdate(id, 'Nuovo commento', content, undefined, authorName);
+        console.log('✅ Email notification sent');
+      } catch (emailError: any) {
+        console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+      }
+    } else {
+      console.log('ℹ️ Deferring email notification to attachment upload');
+    }
 
     res.json(comment);
   } catch (error: any) {
+    console.error('❌ ERROR adding comment:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -195,22 +468,115 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
 router.post('/:id/attachments', authenticate, upload.single('file'), auditLog('UPLOAD_FILE', 'Attachment'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { commentId, isLastFile } = req.body; // Optional commentId to link file to comment
+
+    console.log('📎 Uploading file to ticket:', id);
+    if (commentId) {
+      console.log('📎 Linking to comment:', commentId);
+    }
 
     if (!req.file) {
+      console.error('❌ No file in request');
       return res.status(400).json({ error: 'Nessun file caricato' });
     }
+
+    console.log('📎 File info:', {
+      name: req.file.originalname,
+      size: req.file.size,
+      type: req.file.mimetype
+    });
 
     const attachment = await prisma.attachment.create({
       data: {
         ticketId: id,
+        commentId: commentId || null, // Link to comment if provided
         fileName: req.file.originalname,
-        filePath: req.file.path,
+        filePath: req.file.filename,
         fileSize: req.file.size,
-        mimeType: req.file.mimetype
+        mimeType: req.file.mimetype,
+        uploadedById: req.user!.id
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        }
       }
     });
 
+    console.log('✅ File uploaded successfully:', attachment.id);
+
+    // Invia notifica email:
+    // - Standalone (senza commento): notifica con file allegato
+    // - Con commento + isLastFile: notifica combinata (testo commento + tutti i file)
+    const shouldNotify = !commentId || (commentId && isLastFile === 'true');
+    if (shouldNotify) {
+      try {
+        // Raccogli tutti gli allegati collegati al commento (o solo questo se standalone)
+        let allFileAttachments: { fileName: string; filePath: string; mimeType: string }[] = [];
+        let emailDetails = '';
+
+        if (commentId) {
+          // Recupera il commento e tutti i suoi allegati
+          const commentData = await prisma.comment.findUnique({
+            where: { id: commentId },
+            include: { attachments: true }
+          });
+          emailDetails = commentData?.content || '';
+          allFileAttachments = (commentData?.attachments || []).map((att: any) => ({
+            fileName: att.fileName,
+            filePath: att.filePath,
+            mimeType: att.mimeType || 'application/octet-stream',
+          }));
+        } else {
+          emailDetails = `File caricato: <strong>${req.file.originalname}</strong>`;
+          allFileAttachments = [{ fileName: req.file.originalname, filePath: req.file.filename, mimeType: req.file.mimetype }];
+        }
+
+        const authorName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || undefined;
+        await notifyTicketUpdate(
+          id,
+          commentId ? 'Nuovo commento' : 'Nuovo allegato',
+          emailDetails,
+          allFileAttachments,
+          authorName
+        );
+        console.log('✅ Email notification sent with', allFileAttachments.length, 'attachment(s)');
+      } catch (emailError: any) {
+        console.error('⚠️ Email notification failed (non-critical):', emailError.message);
+      }
+    } else {
+      console.log('ℹ️ Waiting for last file before sending notification');
+    }
+
     res.json(attachment);
+  } catch (error: any) {
+    console.error('❌ ERROR uploading file:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE ticket (solo admin)
+router.delete('/:id', authenticate, authorize('ADMIN'), auditLog('DELETE_TICKET', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket non trovato' });
+    }
+
+    // Cascade delete rimuove automaticamente: comments, attachments, assignments, history
+    await prisma.ticket.delete({ where: { id } });
+
+    res.json({ message: 'Ticket eliminato con successo' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -264,146 +630,355 @@ router.get('/:id/history', authenticate, async (req: AuthRequest, res: Response)
   }
 });
 
-// ── Assign users ──────────────────────────────────────────────────────────────
-router.post('/:id/assign-users', authenticate, async (req: AuthRequest, res: Response) => {
+// Assign users to ticket (multi-assignment)
+router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { userIds } = req.body;
+    const { userIds } = req.body; // Array of user IDs
+
     if (!Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({ error: 'userIds array required' });
-    }
-    const ticket = await prisma.ticket.update({
-      where: { id },
-      data: { assignedToId: userIds[0] },
-      include: { assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } } }
-    });
-    res.json(ticket);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete('/:id/assign-users/:userId', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const ticket = await prisma.ticket.update({
-      where: { id },
-      data: { assignedToId: null }
-    });
-    res.json(ticket);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ── Assign departments ────────────────────────────────────────────────────────
-router.post('/:id/assign-departments', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { departments } = req.body;
-    const ticket = await prisma.ticket.update({
-      where: { id },
-      data: { category: Array.isArray(departments) ? departments[0] : departments }
-    });
-    res.json(ticket);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ── External contacts ─────────────────────────────────────────────────────────
-router.post('/:id/external-contacts', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { emails } = req.body;
-
-    const ticket = await (prisma.ticket as any).findUnique({ where: { id } });
-    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
-
-    const existing: string[] = ticket.externalContacts
-      ? JSON.parse(ticket.externalContacts)
-      : [];
-
-    const merged = [...new Set([...existing, ...(emails || [])])];
-
-    const updated = await (prisma.ticket as any).update({
-      where: { id },
-      data: { externalContacts: JSON.stringify(merged) }
-    });
-
-    res.json({ ...updated, externalContacts: merged });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete('/:id/external-contacts/:email', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id, email } = req.params;
-    const decoded = decodeURIComponent(email);
-
-    const ticket = await (prisma.ticket as any).findUnique({ where: { id } });
-    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
-
-    const existing: string[] = ticket.externalContacts
-      ? JSON.parse(ticket.externalContacts)
-      : [];
-
-    const filtered = existing.filter((e: string) => e !== decoded);
-
-    const updated = await (prisma.ticket as any).update({
-      where: { id },
-      data: { externalContacts: JSON.stringify(filtered) }
-    });
-
-    res.json({ ...updated, externalContacts: filtered });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ── Send email from ticket ────────────────────────────────────────────────────
-router.post('/:id/send-email', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { subject, body, toEmails, attachmentIds } = req.body;
-
-    if (!toEmails || !Array.isArray(toEmails) || toEmails.length === 0) {
-      return res.status(400).json({ error: 'toEmails required' });
+      return res.status(400).json({ error: 'userIds must be a non-empty array' });
     }
 
-    const ticket = await prisma.ticket.findUnique({ where: { id } });
-    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+    console.log(`👥 Assigning ${userIds.length} users to ticket ${id}`);
 
-    const htmlBody = `
-      <div>${body.replace(/\n/g, '<br>')}</div>
-      <hr style="margin:20px 0;border:none;border-top:1px solid #e5e7eb;">
-      <p style="color:#6b7280;font-size:12px;">
-        Ticket #${ticket.id.substring(0, 8)} — ${ticket.title}<br>
-        Per rispondere scrivi direttamente a questa email.
-      </p>
-    `;
+    // Get ticket info for notifications
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { title: true, status: true }
+    });
 
-    for (const toEmail of toEmails) {
-      await sendEmail(toEmail, subject, htmlBody, id);
+    // Clear department assignments (mutually exclusive)
+    await prisma.ticket.update({
+      where: { id },
+      data: { assignedDepartments: [] }
+    });
+    console.log('🏢 Cleared department assignments (users have priority)');
+
+    // Remove all existing user assignments first
+    await prisma.ticketAssignment.deleteMany({
+      where: { ticketId: id }
+    });
+
+    // Create new assignments for each user
+    const assignments = await Promise.all(
+      userIds.map((userId: string) =>
+        prisma.ticketAssignment.create({
+          data: {
+            ticketId: id,
+            userId: userId,
+            assignedBy: req.user!.id
+          },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+            }
+          }
+        })
+      )
+    );
+
+    // If assigning to users, move ticket to IN_PROGRESS
+    if (ticket && ticket.status === 'OPEN') {
+      await prisma.ticket.update({
+        where: { id },
+        data: { status: 'IN_PROGRESS' }
+      });
+      console.log('📊 Ticket moved to IN_PROGRESS');
     }
 
-    // Save as outgoing email comment
-    const comment = await (prisma.comment as any).create({
-      data: {
-        ticketId: id,
-        userId: req.user!.id,
-        content: body,
-        isOutgoingEmail: true,
-        toEmails: JSON.stringify(toEmails),
-      },
-      include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true } }
+    // In-app + email notifications
+    const assignerName = [req.user!.firstName, req.user!.lastName].filter(Boolean).join(' ') || 'Utente';
+    notifyAssignment(id, userIds, assignerName).catch((e: any) => console.error('❌ notifyAssignment failed:', e.message));
+
+    for (const assignment of assignments) {
+      try {
+        await notifyTicketUpdate(
+          id,
+          'Assegnazione ticket',
+          `Ti è stato assegnato il ticket: "${ticket?.title}". Controlla la tua board Kanban.`
+        );
+        console.log(`📧 Email sent to ${assignment.user.email}`);
+      } catch (emailError: any) {
+        console.error(`⚠️ Failed to send email to ${assignment.user.email}:`, emailError.message);
+      }
+    }
+
+    console.log(`✅ Successfully assigned ${assignments.length} users`);
+    res.json({ message: 'Users assigned successfully', assignments });
+  } catch (error: any) {
+    console.error('❌ Error assigning users:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remove user assignment from ticket
+router.delete('/:id/assign-users/:userId', authenticate, auditLog('UNASSIGN_USER', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, userId } = req.params;
+
+    console.log(`👥 Removing user ${userId} from ticket ${id}`);
+
+    await prisma.ticketAssignment.delete({
+      where: {
+        ticketId_userId: {
+          ticketId: id,
+          userId: userId
+        }
       }
     });
 
-    res.json(comment);
+    console.log(`✅ Successfully removed user assignment`);
+    res.json({ message: 'User unassigned successfully' });
   } catch (error: any) {
+    console.error('❌ Error removing user assignment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Assign departments to ticket
+router.post('/:id/assign-departments', authenticate, auditLog('ASSIGN_DEPARTMENTS', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { departments } = req.body; // Array of department names
+
+    if (!Array.isArray(departments)) {
+      return res.status(400).json({ error: 'departments must be an array' });
+    }
+
+    console.log(`🏢 Assigning departments to ticket ${id}:`, departments);
+
+    // Clear user assignments (mutually exclusive)
+    await prisma.ticketAssignment.deleteMany({
+      where: { ticketId: id }
+    });
+    console.log('👥 Cleared user assignments (departments have priority)');
+
+    // Update ticket with department assignments
+    const ticket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        assignedDepartments: departments,
+        status: 'OPEN' // Keep in OPEN when assigning to departments
+      }
+    });
+
+    console.log(`✅ Successfully assigned departments, ticket status: ${ticket.status}`);
+    res.json({ message: 'Departments assigned successfully', assignedDepartments: ticket.assignedDepartments });
+  } catch (error: any) {
+    console.error('❌ Error assigning departments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ EMAIL INTEGRATION ============
+
+// Aggiungi contatti esterni al ticket
+router.post('/:id/external-contacts', authenticate, auditLog('ADD_EXTERNAL_CONTACTS', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { emails } = req.body; // Array of email addresses
+
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ error: 'emails must be a non-empty array' });
+    }
+
+    // Valida formato email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = emails.filter((email: string) => !emailRegex.test(email));
+    if (invalidEmails.length > 0) {
+      return res.status(400).json({ error: `Invalid email format: ${invalidEmails.join(', ')}` });
+    }
+
+    // Recupera ticket esistente
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { externalContacts: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Aggiungi nuovi contatti (evita duplicati)
+    const existingContacts = new Set(ticket.externalContacts);
+    emails.forEach((email: string) => existingContacts.add(email.toLowerCase()));
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        externalContacts: Array.from(existingContacts),
+      },
+    });
+
+    console.log(`📧 Contatti esterni aggiunti al ticket ${id}:`, emails);
+    res.json({
+      message: 'External contacts added successfully',
+      externalContacts: updatedTicket.externalContacts
+    });
+  } catch (error: any) {
+    console.error('❌ Error adding external contacts:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Invia email a contatti esterni (con allegati opzionali)
+router.post('/:id/send-email', authenticate, auditLog('SEND_EMAIL', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subject, body, toEmails, attachmentIds } = req.body;
+    const currentUser = req.user!;
+
+    if (!subject || !body) {
+      return res.status(400).json({ error: 'subject and body are required' });
+    }
+
+    if (!Array.isArray(toEmails) || toEmails.length === 0) {
+      return res.status(400).json({ error: 'toEmails must be a non-empty array' });
+    }
+
+    // Verifica che ticket esista
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: {
+        attachments: {
+          where: {
+            isDeleted: false,
+            ...(attachmentIds && attachmentIds.length > 0
+              ? { id: { in: attachmentIds } }
+              : {}
+            )
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Invia email con allegati
+    await sendTicketEmail(id, toEmails, subject, body, currentUser.id, attachmentIds);
+
+    // Crea commento per tracciare l'invio email, poi imposta flag outgoing via raw SQL
+    // (raw SQL evita dipendenza da prisma generate per le nuove colonne)
+    const emailComment = await prisma.comment.create({
+      data: {
+        ticketId: id,
+        userId: currentUser.id,
+        content: body,
+      },
+    });
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Comment" SET "isOutgoingEmail" = true, "toEmails" = $1 WHERE "id" = $2`,
+      toEmails,
+      emailComment.id
+    );
+
+    console.log(`✅ Email inviata per ticket ${id} a ${toEmails.join(', ')}`);
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      console.log(`   📎 Con ${ticket.attachments.length} allegati`);
+    }
+    res.json({
+      message: 'Email sent successfully',
+      sentTo: toEmails,
+      attachmentsCount: ticket.attachments?.length || 0
+    });
+  } catch (error: any) {
+    console.error('❌ Error sending email:', error);
+    res.status(500).json({ error: error.message || 'Failed to send email' });
+  }
+});
+
+// Rimuovi contatto esterno
+router.delete('/:id/external-contacts/:email', authenticate, auditLog('REMOVE_EXTERNAL_CONTACT', 'Ticket'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, email } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { externalContacts: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Rimuovi contatto
+    const updatedContacts = ticket.externalContacts.filter(
+      (contact) => contact.toLowerCase() !== email.toLowerCase()
+    );
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: {
+        externalContacts: updatedContacts,
+      },
+    });
+
+    console.log(`🗑️ Contatto esterno rimosso dal ticket ${id}:`, email);
+    res.json({
+      message: 'External contact removed successfully',
+      externalContacts: updatedTicket.externalContacts
+    });
+  } catch (error: any) {
+    console.error('❌ Error removing external contact:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrazione: pulisci descrizioni ticket creati da email (one-time)
+router.post('/migrate/clean-email-descriptions', authenticate, authorize('ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    // Trova tutti i ticket con emailThreadId (creati da email)
+    const emailTickets = await prisma.ticket.findMany({
+      where: {
+        emailThreadId: { not: null },
+      },
+      include: {
+        attachments: {
+          where: { commentId: null, isDeleted: false },
+        },
+      },
+    });
+
+    let updated = 0;
+    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+
+    for (const ticket of emailTickets) {
+      // Pulisci la descrizione dal corpo email originale
+      const cleanBody = cleanEmailBodyForDescription(ticket.description || '');
+
+      // Aggiungi link allegati
+      let newDescription = cleanBody;
+      if (ticket.attachments.length > 0) {
+        const attachmentLines = ticket.attachments.map((a: any) => {
+          const url = `${baseUrl}/uploads/${a.filePath}`;
+          const isImage = a.mimeType?.startsWith('image/');
+          return isImage
+            ? `![${a.fileName}](${url})`
+            : `[${a.fileName}](${url})`;
+        });
+        newDescription += '\n\n---\n**Allegati:**\n' + attachmentLines.join('\n');
+      }
+
+      // Aggiorna solo se la descrizione è cambiata
+      if (newDescription !== ticket.description) {
+        await prisma.ticket.update({
+          where: { id: ticket.id },
+          data: { description: newDescription },
+        });
+        updated++;
+      }
+    }
+
+    res.json({
+      message: `Migrazione completata: ${updated}/${emailTickets.length} ticket aggiornati`,
+      total: emailTickets.length,
+      updated,
+    });
+  } catch (error: any) {
+    console.error('❌ Errore migrazione descrizioni email:', error);
     res.status(500).json({ error: error.message });
   }
 });

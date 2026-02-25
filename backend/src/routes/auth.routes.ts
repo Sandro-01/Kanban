@@ -43,7 +43,8 @@ router.post('/register', auditLog('REGISTER', 'User'), async (req: Request, res:
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role
+        role: user.role,
+        department: user.department
       }
     });
   } catch (error: any) {
@@ -84,6 +85,7 @@ router.post('/login', auditLog('LOGIN', 'User'), async (req: Request, res: Respo
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        department: user.department,
         status: user.status
       }
     });
@@ -103,6 +105,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         firstName: true,
         lastName: true,
         role: true,
+        department: true,
         status: true,
         createdAt: true
       }

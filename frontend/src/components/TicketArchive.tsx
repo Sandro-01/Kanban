@@ -7,33 +7,33 @@ interface TicketArchiveProps {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In Progress',
-  WAITING: 'Waiting',
-  RESOLVED: 'Resolved',
-  CLOSED: 'Closed',
+  OPEN: 'Aperto',
+  IN_PROGRESS: 'In Lavorazione',
+  WAITING: 'In Attesa',
+  RESOLVED: 'Risolto',
+  CLOSED: 'Chiuso',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: '#000000',
-  IN_PROGRESS: '#FFE600',
-  WAITING: '#888888',
-  RESOLVED: '#333333',
-  CLOSED: '#CCCCCC',
+  OPEN: '#3b82f6',
+  IN_PROGRESS: '#f59e0b',
+  WAITING: '#8b5cf6',
+  RESOLVED: '#10b981',
+  CLOSED: '#6b7280',
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: 'Critical',
-  HIGH: 'High',
-  MEDIUM: 'Medium',
-  LOW: 'Low',
+  CRITICAL: 'Critica',
+  HIGH: 'Alta',
+  MEDIUM: 'Media',
+  LOW: 'Bassa',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#000000',
-  HIGH: '#333333',
-  MEDIUM: '#FFE600',
-  LOW: '#D0C8BF',
+  CRITICAL: '#dc2626',
+  HIGH: '#f97316',
+  MEDIUM: '#eab308',
+  LOW: '#22c55e',
 };
 
 const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
@@ -71,7 +71,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
   const loadTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = { archive: 'true' };
+      const params: any = {};
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.status = statusFilter;
       if (priorityFilter) params.priority = priorityFilter;
@@ -139,61 +139,27 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-GB', {
+    return new Date(date).toLocaleDateString('it-IT', {
       day: '2-digit', month: '2-digit', year: 'numeric',
     });
   };
 
   const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleDateString('en-GB', {
+    return new Date(date).toLocaleDateString('it-IT', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-  };
-
-  const isHtmlContent = (text: string) => /<[a-z][\s\S]*>/i.test(text);
-
-  const isFullHtmlDocument = (text: string) => /<html/i.test(text);
-
-  const renderHtml = (text: string): string => {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/\n/g, '<br/>');
-  };
-
-  const buildSrcdoc = (html: string): string => {
-    let content = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-    if (isFullHtmlDocument(content)) {
-      const baseStyle = `<style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; font-size:14px; }</style>`;
-      return content.replace(/<head([^>]*)>/i, `<head$1>${baseStyle}`);
-    }
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; font-size: 14px; line-height: 1.6; color: #1f2937; }
-      img { max-width: 100%; height: auto; } table { border-collapse: collapse; } a { color: #4f6ef7; }
-    </style></head><body>${content}</body></html>`;
-  };
-
-  const handleIframeLoad = (e: React.SyntheticEvent<HTMLIFrameElement>) => {
-    const iframe = e.currentTarget;
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-        iframe.style.height = Math.min(h + 20, 600) + 'px';
-      }
-    } catch {}
   };
 
   return (
     <div className="archive-page">
       <div className="archive-header">
         <div>
-          <h2>Ticket Archive</h2>
-          <p className="archive-subtitle">Search and view all tickets, current and past</p>
+          <h2>Archivio Ticket</h2>
+          <p className="archive-subtitle">Cerca e consulta tutti i ticket, attuali e passati</p>
         </div>
         <div className="archive-stats">
-          <span className="stat-pill">{allTickets.length} ticket(s) found</span>
+          <span className="stat-pill">{allTickets.length} ticket trovati</span>
         </div>
       </div>
 
@@ -203,7 +169,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder="Search by title, description or ID..."
+            placeholder="Cerca per titolo, descrizione o ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="search-input"
@@ -212,38 +178,38 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
 
         <div className="filter-row">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="filter-select">
-            <option value="">All statuses</option>
+            <option value="">Tutti gli stati</option>
             {Object.entries(STATUS_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
 
           <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="filter-select">
-            <option value="">All priorities</option>
+            <option value="">Tutte le priorita</option>
             {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
 
           <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="filter-select">
-            <option value="">All departments</option>
+            <option value="">Tutti i reparti</option>
             {departments.map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
 
           <select value={assignedUserFilter} onChange={(e) => setAssignedUserFilter(e.target.value)} className="filter-select">
-            <option value="">All operators</option>
+            <option value="">Tutti gli operatori</option>
             {operators.map((u: any) => (
               <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
             ))}
           </select>
 
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="filter-date" title="From date" />
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="filter-date" title="To date" />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="filter-date" title="Da data" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="filter-date" title="A data" />
 
           {hasFilters && (
-            <button className="filter-clear" onClick={clearFilters}>Clear filters</button>
+            <button className="filter-clear" onClick={clearFilters}>Pulisci filtri</button>
           )}
         </div>
       </div>
@@ -251,22 +217,22 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
       {/* Results table */}
       <div className="archive-table-wrapper">
         {loading ? (
-          <div className="archive-loading">Loading...</div>
+          <div className="archive-loading">Caricamento...</div>
         ) : allTickets.length === 0 ? (
           <div className="archive-empty">
             <span className="empty-icon">📭</span>
-            <p>No tickets found with the selected filters</p>
+            <p>Nessun ticket trovato con i filtri selezionati</p>
           </div>
         ) : (
           <table className="archive-table">
             <thead>
               <tr>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Title</th>
-                <th>Created by</th>
-                <th>Assigned to</th>
-                <th>Date</th>
+                <th>Stato</th>
+                <th>Priorita</th>
+                <th>Titolo</th>
+                <th>Creato da</th>
+                <th>Assegnato a</th>
+                <th>Data</th>
                 <th>SLA</th>
               </tr>
             </thead>
@@ -276,7 +242,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                 return (
                   <tr key={ticket.id} onClick={() => openDetail(ticket)} className="archive-row">
                     <td>
-                      <span className="status-badge" style={{ background: STATUS_COLORS[ticket.status], color: ticket.status === 'IN_PROGRESS' ? '#000000' : ticket.status === 'WAITING' || ticket.status === 'CLOSED' ? '#FFFFFF' : '#FFFFFF' }}>
+                      <span className="status-badge" style={{ background: STATUS_COLORS[ticket.status] }}>
                         {STATUS_LABELS[ticket.status] || ticket.status}
                       </span>
                     </td>
@@ -299,17 +265,17 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                           ))}
                         </div>
                       ) : (
-                        <span className="no-assignee">Unassigned</span>
+                        <span className="no-assignee">Non assegnato</span>
                       )}
                     </td>
                     <td className="cell-date">{formatDate(ticket.createdAt)}</td>
                     <td>
                       {ticket.slaViolated ? (
-                        <span className="sla-tag violated">Violated</span>
+                        <span className="sla-tag violated">Violato</span>
                       ) : ticket.resolvedAt ? (
                         <span className="sla-tag ok">OK</span>
                       ) : (
-                        <span className="sla-tag pending">In progress</span>
+                        <span className="sla-tag pending">In corso</span>
                       )}
                     </td>
                   </tr>
@@ -336,73 +302,54 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
               {/* Info grid */}
               <div className="detail-grid">
                 <div className="detail-field">
-                  <label>Status</label>
-                  <span className="status-badge" style={{ background: STATUS_COLORS[selectedTicket.status], color: selectedTicket.status === 'IN_PROGRESS' ? '#000000' : '#FFFFFF' }}>
+                  <label>Stato</label>
+                  <span className="status-badge" style={{ background: STATUS_COLORS[selectedTicket.status] }}>
                     {STATUS_LABELS[selectedTicket.status]}
                   </span>
                 </div>
                 <div className="detail-field">
-                  <label>Priority</label>
+                  <label>Priorita</label>
                   <span>
                     <span className="priority-dot" style={{ background: PRIORITY_COLORS[selectedTicket.priority] }} />
                     {PRIORITY_LABELS[selectedTicket.priority]}
                   </span>
                 </div>
                 <div className="detail-field">
-                  <label>Created by</label>
+                  <label>Creato da</label>
                   <span>{selectedTicket.createdBy?.firstName} {selectedTicket.createdBy?.lastName}</span>
                 </div>
                 <div className="detail-field">
-                  <label>Creation date</label>
+                  <label>Data creazione</label>
                   <span>{formatDateTime(selectedTicket.createdAt)}</span>
                 </div>
                 {selectedTicket.resolvedAt && (
                   <div className="detail-field">
-                    <label>Resolved on</label>
+                    <label>Risolto il</label>
                     <span>{formatDateTime(selectedTicket.resolvedAt)}</span>
                   </div>
                 )}
                 <div className="detail-field">
-                  <label>SLA Deadline</label>
+                  <label>Scadenza SLA</label>
                   <span>{formatDateTime(selectedTicket.dueDate)}</span>
                 </div>
               </div>
 
               {/* Description */}
               <div className="detail-section">
-                <label>Description</label>
-                {selectedTicket.description ? (
-                  isFullHtmlDocument(selectedTicket.description) ? (
-                    <iframe
-                      style={{ width: '100%', minHeight: '200px', border: '1px solid #e2e8f0', borderRadius: '6px' }}
-                      srcDoc={buildSrcdoc(selectedTicket.description)}
-                      sandbox="allow-same-origin"
-                      onLoad={handleIframeLoad}
-                      title="Description"
-                    />
-                  ) : isHtmlContent(selectedTicket.description) ? (
-                    <div
-                      className="detail-description"
-                      dangerouslySetInnerHTML={{ __html: renderHtml(selectedTicket.description) }}
-                    />
-                  ) : (
-                    <p className="detail-description">{selectedTicket.description}</p>
-                  )
-                ) : (
-                  <p className="detail-description" style={{ color: '#9ca3af' }}>—</p>
-                )}
+                <label>Descrizione</label>
+                <p className="detail-description">{selectedTicket.description}</p>
               </div>
 
               {/* Assignees */}
               <div className="detail-section">
-                <label>Assigned to</label>
+                <label>Assegnato a</label>
                 <div className="detail-assignees">
                   {getAssignees(selectedTicket).length > 0 ? (
                     getAssignees(selectedTicket).map((name, i) => (
                       <span className="assignee-tag" key={i}>{name}</span>
                     ))
                   ) : (
-                    <span className="no-assignee">Unassigned</span>
+                    <span className="no-assignee">Non assegnato</span>
                   )}
                 </div>
               </div>
@@ -410,75 +357,46 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
               {/* Comments */}
               {selectedTicket.comments?.length > 0 && (
                 <div className="detail-section">
-                  <label>Comments ({selectedTicket.comments.length})</label>
+                  <label>Commenti ({selectedTicket.comments.length})</label>
                   <div className="detail-comments">
-                    {selectedTicket.comments.map((c: any) => {
-                      const commentAttachments = (selectedTicket.attachments || []).filter(
-                        (a: any) => a.commentId === c.id
-                      );
-                      return (
-                        <div className="detail-comment" key={c.id}>
-                          <div className="comment-meta">
-                            <strong>{c.user?.firstName} {c.user?.lastName}</strong>
-                            <span>{formatDateTime(c.createdAt)}</span>
-                          </div>
-                          {isHtmlContent(c.content || '') ? (
-                            <div dangerouslySetInnerHTML={{ __html: renderHtml(c.content) }} />
-                          ) : (
-                            <p>{c.content}</p>
-                          )}
-                          {commentAttachments.length > 0 && (
-                            <div className="comment-attachments">
-                              {commentAttachments.map((a: any) => (
-                                <a
-                                  key={a.id}
-                                  href={`${UPLOADS_URL}/${a.filePath}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="attachment-link"
-                                >
-                                  📎 {a.fileName}
-                                </a>
-                              ))}
-                            </div>
-                          )}
+                    {selectedTicket.comments.map((c: any) => (
+                      <div className="detail-comment" key={c.id}>
+                        <div className="comment-meta">
+                          <strong>{c.user?.firstName} {c.user?.lastName}</strong>
+                          <span>{formatDateTime(c.createdAt)}</span>
                         </div>
-                      );
-                    })}
+                        <p>{c.content}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Standalone attachments (not linked to any comment) */}
-              {(() => {
-                const standalone = (selectedTicket.attachments || []).filter(
-                  (a: any) => !a.commentId
-                );
-                return standalone.length > 0 ? (
-                  <div className="detail-section">
-                    <label>Attachments ({standalone.length})</label>
-                    <div className="detail-attachments">
-                      {standalone.map((a: any) => (
-                        <a
-                          key={a.id}
-                          href={`${UPLOADS_URL}/${a.filePath}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="attachment-link"
-                        >
-                          📎 {a.fileName}
-                        </a>
-                      ))}
-                    </div>
+              {/* Attachments */}
+              {selectedTicket.attachments?.length > 0 && (
+                <div className="detail-section">
+                  <label>Allegati ({selectedTicket.attachments.length})</label>
+                  <div className="detail-attachments">
+                    {selectedTicket.attachments.map((a: any) => (
+                      <a
+                        key={a.id}
+                        href={`${UPLOADS_URL}/${a.filePath}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="attachment-link"
+                      >
+                        📎 {a.fileName}
+                      </a>
+                    ))}
                   </div>
-                ) : null;
-              })()}
+                </div>
+              )}
 
               {/* History */}
               <div className="detail-section">
-                <label>Change history</label>
+                <label>Cronologia modifiche</label>
                 {loadingHistory ? (
-                  <p className="loading-text">Loading...</p>
+                  <p className="loading-text">Caricamento...</p>
                 ) : ticketHistory.length > 0 ? (
                   <div className="detail-history">
                     {ticketHistory.map((h: any, i: number) => (
@@ -494,7 +412,7 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                     ))}
                   </div>
                 ) : (
-                  <p className="no-history">No changes recorded</p>
+                  <p className="no-history">Nessuna modifica registrata</p>
                 )}
               </div>
             </div>

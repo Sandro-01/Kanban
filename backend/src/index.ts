@@ -2,21 +2,30 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import { PrismaClient } from '@prisma/client';
 
 // Routes
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import ticketRoutes from './routes/ticket.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import offboardingRoutes from './routes/offboarding.routes';
 import slaRoutes from './routes/sla.routes';
 import auditRoutes from './routes/audit.routes';
 import emailRoutes from './routes/email.routes';
-import userRoutes from './routes/user.routes';
+import notificationRoutes from './routes/notification.routes';
+import kbRoutes from './routes/kb.routes';
+import aiRoutes from './routes/ai.routes';
 
 // Services
 import { startEmailListener } from './services/email.service';
+import { startEmailPolling } from './services/emailIntegration.service';
+import { startGraphEmailPolling, isGraphConfigured } from './services/graphEmail.service';
 
 dotenv.config();
+
+// Prisma Client (shared instance)
+export const prisma = new PrismaClient();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -31,13 +40,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/offboarding', offboardingRoutes);
 app.use('/api/sla', slaRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/email', emailRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/kb', kbRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
@@ -58,13 +70,116 @@ app.get('/api/compliance', (req: Request, res: Response) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Email listener starting...`);
+// Auto-create SystemConfig table if not exists
+async function ensureSystemConfigTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SystemConfig" (
+        "key" TEXT NOT NULL,
+        "value" TEXT NOT NULL,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        CONSTRAINT "SystemConfig_pkey" PRIMARY KEY ("key")
+      )
+    `);
+    console.log('✅ SystemConfig table ready');
+  } catch (err: any) {
+    console.warn('⚠️  SystemConfig table check failed:', err.message);
+  }
+}
 
-  // Start email listener for incoming tickets
-  startEmailListener().catch(console.error);
+// Auto-add outgoing email columns to Comment table if missing
+async function ensureCommentEmailColumns() {
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Comment" ADD COLUMN IF NOT EXISTS "isOutgoingEmail" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Comment" ADD COLUMN IF NOT EXISTS "toEmails" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`);
+  } catch (err: any) {
+    console.warn('⚠️  Comment email columns check failed:', err.message);
+  }
+}
+
+// Auto-create Notification table
+async function ensureNotificationTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Notification" (
+        "id" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "type" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "message" TEXT NOT NULL,
+        "ticketId" TEXT,
+        "read" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification" ("userId", "read")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Notification_createdAt_idx" ON "Notification" ("createdAt")`);
+  } catch (err: any) {
+    console.warn('⚠️  Notification table check failed:', err.message);
+  }
+}
+
+// Auto-create KBArticle table
+async function ensureKBArticleTable() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "KBArticle" (
+        "id" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "content" TEXT NOT NULL,
+        "category" TEXT NOT NULL,
+        "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        "authorId" TEXT NOT NULL,
+        "published" BOOLEAN NOT NULL DEFAULT true,
+        "viewCount" INTEGER NOT NULL DEFAULT 0,
+        "helpfulCount" INTEGER NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        CONSTRAINT "KBArticle_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "KBArticle_category_idx" ON "KBArticle" ("category")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "KBArticle_published_idx" ON "KBArticle" ("published")`);
+  } catch (err: any) {
+    console.warn('⚠️  KBArticle table check failed:', err.message);
+  }
+}
+
+// Start server
+app.listen(PORT, async () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+
+  // Ensure DB schema is up to date
+  await ensureSystemConfigTable();
+  await ensureCommentEmailColumns();
+  await ensureNotificationTable();
+  await ensureKBArticleTable();
+
+  // Email integration
+  if (isGraphConfigured()) {
+    // Microsoft Graph API (OAuth2 - raccomandato per M365)
+    console.log('📧 Email integration via Microsoft Graph API');
+    startGraphEmailPolling(30);
+  } else {
+    // Check SMTP config from DB or env
+    const { getSmtpConfig } = await import('./services/config.service');
+    const smtp = await getSmtpConfig();
+    if (smtp.host && smtp.user && smtp.password) {
+      console.log(`📧 Email integration via IMAP (host: ${smtp.host}, user: ${smtp.user})`);
+      startEmailListener().catch((err) => {
+        console.warn('⚠️  Email listener non avviato:', err.message);
+      });
+      startEmailPolling(2);
+    } else {
+      console.log('📧 Email integration disabilitata');
+      console.log('   Configurare via Admin UI (/settings/email)');
+      console.log('   Oppure impostare AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET');
+      if (!smtp.password) {
+        console.log('   ⚠️  SMTP password mancante - controllare configurazione');
+      }
+    }
+  }
 });
 
 export default app;
