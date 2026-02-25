@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -151,13 +153,47 @@ function stripPlainTextQuotes(text: string): string {
 }
 
 /**
+ * Converts HTML to plain text without any quote/forward stripping.
+ * Used as a fallback when a forwarded email has no new text before the forward marker.
+ */
+function htmlToPlainText(html: string): string {
+  let result = html;
+  result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  result = result.replace(/<br\s*\/?>/gi, '\n');
+  result = result.replace(/<\/p>/gi, '\n');
+  result = result.replace(/<[^>]+>/g, ' ');
+  result = result
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  result = result.replace(/[ \t]+/g, ' ');
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result.trim();
+}
+
+/**
  * Strips quoted / forwarded content from an inbound email body.
  * Accepts both HTML and plain-text bodies.
+ *
+ * If stripping removes all content (e.g. a pure forward with no new text),
+ * falls back to a plain-text conversion of the full raw body so the ticket
+ * description is never left empty.
  */
 export function stripEmailQuotes(body: string): string {
   if (!body) return '';
   const isHtml = /<html|<body|<div|<p[^>]*>|<br/i.test(body);
-  return isHtml ? stripHtmlQuotes(body) : stripPlainTextQuotes(body);
+  const cleaned = isHtml ? stripHtmlQuotes(body) : stripPlainTextQuotes(body);
+
+  // Pure forward with no new text typed before it → entire content was stripped.
+  // Fall back to full plain-text conversion so we preserve the forwarded message.
+  if (!cleaned.trim()) {
+    return isHtml ? htmlToPlainText(body) : body.trim();
+  }
+
+  return cleaned;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -315,6 +351,44 @@ export async function createTicketFromEmail(
       emailThreadId: from
     }
   });
+
+  // Save email attachments to disk and DB
+  if (attachments && attachments.length > 0) {
+    const uploadsDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    for (const att of attachments) {
+      try {
+        const filename = att.filename || att.name || 'attachment';
+        const content = att.content || att.data;
+        const mimeType = att.type || att.contentType || att.content_type || 'application/octet-stream';
+
+        if (!content) continue;
+
+        const uniqueName = `${Date.now()}-${filename}`;
+        const filePath = path.join(uploadsDir, uniqueName);
+        const buffer = Buffer.isBuffer(content)
+          ? content
+          : Buffer.from(content as string, 'base64');
+
+        fs.writeFileSync(filePath, buffer);
+
+        await prisma.attachment.create({
+          data: {
+            ticketId: ticket.id,
+            fileName: filename,
+            filePath,
+            fileSize: buffer.length,
+            mimeType
+          }
+        });
+      } catch (attErr) {
+        console.error('Errore salvataggio allegato email:', attErr);
+      }
+    }
+  }
 
   // Invia conferma
   await sendEmail(
