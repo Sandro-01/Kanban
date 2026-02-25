@@ -1100,10 +1100,6 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                 return label.split(' ').map((n: string) => n[0] || '').join('').slice(0, 2).toUpperCase() || '?';
               };
               const fileTypeInfo = cardType === 'files' ? getFileTypeInfo(item.file) : null;
-              const initials = computeInitials(primaryLabel);
-              const avatarBg  = fileTypeInfo
-                ? fileTypeInfo.bg
-                : (item.user?.avatarColor || getAvatarColor(primaryLabel));
 
               const atts: any[] = item.attachments || [];
               const isEmailItem = item.isEmailReply || item.isOutgoingEmail;
