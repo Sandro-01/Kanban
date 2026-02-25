@@ -64,6 +64,7 @@ export const sla = {
   getViolations: () => api.get('/sla/violations'),
 };
 
+
 // Audit
 export const audit = {
   getLogs: (params?: any) => api.get('/audit', { params }),
