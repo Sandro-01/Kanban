@@ -84,7 +84,15 @@ router.post('/login', auditLog('LOGIN', 'User'), async (req: Request, res: Respo
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        status: user.status
+        status: user.status,
+        department: user.department,
+        jobTitle: user.jobTitle,
+        avatarColor: user.avatarColor,
+        avatarUrl: user.avatarUrl,
+        avatarConfig: user.avatarConfig,
+        theme: user.theme,
+        language: user.language,
+        allowedPages: user.allowedPages,
       }
     });
   } catch (error: any) {
@@ -104,7 +112,19 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
         lastName: true,
         role: true,
         status: true,
-        createdAt: true
+        department: true,
+        jobTitle: true,
+        phone: true,
+        location: true,
+        bio: true,
+        allowedPages: true,
+        avatarColor: true,
+        avatarUrl: true,
+        avatarConfig: true,
+        theme: true,
+        language: true,
+        createdAt: true,
+        updatedAt: true,
       }
     });
 

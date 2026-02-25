@@ -11,6 +11,7 @@ import Offboarding from './components/Offboarding';
 import SLAMetrics from './components/SLAMetrics';
 import AuditLogs from './components/AuditLogs';
 import Header from './components/Header';
+import UserProfile from './components/UserProfile';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,6 +41,12 @@ function App() {
     setUser(null);
   };
 
+  const handleUserUpdate = (updatedUser: any) => {
+    const merged = { ...user, ...updatedUser };
+    localStorage.setItem('user', JSON.stringify(merged));
+    setUser(merged);
+  };
+
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
@@ -55,6 +62,10 @@ function App() {
           <Route path="/offboarding" element={<Offboarding user={user} />} />
           <Route path="/sla" element={<SLAMetrics user={user} />} />
           <Route path="/audit" element={<AuditLogs user={user} />} />
+          <Route
+            path="/profile"
+            element={<UserProfile user={user} onUserUpdate={handleUserUpdate} />}
+          />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>

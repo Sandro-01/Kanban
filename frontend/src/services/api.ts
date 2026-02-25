@@ -72,4 +72,14 @@ export const audit = {
     api.get('/audit/export', { params, responseType: 'blob' }),
 };
 
+// Users
+export const users = {
+  getAll: () => api.get('/users'),
+  getAllAdmin: () => api.get('/users/all'),
+  get: (id: string) => api.get(`/users/${id}`),
+  update: (id: string, data: any) => api.put(`/users/${id}`, data),
+  updateAvatar: (id: string, data: any) => api.put(`/users/${id}/avatar`, data),
+  deactivate: (id: string) => api.delete(`/users/${id}`),
+};
+
 export default api;

@@ -19,20 +19,42 @@ model User {
   lastName      String
   role          UserRole @default(USER)
   status        UserStatus @default(ACTIVE)
+
+  // Profile & department
+  department    String?
+  jobTitle      String?
+  phone         String?
+  location      String?
+  bio           String?
+
+  // Access control
+  allowedPages  String[] @default([])
+
+  // Avatar & Sims-like customization
+  avatarColor   String?  @default("#4F46E5")
+  avatarUrl     String?
+  avatarConfig  Json?    // { skinTone, hairStyle, hairColor, eyeColor, outfit, accessory, expression, mood, badge }
+
+  // UI preferences
+  theme         String?  @default("dark")
+  language      String?  @default("it")
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  assignedTickets Ticket[] @relation("AssignedTickets")
-  createdTickets  Ticket[] @relation("CreatedTickets")
-  comments        Comment[]
-  auditLogs       AuditLog[]
-  onboardings     Onboarding[] @relation("OnboardingUser")
-  managedOnboardings Onboarding[] @relation("OnboardingManager")
-  offboardings    Offboarding[] @relation("OffboardingUser")
+  assignedTickets     Ticket[]      @relation("AssignedTickets")
+  createdTickets      Ticket[]      @relation("CreatedTickets")
+  comments            Comment[]
+  auditLogs           AuditLog[]
+  onboardings         Onboarding[]  @relation("OnboardingUser")
+  managedOnboardings  Onboarding[]  @relation("OnboardingManager")
+  offboardings        Offboarding[] @relation("OffboardingUser")
   managedOffboardings Offboarding[] @relation("OffboardingManager")
 
   @@index([email])
+  @@index([department])
+  @@index([status])
 }
 
 enum UserRole {
