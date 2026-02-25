@@ -1,6 +1,8 @@
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const BASE_URL = API_URL.replace(/\/api$/, '');
+export const UPLOADS_URL = `${BASE_URL}/uploads`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,6 +17,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Gestione automatica errori 401 (token scaduto/invalido)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+      if (!isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth
 export const auth = {
   login: (email: string, password: string) =>
@@ -26,25 +44,52 @@ export const auth = {
 // Tickets
 export const tickets = {
   getAll: (params?: any) => api.get('/tickets', { params }),
+  getById: (id: string) => api.get(`/tickets/${id}`),
   create: (data: any) => api.post('/tickets', data),
   update: (id: string, data: any) => api.put(`/tickets/${id}`, data),
-  addComment: (id: string, content: string) =>
-    api.post(`/tickets/${id}/comments`, { content }),
-  uploadFile: (id: string, file: File) => {
+  delete: (id: string) => api.delete(`/tickets/${id}`),
+  addComment: (id: string, content: string, hasFile?: boolean) =>
+    api.post(`/tickets/${id}/comments`, { content, hasFile }),
+  deleteComment: (ticketId: string, commentId: string) =>
+    api.delete(`/tickets/${ticketId}/comments/${commentId}`),
+  uploadFile: (id: string, file: File, commentId?: string, isLastFile?: boolean) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (commentId) {
+      formData.append('commentId', commentId);
+    }
+    if (isLastFile) {
+      formData.append('isLastFile', 'true');
+    }
     return api.post(`/tickets/${id}/attachments`, formData);
   },
+  deleteAttachment: (ticketId: string, attachmentId: string) =>
+    api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`),
   getHistory: (id: string) => api.get(`/tickets/${id}/history`),
+  assignUsers: (id: string, userIds: string[]) =>
+    api.post(`/tickets/${id}/assign-users`, { userIds }),
+  unassignUser: (id: string, userId: string) =>
+    api.delete(`/tickets/${id}/assign-users/${userId}`),
+  assignDepartments: (id: string, departments: string[]) =>
+    api.post(`/tickets/${id}/assign-departments`, { departments }),
+  addExternalContacts: (id: string, emails: string[]) =>
+    api.post(`/tickets/${id}/external-contacts`, { emails }),
+  removeExternalContact: (id: string, email: string) =>
+    api.delete(`/tickets/${id}/external-contacts/${email}`),
+  sendEmail: (id: string, data: { subject: string; body: string; toEmails: string[]; attachmentIds?: string[] }) =>
+    api.post(`/tickets/${id}/send-email`, data),
 };
 
 // Onboarding
 export const onboarding = {
   getAll: () => api.get('/onboarding'),
   create: (data: any) => api.post('/onboarding', data),
+  updateInfo: (id: string, data: any) => api.put(`/onboarding/${id}/info`, data),
+  updateEquipment: (id: string, data: any) => api.put(`/onboarding/${id}/equipment`, data),
   updateTask: (id: string, taskId: string, completed: boolean) =>
     api.put(`/onboarding/${id}/tasks/${taskId}`, { completed }),
   get: (id: string) => api.get(`/onboarding/${id}`),
+  delete: (id: string) => api.delete(`/onboarding/${id}`),
 };
 
 // Offboarding
@@ -73,13 +118,21 @@ export const users = {
   uploadAvatar: (id: string, file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    return api.post(`/users/${id}/avatar`, formData);
+    return api.put(`/users/${id}/avatar`, formData);
   },
   removeAvatar: (id: string) => api.delete(`/users/${id}/avatar`),
   saveAvatarConfig: (id: string, config: object) =>
-    api.put(`/users/${id}/avatar-config`, config),
+    api.put(`/users/${id}/avatar-config`, { config }),
   removeAvatarConfig: (id: string) => api.delete(`/users/${id}/avatar-config`),
   deactivate: (id: string) => api.delete(`/users/${id}`),
+};
+
+// Email Config (Admin)
+export const emailConfig = {
+  get: () => api.get('/email/config'),
+  save: (data: Record<string, string>) => api.put('/email/config', data),
+  test: () => api.post('/email/config/test'),
+  status: () => api.get('/email/config/status'),
 };
 
 // Audit
@@ -88,6 +141,38 @@ export const audit = {
   getISOReport: (params?: any) => api.get('/audit/iso-report', { params }),
   export: (params?: any) =>
     api.get('/audit/export', { params, responseType: 'blob' }),
+};
+
+// Notifications
+export const notifications = {
+  getAll: (params?: any) => api.get('/notifications', { params }),
+  getCount: () => api.get('/notifications/count'),
+  markRead: (id: string) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+};
+
+// AI
+export const ai = {
+  status: () => api.get('/ai/status'),
+  suggestCategory: (title: string, description: string) =>
+    api.post('/ai/suggest-category', { title, description }),
+  suggestResponse: (ticketId: string) =>
+    api.post('/ai/suggest-response', { ticketId }),
+  findDuplicates: (title: string, description: string) =>
+    api.post('/ai/find-duplicates', { title, description }),
+  suggestKB: (title: string, description: string) =>
+    api.post('/ai/suggest-kb', { title, description }),
+  saveConfig: (apiKey: string) => api.post('/ai/config', { apiKey }),
+};
+
+// Knowledge Base
+export const kb = {
+  getAll: (params?: any) => api.get('/kb', { params }),
+  getById: (id: string) => api.get(`/kb/${id}`),
+  create: (data: any) => api.post('/kb', data),
+  update: (id: string, data: any) => api.put(`/kb/${id}`, data),
+  delete: (id: string) => api.delete(`/kb/${id}`),
+  markHelpful: (id: string) => api.post(`/kb/${id}/helpful`),
 };
 
 export default api;
