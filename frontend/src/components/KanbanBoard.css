@@ -262,3 +262,38 @@
   gap: 10px;
   margin-top: 20px;
 }
+
+/* ── Ticket Page (full page layout) ─────────────────────────────────────── */
+.ticket-page-full {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.ticket-page-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.ticket-back-btn {
+  font-size: 13px;
+  padding: 6px 14px;
+}
+
+.ticket-page-id {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: monospace;
+  background: #1e293b;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.ticket-page-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}

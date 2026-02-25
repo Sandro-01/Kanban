@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { useNavigate } from 'react-router-dom';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor from './RichTextEditor';
 import './KanbanBoard.css';
@@ -17,8 +18,8 @@ const COLUMNS = [
 ];
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -152,7 +153,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                             className={`ticket-card ${isOverdue(ticket) ? 'overdue' : ''} ${
                               snapshot.isDragging ? 'dragging' : ''
                             }`}
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => { if (!snapshot.isDragging) navigate(`/ticket/${ticket.id}`); }}
                           >
                             <div className="ticket-header">
                               <span className="ticket-id">#{ticket.id.substring(0, 8)}</span>
@@ -217,16 +218,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
           ))}
         </div>
       </DragDropContext>
-
-      {selectedTicket && (
-        <TicketModal
-          ticket={selectedTicket}
-          user={user}
-          onClose={() => setSelectedTicket(null)}
-          onUpdate={loadTickets}
-          onMove={handleMoveTicket}
-        />
-      )}
 
       {showNewTicket && (
         <NewTicketModal

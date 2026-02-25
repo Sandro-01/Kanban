@@ -16,6 +16,7 @@ import EmailSettings from './components/EmailSettings';
 import KnowledgeBase from './components/KnowledgeBase';
 import Header from './components/Header';
 import UserProfile from './components/UserProfile';
+import TicketPage from './components/TicketPage';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ user: any; allowedRoles?: string[]; allowedDepartments?: string[]; children: React.ReactElement }> = ({
@@ -151,6 +152,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Ticket Page */}
+          <Route path="/ticket/:id" element={<TicketPage user={user} />} />
 
           {/* User Profile */}
           <Route
