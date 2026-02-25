@@ -9,6 +9,9 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: string;
+    department?: string;
+    firstName?: string;
+    lastName?: string;
   };
 }
 
@@ -41,7 +44,10 @@ export const authenticate = async (
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      department: (user as any).department ?? undefined,
+      firstName: (user as any).firstName ?? undefined,
+      lastName: (user as any).lastName ?? undefined,
     };
 
     next();
@@ -58,6 +64,25 @@ export const authorize = (...roles: string[]) => {
 
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ error: 'Accesso negato' });
+    }
+
+    next();
+  };
+};
+
+export const authorizeDepartment = (...departments: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Non autenticato' });
+    }
+
+    // ADMIN bypasses department check
+    if (req.user.role === 'ADMIN') {
+      return next();
+    }
+
+    if (!req.user.department || !departments.includes(req.user.department)) {
+      return res.status(403).json({ error: 'Accesso negato: dipartimento non autorizzato' });
     }
 
     next();

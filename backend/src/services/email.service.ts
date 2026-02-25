@@ -204,6 +204,13 @@ function htmlToPlainText(html: string): string {
  * falls back to a plain-text conversion of the full raw body so the ticket
  * description is never left empty.
  */
+/**
+ * Alias used by ticket.routes to clean an inbound email body before storing it.
+ */
+export function cleanEmailBodyForDescription(body: string): string {
+  return stripEmailQuotes(body);
+}
+
 export function stripEmailQuotes(body: string): string {
   if (!body) return '';
   const isHtml = /<html|<body|<div|<p[^>]*>|<br/i.test(body);
@@ -304,7 +311,8 @@ export async function createTicketFromEmail(
   fromRaw: string,
   subject: string,
   body: string,
-  attachments: any[]
+  attachments: any[],
+  messageId?: string
 ) {
   const from = extractEmailAddress(fromRaw);
 
@@ -455,7 +463,9 @@ export async function startEmailListener() {
 export async function notifyTicketUpdate(
   ticketId: string,
   updateType: string,
-  details: string
+  details: string,
+  attachments?: any[],
+  authorName?: string
 ) {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
