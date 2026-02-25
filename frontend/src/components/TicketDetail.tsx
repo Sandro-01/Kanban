@@ -536,19 +536,22 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
     if (!ticket) return [];
     const items: any[] = [];
 
-    if (isEmailTicket && ticket.description) {
+    if (isEmailTicket) {
       const ticketCreatedMs = new Date(ticket.createdAt).getTime();
       const hasInitialEmailComment = (ticket.comments || []).some((c: any) =>
         c.isEmailReply && !c.isOutgoingEmail &&
         Math.abs(new Date(c.createdAt).getTime() - ticketCreatedMs) < 120_000
       );
+      // Create the origin card even when description is empty so that
+      // email attachments are always grouped here instead of appearing
+      // as orphan "file upload" items.
       if (!hasInitialEmailComment) {
         items.push({
           type: 'comment',
           id: 'email-origin',
           date: new Date(ticket.createdAt),
           user: null,
-          content: ticket.description,
+          content: ticket.description || '',
           isEmailReply: true,
           isOutgoingEmail: false,
           fromEmail: ticket.externalContacts?.[0]?.email || '',
