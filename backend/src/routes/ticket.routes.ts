@@ -6,7 +6,7 @@ import fs from 'fs';
 import { authenticate, AuthRequest, authorize } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
-import { notifyTicketUpdate } from '../services/email.service';
+import { notifyTicketUpdate, sendEmail, stripEmailQuotes } from '../services/email.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -259,6 +259,150 @@ router.get('/:id/history', authenticate, async (req: AuthRequest, res: Response)
     });
 
     res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Assign users ──────────────────────────────────────────────────────────────
+router.post('/:id/assign-users', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userIds } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds array required' });
+    }
+    const ticket = await prisma.ticket.update({
+      where: { id },
+      data: { assignedToId: userIds[0] },
+      include: { assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } } }
+    });
+    res.json(ticket);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/:id/assign-users/:userId', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const ticket = await prisma.ticket.update({
+      where: { id },
+      data: { assignedToId: null }
+    });
+    res.json(ticket);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Assign departments ────────────────────────────────────────────────────────
+router.post('/:id/assign-departments', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { departments } = req.body;
+    const ticket = await prisma.ticket.update({
+      where: { id },
+      data: { category: Array.isArray(departments) ? departments[0] : departments }
+    });
+    res.json(ticket);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── External contacts ─────────────────────────────────────────────────────────
+router.post('/:id/external-contacts', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { emails } = req.body;
+
+    const ticket = await (prisma.ticket as any).findUnique({ where: { id } });
+    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+
+    const existing: string[] = ticket.externalContacts
+      ? JSON.parse(ticket.externalContacts)
+      : [];
+
+    const merged = [...new Set([...existing, ...(emails || [])])];
+
+    const updated = await (prisma.ticket as any).update({
+      where: { id },
+      data: { externalContacts: JSON.stringify(merged) }
+    });
+
+    res.json({ ...updated, externalContacts: merged });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/:id/external-contacts/:email', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, email } = req.params;
+    const decoded = decodeURIComponent(email);
+
+    const ticket = await (prisma.ticket as any).findUnique({ where: { id } });
+    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+
+    const existing: string[] = ticket.externalContacts
+      ? JSON.parse(ticket.externalContacts)
+      : [];
+
+    const filtered = existing.filter((e: string) => e !== decoded);
+
+    const updated = await (prisma.ticket as any).update({
+      where: { id },
+      data: { externalContacts: JSON.stringify(filtered) }
+    });
+
+    res.json({ ...updated, externalContacts: filtered });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Send email from ticket ────────────────────────────────────────────────────
+router.post('/:id/send-email', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subject, body, toEmails, attachmentIds } = req.body;
+
+    if (!toEmails || !Array.isArray(toEmails) || toEmails.length === 0) {
+      return res.status(400).json({ error: 'toEmails required' });
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+
+    const htmlBody = `
+      <div>${body.replace(/\n/g, '<br>')}</div>
+      <hr style="margin:20px 0;border:none;border-top:1px solid #e5e7eb;">
+      <p style="color:#6b7280;font-size:12px;">
+        Ticket #${ticket.id.substring(0, 8)} — ${ticket.title}<br>
+        Per rispondere scrivi direttamente a questa email.
+      </p>
+    `;
+
+    for (const toEmail of toEmails) {
+      await sendEmail(toEmail, subject, htmlBody, id);
+    }
+
+    // Save as outgoing email comment
+    const comment = await (prisma.comment as any).create({
+      data: {
+        ticketId: id,
+        userId: req.user!.id,
+        content: body,
+        isOutgoingEmail: true,
+        toEmails: JSON.stringify(toEmails),
+      },
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true } }
+      }
+    });
+
+    res.json(comment);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

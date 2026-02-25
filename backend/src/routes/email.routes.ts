@@ -1,21 +1,22 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { createTicketFromEmail } from '../services/email.service';
+import { processInboundEmail } from '../services/email.service';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Webhook per ricevere email (SendGrid, Mailgun, etc.)
+// Se la mail è una risposta a un ticket esistente (subject contiene "Ticket #<id>")
+// viene aggiunta come commento. Altrimenti viene creato un nuovo ticket.
 router.post('/webhook', async (req: any, res: Response) => {
   try {
-    // Esempio per SendGrid
     const { from, subject, text, html, attachments } = req.body;
 
-    await createTicketFromEmail(
+    await processInboundEmail(
       from,
-      subject,
-      html || text,
+      subject || '',
+      html || text || '',
       attachments || []
     );
 

@@ -186,7 +186,8 @@ model Ticket {
   slaViolated   Boolean  @default(false)
 
   // Email integration
-  emailThreadId String?
+  emailThreadId    String?
+  externalContacts String?   // JSON array of email strings
 
   // Relations
   comments      Comment[]
@@ -231,6 +232,12 @@ model Comment {
   // IMMUTABILE: Non può essere eliminato o modificato
   isDeleted Boolean  @default(false) // Soft delete solo per UI, ma dati rimangono
 
+  // Email reply metadata
+  isEmailReply    Boolean @default(false)
+  isOutgoingEmail Boolean @default(false)
+  fromEmail       String?
+  toEmails        String? // JSON array stored as string
+
   @@index([ticketId])
   @@index([userId])
 }
@@ -249,6 +256,9 @@ model Attachment {
 
   // IMMUTABILE: Non può essere eliminato
   isDeleted   Boolean  @default(false) // Soft delete solo per UI, ma file rimane
+
+  // Link to comment (optional)
+  commentId   String?
 
   @@index([ticketId])
 }
