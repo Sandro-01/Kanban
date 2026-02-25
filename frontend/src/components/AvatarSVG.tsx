@@ -3,6 +3,7 @@ import React from 'react';
 /* ── Types ──────────────────────────────────────────────────────────────── */
 
 export interface AvatarConfig {
+  gender: 'female' | 'male';
   skinTone: string;
   hairStyle: string;
   hairColor: string;
@@ -17,11 +18,17 @@ export interface AvatarConfig {
   eyelashes: string;
   earring: string;
   nailColor: string;
+  beard: string;
   /** Background color stored inside the config for self-contained rendering */
   avatarColor?: string;
 }
 
 /* ── Options ────────────────────────────────────────────────────────────── */
+
+export const GENDERS = [
+  { id: 'female', label: 'Donna', emoji: '👩' },
+  { id: 'male',   label: 'Uomo',  emoji: '👨' },
+];
 
 export const SKIN_TONES = [
   { id: 'light',  label: 'Chiara',      color: '#FFDBB4' },
@@ -31,7 +38,7 @@ export const SKIN_TONES = [
   { id: 'deep',   label: 'Profonda',    color: '#4A2912' },
 ];
 
-export const HAIR_STYLES = [
+export const FEMALE_HAIR_STYLES = [
   { id: 'short',     label: 'Corto',        emoji: '💇' },
   { id: 'medium',    label: 'Medio',        emoji: '👩' },
   { id: 'long',      label: 'Lungo liscio', emoji: '👱‍♀️' },
@@ -45,6 +52,21 @@ export const HAIR_STYLES = [
   { id: 'bangs',     label: 'Frangetta',    emoji: '💁‍♀️' },
   { id: 'bald',      label: 'Rasato',       emoji: '🧑‍🦲' },
 ];
+
+export const MALE_HAIR_STYLES = [
+  { id: 'sidepart',  label: 'Scalata',      emoji: '💈' },
+  { id: 'buzz',      label: 'Buzzcut',      emoji: '✂️' },
+  { id: 'pompadour', label: 'Pompadour',    emoji: '🕺' },
+  { id: 'undercut',  label: 'Undercut',     emoji: '💇‍♂️' },
+  { id: 'curly',     label: 'Ricci',        emoji: '🌀' },
+  { id: 'medium',    label: 'Medio',        emoji: '👨' },
+  { id: 'short',     label: 'Corto',        emoji: '👦' },
+  { id: 'bald',      label: 'Calvo',        emoji: '🧑‍🦲' },
+  { id: 'ponytail',  label: 'Coda',         emoji: '🐴' },
+];
+
+/** Union of all styles for TypeScript — the component picks from the right set */
+export const HAIR_STYLES = FEMALE_HAIR_STYLES;
 
 export const HAIR_COLORS = [
   { id: '#1a1a1a', label: 'Nero' },
@@ -82,13 +104,13 @@ export const OUTFITS = [
   { id: 'floral',    label: 'Floreale',    emoji: '🌺' },
   { id: 'elegant',   label: 'Elegante',    emoji: '✨' },
   { id: 'princess',  label: 'Principessa', emoji: '👸' },
-  { id: 'sport',     label: 'Sport',       emoji: '🏃‍♀️' },
+  { id: 'sport',     label: 'Sport',       emoji: '🏃' },
   { id: 'formal',    label: 'Formale',     emoji: '👔' },
   { id: 'creative',  label: 'Creativo',    emoji: '🎨' },
   { id: 'tech',      label: 'Tech',        emoji: '💻' },
   { id: 'ninja',     label: 'Ninja',       emoji: '🥷' },
-  { id: 'astronaut', label: 'Astronauta',  emoji: '👩‍🚀' },
-  { id: 'chef',      label: 'Chef',        emoji: '👩‍🍳' },
+  { id: 'astronaut', label: 'Astronauta',  emoji: '🧑‍🚀' },
+  { id: 'chef',      label: 'Chef',        emoji: '🧑‍🍳' },
 ];
 
 export const ACCESSORIES = [
@@ -108,26 +130,26 @@ export const ACCESSORIES = [
 
 export const EXPRESSIONS = [
   { id: 'happy',   label: 'Felice',            emoji: '😄' },
-  { id: 'cute',    label: 'Carina',            emoji: '🥰' },
+  { id: 'cute',    label: 'Carino/a',          emoji: '🥰' },
   { id: 'wink',    label: 'Ammiccante',        emoji: '😉' },
   { id: 'kiss',    label: 'Bacio',             emoji: '😘' },
   { id: 'excited', label: 'Entusiasta',        emoji: '🤩' },
   { id: 'cool',    label: 'Cool',              emoji: '😎' },
-  { id: 'smirk',   label: 'Sorriso malizioso', emoji: '😏' },
+  { id: 'smirk',   label: 'Sorriso obliquo',  emoji: '😏' },
   { id: 'neutral', label: 'Neutro',            emoji: '😐' },
-  { id: 'focused', label: 'Concentrata',       emoji: '🧐' },
-  { id: 'silly',   label: 'Buffa',             emoji: '🤪' },
-  { id: 'tired',   label: 'Stanca',            emoji: '😴' },
-  { id: 'serious', label: 'Seria',             emoji: '😤' },
+  { id: 'focused', label: 'Concentrato/a',     emoji: '🧐' },
+  { id: 'silly',   label: 'Buffo/a',           emoji: '🤪' },
+  { id: 'tired',   label: 'Stanco/a',          emoji: '😴' },
+  { id: 'serious', label: 'Serio/a',           emoji: '😤' },
 ];
 
 export const MOODS = [
-  { id: 'romantic',  label: 'Romantica',    emoji: '💕', color: '#FF69B4' },
-  { id: 'playful',   label: 'Giocosa',      emoji: '🎀', color: '#FF85A1' },
-  { id: 'energized', label: 'Energica',     emoji: '⚡', color: '#F39C12' },
-  { id: 'calm',      label: 'Calma',        emoji: '🌊', color: '#3498DB' },
-  { id: 'creative',  label: 'Creativa',     emoji: '🌈', color: '#9B59B6' },
-  { id: 'confident', label: 'Sicura di sé', emoji: '💪', color: '#E74C3C' },
+  { id: 'romantic',  label: 'Romantico/a',  emoji: '💕', color: '#FF69B4' },
+  { id: 'playful',   label: 'Giocoso/a',    emoji: '🎀', color: '#FF85A1' },
+  { id: 'energized', label: 'Energico/a',   emoji: '⚡', color: '#F39C12' },
+  { id: 'calm',      label: 'Calmo/a',      emoji: '🌊', color: '#3498DB' },
+  { id: 'creative',  label: 'Creativo/a',   emoji: '🌈', color: '#9B59B6' },
+  { id: 'confident', label: 'Sicuro/a',     emoji: '💪', color: '#E74C3C' },
   { id: 'social',    label: 'Sociale',      emoji: '🎉', color: '#2ECC71' },
   { id: 'dreamy',    label: 'Sognante',     emoji: '🌙', color: '#7C83FD' },
   { id: 'zen',       label: 'Zen',          emoji: '🧘', color: '#1ABC9C' },
@@ -199,6 +221,14 @@ export const NAIL_COLORS = [
   { id: 'coral',       label: 'Corallo',    color: '#FF7F50' },
 ];
 
+export const BEARD_STYLES = [
+  { id: 'none',    label: 'Nessuna',     emoji: '✖️' },
+  { id: 'stubble', label: 'Barba corta', emoji: '🧔' },
+  { id: 'goatee',  label: 'Pizzetto',    emoji: '🧔‍♂️' },
+  { id: 'short',   label: 'Barba media', emoji: '🧔' },
+  { id: 'full',    label: 'Barba piena', emoji: '🧔‍♂️' },
+];
+
 export const AVATAR_COLORS = [
   '#DB2777', '#EC4899', '#F472B6', '#9333EA',
   '#7C3AED', '#4F46E5', '#0284C7', '#059669',
@@ -206,6 +236,7 @@ export const AVATAR_COLORS = [
 ];
 
 export const DEFAULT_CONFIG: AvatarConfig = {
+  gender: 'female',
   skinTone: 'light',
   hairStyle: 'long',
   hairColor: '#4a3728',
@@ -220,6 +251,26 @@ export const DEFAULT_CONFIG: AvatarConfig = {
   eyelashes: 'natural',
   earring: 'studs',
   nailColor: 'pink',
+  beard: 'none',
+};
+
+export const MALE_DEFAULT_CONFIG: AvatarConfig = {
+  gender: 'male',
+  skinTone: 'medium',
+  hairStyle: 'sidepart',
+  hairColor: '#4a3728',
+  eyeColor: 'brown',
+  outfit: 'formal',
+  accessory: 'none',
+  expression: 'happy',
+  mood: 'confident',
+  badge: 'none',
+  lipstick: 'none',
+  blush: 'none',
+  eyelashes: 'none',
+  earring: 'none',
+  nailColor: 'none',
+  beard: 'none',
 };
 
 /* ── AvatarPreview SVG component ─────────────────────────────────────────── */
@@ -236,6 +287,8 @@ export function AvatarPreview({
   /** When true the SVG fills its container (100%×100%) */
   responsive?: boolean;
 }) {
+  const isMale = config.gender === 'male';
+
   const skin = SKIN_TONES.find(s => s.id === config.skinTone)?.color ?? '#FFDBB4';
   const eye  = EYE_COLORS.find(e => e.id === config.eyeColor)?.color ?? '#8B6914';
   const hair = config.hairColor;
@@ -251,90 +304,186 @@ export function AvatarPreview({
   const cx = s / 2;
   const cy = s / 2;
 
-  const hairPaths: Record<string, React.ReactNode> = {
+  /* ── Face geometry ─── */
+  // Female: rounder face. Male: slightly wider with chin definition.
+  const faceRx = isMale ? s * 0.225 : s * 0.215;
+  const faceRy = isMale ? s * 0.228 : s * 0.22;
+  const faceCy = cy - s * 0.03;
+
+  /* ── Hair paths ─── */
+  // Female hair styles
+  const femaleHairPaths: Record<string, React.ReactNode> = {
     bald: null,
-    short: <ellipse cx={cx} cy={cy - s * 0.18} rx={s * 0.22} ry={s * 0.12} fill={hair} />,
-    pixie: (
+    short: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.17} rx={s * 0.22} ry={s * 0.14} fill={hair} />
-        <ellipse cx={cx - s * 0.18} cy={cy - s * 0.08} rx={s * 0.06} ry={s * 0.09} fill={hair} />
-        <ellipse cx={cx + s * 0.18} cy={cy - s * 0.08} rx={s * 0.06} ry={s * 0.09} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s * 0.15} rx={s * 0.22} ry={s * 0.12} fill={hair} />
+        <ellipse cx={cx - s*0.19} cy={faceCy - s*0.06} rx={s*0.05} ry={s*0.08} fill={hair} />
+        <ellipse cx={cx + s*0.19} cy={faceCy - s*0.06} rx={s*0.05} ry={s*0.08} fill={hair} />
       </>
     ),
-    medium: <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.18} fill={hair} />,
+    pixie: (
+      <>
+        <ellipse cx={cx} cy={faceCy - s * 0.16} rx={s * 0.22} ry={s * 0.14} fill={hair} />
+        <ellipse cx={cx - s * 0.18} cy={faceCy - s * 0.07} rx={s * 0.06} ry={s * 0.09} fill={hair} />
+        <ellipse cx={cx + s * 0.18} cy={faceCy - s * 0.07} rx={s * 0.06} ry={s * 0.09} fill={hair} />
+      </>
+    ),
+    medium: (
+      <>
+        <ellipse cx={cx} cy={faceCy - s * 0.13} rx={s * 0.24} ry={s * 0.18} fill={hair} />
+        <ellipse cx={cx - s*0.21} cy={faceCy + s*0.07} rx={s*0.05} ry={s*0.09} fill={hair} />
+        <ellipse cx={cx + s*0.21} cy={faceCy + s*0.07} rx={s*0.05} ry={s*0.09} fill={hair} />
+      </>
+    ),
     long: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.18} fill={hair} />
-        <rect x={cx - s * 0.22} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={4} fill={hair} />
-        <rect x={cx + s * 0.12} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={4} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s * 0.13} rx={s * 0.24} ry={s * 0.18} fill={hair} />
+        <rect x={cx - s * 0.235} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.35} rx={5} fill={hair} />
+        <rect x={cx + s * 0.135} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.35} rx={5} fill={hair} />
       </>
     ),
     waves: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.18} fill={hair} />
-        <rect x={cx - s * 0.22} y={cy - s * 0.02} width={s * 0.1} height={s * 0.26} rx={4} fill={hair} />
-        <rect x={cx + s * 0.12} y={cy - s * 0.02} width={s * 0.1} height={s * 0.26} rx={4} fill={hair} />
-        <path d={`M ${cx - s*0.22} ${cy + s*0.12} Q ${cx - s*0.16} ${cy + s*0.17} ${cx - s*0.10} ${cy + s*0.12}`} stroke={hair} strokeWidth={s * 0.06} fill="none" strokeLinecap="round" />
-        <path d={`M ${cx + s*0.12} ${cy + s*0.12} Q ${cx + s*0.18} ${cy + s*0.17} ${cx + s*0.24} ${cy + s*0.12}`} stroke={hair} strokeWidth={s * 0.06} fill="none" strokeLinecap="round" />
+        <ellipse cx={cx} cy={faceCy - s * 0.13} rx={s * 0.24} ry={s * 0.18} fill={hair} />
+        <rect x={cx - s * 0.235} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.28} rx={5} fill={hair} />
+        <rect x={cx + s * 0.135} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.28} rx={5} fill={hair} />
+        <path d={`M ${cx - s*0.235} ${faceCy + s*0.14} Q ${cx - s*0.17} ${faceCy + s*0.2} ${cx - s*0.11} ${faceCy + s*0.14}`} stroke={hair} strokeWidth={s * 0.06} fill="none" strokeLinecap="round" />
+        <path d={`M ${cx + s*0.135} ${faceCy + s*0.14} Q ${cx + s*0.2} ${faceCy + s*0.2} ${cx + s*0.26} ${faceCy + s*0.14}`} stroke={hair} strokeWidth={s * 0.06} fill="none" strokeLinecap="round" />
       </>
     ),
     bangs: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.18} fill={hair} />
-        <rect x={cx - s * 0.22} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={4} fill={hair} />
-        <rect x={cx + s * 0.12} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={4} fill={hair} />
-        <rect x={cx - s * 0.22} y={cy - s * 0.24} width={s * 0.44} height={s * 0.1} rx={2} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s * 0.13} rx={s * 0.24} ry={s * 0.18} fill={hair} />
+        <rect x={cx - s * 0.235} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.35} rx={5} fill={hair} />
+        <rect x={cx + s * 0.135} y={faceCy - s * 0.04} width={s * 0.1} height={s * 0.35} rx={5} fill={hair} />
+        {/* Bangs strip over forehead */}
+        <rect x={cx - s * 0.22} y={faceCy - s * 0.22} width={s * 0.44} height={s * 0.1} rx={3} fill={hair} />
       </>
     ),
     bun: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
-        <circle cx={cx} cy={cy - s * 0.35} r={s * 0.09} fill={hair} />
-        <circle cx={cx} cy={cy - s * 0.35} r={s * 0.05} fill={hair} opacity={0.6} />
+        <ellipse cx={cx} cy={faceCy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
+        <circle cx={cx} cy={faceCy - s * 0.34} r={s * 0.1} fill={hair} />
+        <circle cx={cx} cy={faceCy - s * 0.34} r={s * 0.055} fill={hair} opacity={0.55} />
       </>
     ),
     ponytail: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
-        <rect x={cx + s * 0.14} y={cy - s * 0.18} width={s * 0.07} height={s * 0.32} rx={3} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
+        <rect x={cx + s * 0.15} y={faceCy - s * 0.18} width={s * 0.07} height={s * 0.35} rx={4} fill={hair} />
       </>
     ),
     curly: (
       <>
-        {[-0.18, -0.08, 0.02, 0.12].map((dx, i) => (
-          <circle key={i} cx={cx + dx * s} cy={cy - s * 0.2} r={s * 0.09} fill={hair} />
+        {[-0.18, -0.07, 0.04, 0.13].map((dx, i) => (
+          <circle key={i} cx={cx + dx * s} cy={faceCy - s * 0.19} r={s * 0.09} fill={hair} />
         ))}
-        <ellipse cx={cx - s*0.18} cy={cy - s*0.07} rx={s*0.07} ry={s*0.1} fill={hair} />
-        <ellipse cx={cx + s*0.18} cy={cy - s*0.07} rx={s*0.07} ry={s*0.1} fill={hair} />
+        <ellipse cx={cx - s*0.2} cy={faceCy - s*0.06} rx={s*0.07} ry={s*0.11} fill={hair} />
+        <ellipse cx={cx + s*0.2} cy={faceCy - s*0.06} rx={s*0.07} ry={s*0.11} fill={hair} />
       </>
     ),
     twintails: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
-        <rect x={cx - s * 0.28} y={cy - s * 0.2} width={s * 0.07} height={s * 0.34} rx={3} fill={hair} />
-        <ellipse cx={cx - s * 0.245} cy={cy + s * 0.14} rx={s * 0.05} ry={s * 0.03} fill={hair} />
-        <rect x={cx + s * 0.21} y={cy - s * 0.2} width={s * 0.07} height={s * 0.34} rx={3} fill={hair} />
-        <ellipse cx={cx + s * 0.245} cy={cy + s * 0.14} rx={s * 0.05} ry={s * 0.03} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
+        <rect x={cx - s * 0.29} y={faceCy - s * 0.19} width={s * 0.07} height={s * 0.36} rx={3} fill={hair} />
+        <ellipse cx={cx - s * 0.255} cy={faceCy + s * 0.17} rx={s * 0.05} ry={s * 0.03} fill={hair} />
+        <rect x={cx + s * 0.22} y={faceCy - s * 0.19} width={s * 0.07} height={s * 0.36} rx={3} fill={hair} />
+        <ellipse cx={cx + s * 0.255} cy={faceCy + s * 0.17} rx={s * 0.05} ry={s * 0.03} fill={hair} />
       </>
     ),
     braids: (
       <>
-        <ellipse cx={cx} cy={cy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
-        <rect x={cx - s * 0.24} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={3} fill={hair} />
-        <rect x={cx + s * 0.14} y={cy - s * 0.02} width={s * 0.1} height={s * 0.32} rx={3} fill={hair} />
-        {[0.02, 0.10, 0.18, 0.26].map((dy, i) => (
+        <ellipse cx={cx} cy={faceCy - s * 0.14} rx={s * 0.24} ry={s * 0.16} fill={hair} />
+        <rect x={cx - s * 0.245} y={faceCy - s * 0.02} width={s * 0.1} height={s * 0.34} rx={3} fill={hair} />
+        <rect x={cx + s * 0.145} y={faceCy - s * 0.02} width={s * 0.1} height={s * 0.34} rx={3} fill={hair} />
+        {[0.02, 0.1, 0.18, 0.26].map((dy, i) => (
           <React.Fragment key={i}>
-            <line x1={cx - s*0.24} y1={cy + dy*s} x2={cx - s*0.14} y2={cy + (dy + 0.05)*s} stroke={hair} strokeWidth={2.5} opacity={0.5} />
-            <line x1={cx + s*0.24} y1={cy + dy*s} x2={cx + s*0.14} y2={cy + (dy + 0.05)*s} stroke={hair} strokeWidth={2.5} opacity={0.5} />
+            <line x1={cx - s*0.245} y1={faceCy + dy*s} x2={cx - s*0.145} y2={faceCy + (dy+0.05)*s} stroke={hair} strokeWidth={2.5} opacity={0.5} />
+            <line x1={cx + s*0.245} y1={faceCy + dy*s} x2={cx + s*0.145} y2={faceCy + (dy+0.05)*s} stroke={hair} strokeWidth={2.5} opacity={0.5} />
           </React.Fragment>
         ))}
       </>
     ),
   };
 
-  const earY = cy - s * 0.03;
-  const earXL = cx - s * 0.23;
-  const earXR = cx + s * 0.23;
+  // Male hair styles
+  const maleHairPaths: Record<string, React.ReactNode> = {
+    bald: null,
+    buzz: (
+      // Very short all over
+      <ellipse cx={cx} cy={faceCy - s * 0.16} rx={s * 0.225} ry={s * 0.105} fill={hair} />
+    ),
+    sidepart: (
+      <>
+        {/* Main mass */}
+        <ellipse cx={cx} cy={faceCy - s * 0.16} rx={s * 0.225} ry={s * 0.13} fill={hair} />
+        {/* Left side longer */}
+        <ellipse cx={cx - s*0.18} cy={faceCy - s*0.08} rx={s*0.06} ry={s*0.09} fill={hair} />
+        <ellipse cx={cx + s*0.18} cy={faceCy - s*0.08} rx={s*0.055} ry={s*0.075} fill={hair} />
+        {/* Part line highlight */}
+        <line x1={cx - s*0.04} y1={faceCy - s*0.22} x2={cx - s*0.12} y2={faceCy - s*0.08} stroke={hair} strokeWidth={s*0.025} strokeLinecap="round" opacity={0.4} />
+      </>
+    ),
+    pompadour: (
+      <>
+        {/* Sides */}
+        <ellipse cx={cx - s*0.18} cy={faceCy - s*0.08} rx={s*0.055} ry={s*0.085} fill={hair} />
+        <ellipse cx={cx + s*0.18} cy={faceCy - s*0.08} rx={s*0.055} ry={s*0.085} fill={hair} />
+        {/* Base */}
+        <ellipse cx={cx} cy={faceCy - s*0.17} rx={s*0.225} ry={s*0.11} fill={hair} />
+        {/* Pompadour quiff - raised front */}
+        <ellipse cx={cx} cy={faceCy - s*0.28} rx={s*0.13} ry={s*0.1} fill={hair} />
+        <ellipse cx={cx} cy={faceCy - s*0.32} rx={s*0.09} ry={s*0.07} fill={hair} />
+      </>
+    ),
+    undercut: (
+      <>
+        {/* Shaved sides (skin colored thin strip) */}
+        <ellipse cx={cx - s*0.2} cy={faceCy - s*0.06} rx={s*0.04} ry={s*0.1} fill={skin} opacity={0.6} />
+        <ellipse cx={cx + s*0.2} cy={faceCy - s*0.06} rx={s*0.04} ry={s*0.1} fill={skin} opacity={0.6} />
+        {/* Top volume */}
+        <ellipse cx={cx} cy={faceCy - s*0.18} rx={s*0.2} ry={s*0.14} fill={hair} />
+      </>
+    ),
+    curly: (
+      <>
+        {[-0.17, -0.06, 0.05, 0.14].map((dx, i) => (
+          <circle key={i} cx={cx + dx * s} cy={faceCy - s * 0.19} r={s * 0.09} fill={hair} />
+        ))}
+        <ellipse cx={cx - s*0.19} cy={faceCy - s*0.07} rx={s*0.065} ry={s*0.1} fill={hair} />
+        <ellipse cx={cx + s*0.19} cy={faceCy - s*0.07} rx={s*0.065} ry={s*0.1} fill={hair} />
+      </>
+    ),
+    medium: (
+      <>
+        <ellipse cx={cx} cy={faceCy - s*0.14} rx={s*0.235} ry={s*0.17} fill={hair} />
+        <ellipse cx={cx - s*0.2} cy={faceCy + s*0.04} rx={s*0.055} ry={s*0.08} fill={hair} />
+        <ellipse cx={cx + s*0.2} cy={faceCy + s*0.04} rx={s*0.055} ry={s*0.08} fill={hair} />
+      </>
+    ),
+    short: (
+      <>
+        <ellipse cx={cx} cy={faceCy - s*0.16} rx={s*0.225} ry={s*0.12} fill={hair} />
+        <ellipse cx={cx - s*0.19} cy={faceCy - s*0.07} rx={s*0.05} ry={s*0.075} fill={hair} />
+        <ellipse cx={cx + s*0.19} cy={faceCy - s*0.07} rx={s*0.05} ry={s*0.075} fill={hair} />
+      </>
+    ),
+    ponytail: (
+      <>
+        <ellipse cx={cx} cy={faceCy - s*0.15} rx={s*0.225} ry={s*0.14} fill={hair} />
+        <rect x={cx + s*0.16} y={faceCy - s*0.14} width={s*0.065} height={s*0.3} rx={3} fill={hair} />
+      </>
+    ),
+  };
+
+  const hairPaths = isMale ? maleHairPaths : femaleHairPaths;
+
+  /* ── Ears ─── */
+  const earY = faceCy - s * 0.01;
+  const earXL = cx - faceRx - s * 0.01;
+  const earXR = cx + faceRx + s * 0.01;
+
+  /* ── Earrings ─── */
   const gold = '#FFD700';
   const earringEl = (() => {
     if (config.earring === 'none') return null;
@@ -383,33 +532,189 @@ export function AvatarPreview({
     return null;
   })();
 
-  const eyeLY = cy - s * 0.06;
+  /* ── Eyes ─── */
+  const eyeLY = faceCy - s * 0.045;
+  const eyeSpread = s * 0.075;
+  const eyeRx = isMale ? s * 0.038 : s * 0.036;
+  const eyeRy = isMale ? s * 0.03  : s * 0.032;
+
+  const eyeEl = (() => {
+    if (config.expression === 'wink') {
+      return (
+        <>
+          {/* Left eye - open */}
+          <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 1.15} ry={eyeRy * 1.15} fill="white" />
+          <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 0.72} ry={eyeRy * 0.72} fill={eye} />
+          <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 0.38} ry={eyeRy * 0.38} fill="#111" />
+          <circle cx={cx - eyeSpread + eyeRx*0.32} cy={eyeLY - eyeRy*0.3} r={eyeRx * 0.22} fill="white" opacity={0.9} />
+          {/* Right eye - wink */}
+          <path d={`M ${cx + eyeSpread - eyeRx} ${eyeLY} Q ${cx + eyeSpread} ${eyeLY + eyeRy * 0.7} ${cx + eyeSpread + eyeRx} ${eyeLY}`}
+            stroke={eye} strokeWidth={s*0.018} fill="none" strokeLinecap="round" />
+        </>
+      );
+    }
+    return (
+      <>
+        {/* Left eye */}
+        <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 1.15} ry={eyeRy * 1.15} fill="white" />
+        <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 0.72} ry={eyeRy * 0.72} fill={eye} />
+        <ellipse cx={cx - eyeSpread} cy={eyeLY} rx={eyeRx * 0.38} ry={eyeRy * 0.38} fill="#111" />
+        <circle cx={cx - eyeSpread + eyeRx*0.32} cy={eyeLY - eyeRy*0.3} r={eyeRx * 0.22} fill="white" opacity={0.9} />
+        {/* Right eye */}
+        <ellipse cx={cx + eyeSpread} cy={eyeLY} rx={eyeRx * 1.15} ry={eyeRy * 1.15} fill="white" />
+        <ellipse cx={cx + eyeSpread} cy={eyeLY} rx={eyeRx * 0.72} ry={eyeRy * 0.72} fill={eye} />
+        <ellipse cx={cx + eyeSpread} cy={eyeLY} rx={eyeRx * 0.38} ry={eyeRy * 0.38} fill="#111" />
+        <circle cx={cx + eyeSpread + eyeRx*0.32} cy={eyeLY - eyeRy*0.3} r={eyeRx * 0.22} fill="white" opacity={0.9} />
+      </>
+    );
+  })();
+
+  /* ── Eyebrows ─── */
+  // Derive brow color from hair (slightly darker)
+  const browColor = hair === '#FFFFFF' || hair === '#E5E5E5' ? '#8a8a8a' : hair;
+  const browY = eyeLY - s * 0.055;
+  const browW = isMale ? s * 0.068 : s * 0.055;
+  const browThick = isMale ? s * 0.018 : s * 0.012;
+
+  const browEl = (() => {
+    if (isMale) {
+      // Straight thick brows for male
+      return (
+        <>
+          <path
+            d={`M ${cx - eyeSpread - browW} ${browY + s*0.008} L ${cx - eyeSpread + browW} ${browY}`}
+            stroke={browColor} strokeWidth={browThick} strokeLinecap="round" fill="none"
+          />
+          <path
+            d={`M ${cx + eyeSpread - browW} ${browY} L ${cx + eyeSpread + browW} ${browY + s*0.008}`}
+            stroke={browColor} strokeWidth={browThick} strokeLinecap="round" fill="none"
+          />
+        </>
+      );
+    }
+    // Arched thin brows for female
+    return (
+      <>
+        <path
+          d={`M ${cx - eyeSpread - browW} ${browY + s*0.012} Q ${cx - eyeSpread} ${browY - s*0.008} ${cx - eyeSpread + browW} ${browY + s*0.012}`}
+          stroke={browColor} strokeWidth={browThick} strokeLinecap="round" fill="none"
+        />
+        <path
+          d={`M ${cx + eyeSpread - browW} ${browY + s*0.012} Q ${cx + eyeSpread} ${browY - s*0.008} ${cx + eyeSpread + browW} ${browY + s*0.012}`}
+          stroke={browColor} strokeWidth={browThick} strokeLinecap="round" fill="none"
+        />
+      </>
+    );
+  })();
+
+  /* ── Eyelashes ─── */
   const eyelashEl = (() => {
     if (config.eyelashes === 'none') return null;
     const count = config.eyelashes === 'dramatic' ? 5 : config.eyelashes === 'wispy' ? 3 : 4;
     const len   = config.eyelashes === 'dramatic' ? s * 0.045 : s * 0.03;
     const lashes: React.ReactNode[] = [];
-    const eyeCenters = [cx - s * 0.07, cx + s * 0.07];
+    const eyeCenters = [cx - eyeSpread, cx + eyeSpread];
     eyeCenters.forEach((ex, ei) => {
       for (let i = 0; i < count; i++) {
         const t = count <= 1 ? 0.5 : i / (count - 1);
         const angle = (-160 + t * 100) * Math.PI / 180;
-        const r = s * 0.035;
+        const r = eyeRy * 1.1;
         const bx = ex + Math.cos(angle) * r;
         const by = eyeLY + Math.sin(angle) * r;
         const tx = ex + Math.cos(angle) * (r + len);
         const ty = eyeLY + Math.sin(angle) * (r + len);
         lashes.push(
           <line key={`${ei}-${i}`} x1={bx} y1={by} x2={tx} y2={ty}
-            stroke="#1a1a1a" strokeWidth={1} strokeLinecap="round" />
+            stroke="#1a1a1a" strokeWidth={1.2} strokeLinecap="round" />
         );
       }
     });
     return <>{lashes}</>;
   })();
 
-  const mouthColor = lipColor || '#8B6914';
+  /* ── Nose ─── */
+  const noseY = faceCy + s * 0.02;
+  const noseEl = (
+    <path
+      d={`M ${cx - s*0.025} ${noseY} Q ${cx} ${noseY + s*0.04} ${cx + s*0.025} ${noseY}`}
+      stroke={skin} strokeWidth={isMale ? s*0.018 : s*0.013}
+      fill="none" strokeLinecap="round" opacity={0.5}
+    />
+  );
 
+  /* ── Mouth ─── */
+  const mouthY = faceCy + s * 0.075;
+  const mouthColor = lipColor || (isMale ? '#a06050' : '#b07060');
+  const mouthEl = (() => {
+    if (config.expression === 'kiss') return (
+      <ellipse cx={cx} cy={mouthY} rx={s * 0.032} ry={s * 0.025} fill={mouthColor} />
+    );
+    if (config.expression === 'cute') return (
+      <path d={`M ${cx - s*0.065} ${mouthY - s*0.01} Q ${cx} ${mouthY + s*0.055} ${cx + s*0.065} ${mouthY - s*0.01}`}
+        stroke={mouthColor} strokeWidth={s*0.016} fill={lipColor ? lipColor : 'none'}
+        strokeLinecap="round" opacity={lipColor ? 0.85 : 1} />
+    );
+    if (config.expression === 'smirk') return (
+      <path d={`M ${cx - s*0.035} ${mouthY + s*0.01} Q ${cx + s*0.025} ${mouthY + s*0.03} ${cx + s*0.07} ${mouthY - s*0.01}`}
+        stroke={mouthColor} strokeWidth={s*0.015} fill="none" strokeLinecap="round" />
+    );
+    if (['happy', 'excited', 'cool', 'wink'].includes(config.expression)) return (
+      <path d={`M ${cx - s*0.065} ${mouthY - s*0.005} Q ${cx} ${mouthY + s*0.05} ${cx + s*0.065} ${mouthY - s*0.005}`}
+        stroke={mouthColor} strokeWidth={s*0.015} fill="none" strokeLinecap="round" />
+    );
+    if (['neutral', 'focused', 'serious'].includes(config.expression)) return (
+      <line x1={cx - s*0.055} y1={mouthY} x2={cx + s*0.055} y2={mouthY}
+        stroke={mouthColor} strokeWidth={s*0.015} strokeLinecap="round" />
+    );
+    // tired / silly / default (slight frown)
+    return (
+      <path d={`M ${cx - s*0.065} ${mouthY + s*0.02} Q ${cx} ${mouthY - s*0.02} ${cx + s*0.065} ${mouthY + s*0.02}`}
+        stroke={mouthColor} strokeWidth={s*0.015} fill="none" strokeLinecap="round" />
+    );
+  })();
+
+  /* ── Beard ─── */
+  const beardEl = (() => {
+    if (!isMale || config.beard === 'none') return null;
+    const beardColor = hair;
+    const jawY = faceCy + faceRy * 0.7;
+
+    if (config.beard === 'stubble') return (
+      <ellipse cx={cx} cy={jawY} rx={s*0.16} ry={s*0.07}
+        fill={beardColor} opacity={0.35} />
+    );
+    if (config.beard === 'goatee') return (
+      <>
+        {/* Chin patch */}
+        <ellipse cx={cx} cy={jawY + s*0.02} rx={s*0.07} ry={s*0.055} fill={beardColor} opacity={0.75} />
+        {/* Mustache */}
+        <path d={`M ${cx - s*0.06} ${mouthY - s*0.01} Q ${cx} ${mouthY + s*0.02} ${cx + s*0.06} ${mouthY - s*0.01}`}
+          stroke={beardColor} strokeWidth={s*0.025} fill="none" strokeLinecap="round" opacity={0.8} />
+      </>
+    );
+    if (config.beard === 'short') return (
+      <>
+        <ellipse cx={cx} cy={jawY + s*0.01} rx={s*0.18} ry={s*0.1} fill={beardColor} opacity={0.65} />
+        {/* Mustache */}
+        <path d={`M ${cx - s*0.075} ${mouthY - s*0.01} Q ${cx} ${mouthY + s*0.025} ${cx + s*0.075} ${mouthY - s*0.01}`}
+          stroke={beardColor} strokeWidth={s*0.028} fill="none" strokeLinecap="round" opacity={0.75} />
+      </>
+    );
+    if (config.beard === 'full') return (
+      <>
+        <ellipse cx={cx} cy={jawY + s*0.02} rx={s*0.21} ry={s*0.13} fill={beardColor} opacity={0.8} />
+        {/* Cheeks */}
+        <ellipse cx={cx - s*0.14} cy={faceCy + s*0.12} rx={s*0.07} ry={s*0.09} fill={beardColor} opacity={0.6} />
+        <ellipse cx={cx + s*0.14} cy={faceCy + s*0.12} rx={s*0.07} ry={s*0.09} fill={beardColor} opacity={0.6} />
+        {/* Mustache */}
+        <path d={`M ${cx - s*0.085} ${mouthY - s*0.01} Q ${cx} ${mouthY + s*0.03} ${cx + s*0.085} ${mouthY - s*0.01}`}
+          stroke={beardColor} strokeWidth={s*0.032} fill="none" strokeLinecap="round" opacity={0.85} />
+      </>
+    );
+    return null;
+  })();
+
+  /* ── Body / shoulders ─── */
   const outfitColor: Record<string, string> = {
     formal:    '#2C3E50',
     sport:     '#E74C3C',
@@ -422,9 +727,42 @@ export function AvatarPreview({
     floral:    '#FF7F9E',
     elegant:   '#8B008B',
     princess:  '#FFB6C1',
+    casual:    '#3498DB',
   };
   const bodyColor = outfitColor[config.outfit] ?? '#3498DB';
 
+  // Shoulder width: male wider
+  const shoulderW = isMale ? s * 0.34 : s * 0.26;
+  const shoulderY = cy + s * 0.27;
+  const neckW = isMale ? s * 0.09 : s * 0.075;
+  const neckH = isMale ? s * 0.1 : s * 0.12;
+
+  const bodyEl = (
+    <>
+      {/* Neck */}
+      <rect x={cx - neckW} y={faceCy + faceRy - s*0.01} width={neckW * 2} height={neckH} rx={neckW * 0.4} fill={skin} />
+      {/* Shoulders / torso — organic path */}
+      <path
+        d={`M ${cx - shoulderW} ${s * 0.98}
+            L ${cx - shoulderW} ${shoulderY + s*0.03}
+            Q ${cx - shoulderW + s*0.04} ${shoulderY - s*0.02} ${cx - neckW - s*0.04} ${faceCy + faceRy + neckH - s*0.01}
+            L ${cx + neckW + s*0.04} ${faceCy + faceRy + neckH - s*0.01}
+            Q ${cx + shoulderW - s*0.04} ${shoulderY - s*0.02} ${cx + shoulderW} ${shoulderY + s*0.03}
+            L ${cx + shoulderW} ${s * 0.98} Z`}
+        fill={bodyColor}
+      />
+    </>
+  );
+
+  /* ── Blush ─── */
+  const blushEl = blushColor ? (
+    <>
+      <ellipse cx={cx - s * 0.135} cy={faceCy + s * 0.03} rx={s * 0.065} ry={s * 0.038} fill={blushColor} />
+      <ellipse cx={cx + s * 0.135} cy={faceCy + s * 0.03} rx={s * 0.065} ry={s * 0.038} fill={blushColor} />
+    </>
+  ) : null;
+
+  /* ── Container ─── */
   const containerStyle = responsive
     ? { width: '100%', height: '100%' }
     : { width: s, height: s };
@@ -437,70 +775,60 @@ export function AvatarPreview({
         viewBox={`0 0 ${s} ${s}`}
         style={{ display: 'block' }}
       >
-        {/* Background */}
+        {/* Background circle */}
         <circle cx={cx} cy={cy} r={s * 0.48} fill={color} />
         {/* Mood ring */}
         <circle cx={cx} cy={cy} r={s * 0.48} fill="none" stroke={moodColor} strokeWidth={3} opacity={0.7} />
-        {/* Outfit body */}
-        <ellipse cx={cx} cy={cy + s * 0.38} rx={s * 0.28} ry={s * 0.14} fill={bodyColor} />
-        {/* Neck */}
-        <rect x={cx - s * 0.08} y={cy + s * 0.12} width={s * 0.16} height={s * 0.14} fill={skin} />
+
+        {/* Hair BEHIND face */}
+        {hairPaths[config.hairStyle] ?? (isMale ? hairPaths.short : hairPaths.medium)}
+
+        {/* Body / shoulders */}
+        {bodyEl}
+
+        {/* Ear nubs */}
+        <ellipse cx={earXL} cy={earY} rx={s*0.038} ry={s*0.05} fill={skin} />
+        <ellipse cx={earXR} cy={earY} rx={s*0.038} ry={s*0.05} fill={skin} />
+
         {/* Face */}
-        <circle cx={cx} cy={cy - s * 0.04} r={s * 0.22} fill={skin} />
-        {/* Blush */}
-        {blushColor && (
-          <>
-            <ellipse cx={cx - s * 0.14} cy={cy + s * 0.01} rx={s * 0.07} ry={s * 0.04} fill={blushColor} />
-            <ellipse cx={cx + s * 0.14} cy={cy + s * 0.01} rx={s * 0.07} ry={s * 0.04} fill={blushColor} />
-          </>
+        <ellipse cx={cx} cy={faceCy} rx={faceRx} ry={faceRy} fill={skin} />
+
+        {/* Male chin definition (subtle) */}
+        {isMale && (
+          <ellipse cx={cx} cy={faceCy + faceRy * 0.78} rx={s*0.13} ry={s*0.06}
+            fill={skin} opacity={0.5} />
         )}
-        {/* Hair */}
-        {hairPaths[config.hairStyle] ?? hairPaths.medium}
+
+        {/* Blush */}
+        {blushEl}
+
+        {/* Beard (behind mouth/nose, in front of face) */}
+        {beardEl}
+
         {/* Earrings */}
         {earringEl}
+
+        {/* Eyebrows */}
+        {browEl}
+
         {/* Eyes */}
-        {config.expression === 'wink' ? (
-          <>
-            <circle cx={cx - s * 0.07} cy={eyeLY} r={s * 0.035} fill={eye} />
-            <circle cx={cx - s * 0.065} cy={eyeLY - s * 0.01} r={s * 0.012} fill="white" />
-            <path d={`M ${cx + s*0.04} ${eyeLY} Q ${cx + s*0.07} ${eyeLY + s*0.02} ${cx + s*0.10} ${eyeLY}`}
-              stroke={eye} strokeWidth={2} fill="none" strokeLinecap="round" />
-          </>
-        ) : (
-          <>
-            <circle cx={cx - s * 0.07} cy={eyeLY} r={s * 0.035} fill={eye} />
-            <circle cx={cx + s * 0.07} cy={eyeLY} r={s * 0.035} fill={eye} />
-            <circle cx={cx - s * 0.065} cy={eyeLY - s * 0.01} r={s * 0.012} fill="white" />
-            <circle cx={cx + s * 0.075} cy={eyeLY - s * 0.01} r={s * 0.012} fill="white" />
-          </>
-        )}
+        {eyeEl}
+
         {/* Eyelashes */}
         {eyelashEl}
+
+        {/* Nose */}
+        {noseEl}
+
         {/* Mouth */}
-        {config.expression === 'kiss' ? (
-          <ellipse cx={cx} cy={cy + s * 0.06} rx={s * 0.035} ry={s * 0.025} fill={mouthColor || '#D2967A'} />
-        ) : config.expression === 'cute' ? (
-          <path d={`M ${cx - s * 0.08} ${cy + s * 0.04} Q ${cx} ${cy + s * 0.13} ${cx + s * 0.08} ${cy + s * 0.04}`}
-            stroke={mouthColor} strokeWidth={2} fill={lipColor ? lipColor : 'none'}
-            strokeLinecap="round" opacity={lipColor ? 0.85 : 1} />
-        ) : config.expression === 'smirk' ? (
-          <path d={`M ${cx - s * 0.04} ${cy + s * 0.07} Q ${cx + s * 0.03} ${cy + s * 0.1} ${cx + s * 0.08} ${cy + s * 0.05}`}
-            stroke={mouthColor} strokeWidth={1.5} fill="none" strokeLinecap="round" />
-        ) : config.expression === 'happy' || config.expression === 'excited' || config.expression === 'cool' || config.expression === 'wink' ? (
-          <path d={`M ${cx - s * 0.07} ${cy + s * 0.04} Q ${cx} ${cy + s * 0.11} ${cx + s * 0.07} ${cy + s * 0.04}`}
-            stroke={mouthColor} strokeWidth={1.5} fill="none" strokeLinecap="round" />
-        ) : config.expression === 'neutral' || config.expression === 'focused' || config.expression === 'serious' ? (
-          <line x1={cx - s * 0.06} y1={cy + s * 0.06} x2={cx + s * 0.06} y2={cy + s * 0.06}
-            stroke={mouthColor} strokeWidth={1.5} strokeLinecap="round" />
-        ) : (
-          <path d={`M ${cx - s * 0.07} ${cy + s * 0.08} Q ${cx} ${cy + s * 0.03} ${cx + s * 0.07} ${cy + s * 0.08}`}
-            stroke={mouthColor} strokeWidth={1.5} fill="none" strokeLinecap="round" />
-        )}
-        {/* Lipstick gloss highlight */}
+        {mouthEl}
+
+        {/* Lipstick gloss */}
         {lipColor && config.expression !== 'kiss' && (
-          <ellipse cx={cx - s*0.02} cy={cy + s * 0.06} rx={s*0.02} ry={s*0.007} fill="white" opacity={0.35} />
+          <ellipse cx={cx - s*0.018} cy={mouthY + s*0.005} rx={s*0.018} ry={s*0.006} fill="white" opacity={0.35} />
         )}
       </svg>
+
       {/* Emoji overlays */}
       {acc && acc !== '✖️' && (
         <span className="avatar-accessory" style={{ fontSize: s * 0.22, top: -s * 0.08, right: -s * 0.04 }}>

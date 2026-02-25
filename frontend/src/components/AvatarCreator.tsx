@@ -3,9 +3,12 @@ import {
   AvatarConfig,
   AvatarPreview,
   DEFAULT_CONFIG,
+  MALE_DEFAULT_CONFIG,
   AVATAR_COLORS,
+  GENDERS,
   SKIN_TONES,
-  HAIR_STYLES,
+  FEMALE_HAIR_STYLES,
+  MALE_HAIR_STYLES,
   HAIR_COLORS,
   EYE_COLORS,
   OUTFITS,
@@ -18,6 +21,7 @@ import {
   EYELASHES_OPTS,
   EARRINGS,
   NAIL_COLORS,
+  BEARD_STYLES,
 } from './AvatarSVG';
 import './AvatarCreator.css';
 
@@ -38,10 +42,12 @@ function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function randomConfig(): AvatarConfig {
+function randomConfig(gender: 'female' | 'male'): AvatarConfig {
+  const hairStyles = gender === 'male' ? MALE_HAIR_STYLES : FEMALE_HAIR_STYLES;
   return {
+    gender,
     skinTone:   randomItem(SKIN_TONES).id,
-    hairStyle:  randomItem(HAIR_STYLES).id,
+    hairStyle:  randomItem(hairStyles).id,
     hairColor:  randomItem(HAIR_COLORS).id,
     eyeColor:   randomItem(EYE_COLORS).id,
     outfit:     randomItem(OUTFITS).id,
@@ -49,11 +55,12 @@ function randomConfig(): AvatarConfig {
     expression: randomItem(EXPRESSIONS).id,
     mood:       randomItem(MOODS).id,
     badge:      randomItem(BADGES).id,
-    lipstick:   randomItem(LIPSTICKS).id,
-    blush:      randomItem(BLUSHES).id,
-    eyelashes:  randomItem(EYELASHES_OPTS).id,
+    lipstick:   gender === 'male' ? 'none' : randomItem(LIPSTICKS).id,
+    blush:      gender === 'male' ? 'none' : randomItem(BLUSHES).id,
+    eyelashes:  gender === 'male' ? 'none' : randomItem(EYELASHES_OPTS).id,
     earring:    randomItem(EARRINGS).id,
-    nailColor:  randomItem(NAIL_COLORS).id,
+    nailColor:  gender === 'male' ? 'none' : randomItem(NAIL_COLORS).id,
+    beard:      gender === 'male' ? randomItem(BEARD_STYLES).id : 'none',
   };
 }
 
@@ -116,7 +123,10 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
     if (initialConfig) {
       try {
         const c = JSON.parse(initialConfig);
-        if (c.skinTone) return { ...DEFAULT_CONFIG, ...c };
+        if (c.skinTone) {
+          // Ensure gender field exists for old configs
+          return { ...DEFAULT_CONFIG, ...c, gender: c.gender ?? 'female', beard: c.beard ?? 'none' };
+        }
       } catch { /* ignore */ }
     }
     return { ...DEFAULT_CONFIG };
@@ -124,6 +134,22 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
 
   const patch = (key: keyof AvatarConfig, val: string) =>
     setConfig(c => ({ ...c, [key]: val }));
+
+  const handleGenderSwitch = (g: 'female' | 'male') => {
+    if (g === config.gender) return;
+    const base = g === 'male' ? MALE_DEFAULT_CONFIG : DEFAULT_CONFIG;
+    // Keep personal choices that make sense for both
+    setConfig(c => ({
+      ...base,
+      skinTone:  c.skinTone,
+      hairColor: c.hairColor,
+      eyeColor:  c.eyeColor,
+      mood:      c.mood,
+      expression: c.expression,
+      badge:     c.badge,
+      accessory: c.accessory,
+    }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -134,6 +160,9 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
     }
   };
 
+  const isMale = config.gender === 'male';
+  const hairStyles = isMale ? MALE_HAIR_STYLES : FEMALE_HAIR_STYLES;
+
   return (
     <div className="ac-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="ac-modal">
@@ -142,6 +171,19 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
         <div className="ac-header">
           <span className="ac-title">Crea il tuo avatar</span>
           <button className="ac-close" onClick={onClose}>×</button>
+        </div>
+
+        {/* Gender toggle */}
+        <div className="ac-gender-row">
+          {GENDERS.map(g => (
+            <button
+              key={g.id}
+              className={`ac-gender-btn${config.gender === g.id ? ' active' : ''}`}
+              onClick={() => handleGenderSwitch(g.id as 'female' | 'male')}
+            >
+              <span>{g.emoji}</span> {g.label}
+            </button>
+          ))}
         </div>
 
         {/* Live preview */}
@@ -166,7 +208,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
               style={{ padding: 0, cursor: 'pointer' }}
             />
           </div>
-          <button className="ac-random-btn" onClick={() => setConfig(randomConfig())}>
+          <button className="ac-random-btn" onClick={() => setConfig(randomConfig(config.gender))}>
             Casuale
           </button>
         </div>
@@ -176,7 +218,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
           {([
             { id: 'aspetto', label: 'Aspetto' },
             { id: 'stile',   label: 'Stile' },
-            { id: 'makeup',  label: 'Makeup' },
+            { id: 'makeup',  label: isMale ? 'Extra' : 'Makeup' },
           ] as { id: Tab; label: string }[]).map(t => (
             <button
               key={t.id}
@@ -200,7 +242,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
               />
               <OptRow
                 label="Acconciatura"
-                items={HAIR_STYLES}
+                items={hairStyles}
                 value={config.hairStyle}
                 onChange={v => patch('hairStyle', v)}
               />
@@ -259,65 +301,78 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
                 value={config.badge}
                 onChange={v => patch('badge', v)}
               />
+              {/* Beard — male only */}
+              {isMale && (
+                <OptRow
+                  label="Barba"
+                  items={BEARD_STYLES}
+                  value={config.beard}
+                  onChange={v => patch('beard', v)}
+                />
+              )}
             </div>
           )}
 
           {tab === 'makeup' && (
             <div className="ac-section">
-              <div className="ac-row">
-                <span className="ac-row-label">Rossetto</span>
-                <div className="ac-swatches ac-swatches--lg">
-                  {LIPSTICKS.map(l => (
-                    <button
-                      key={l.id}
-                      className={`ac-swatch${config.lipstick === l.id ? ' active' : ''}`}
-                      style={{ background: l.color || '#e0e0e0', border: '1px solid #aaa', opacity: l.color ? 1 : 0.4 }}
-                      title={l.label}
-                      onClick={() => patch('lipstick', l.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="ac-row">
-                <span className="ac-row-label">Blush</span>
-                <div className="ac-swatches ac-swatches--lg">
-                  {BLUSHES.map(b => (
-                    <button
-                      key={b.id}
-                      className={`ac-swatch${config.blush === b.id ? ' active' : ''}`}
-                      style={{ background: b.color || '#e0e0e0', border: '1px solid #aaa', opacity: b.color ? 1 : 0.4 }}
-                      title={b.label}
-                      onClick={() => patch('blush', b.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <OptRow
-                label="Ciglia"
-                items={EYELASHES_OPTS}
-                value={config.eyelashes}
-                onChange={v => patch('eyelashes', v)}
-              />
+              {!isMale && (
+                <>
+                  <div className="ac-row">
+                    <span className="ac-row-label">Rossetto</span>
+                    <div className="ac-swatches ac-swatches--lg">
+                      {LIPSTICKS.map(l => (
+                        <button
+                          key={l.id}
+                          className={`ac-swatch${config.lipstick === l.id ? ' active' : ''}`}
+                          style={{ background: l.color || '#e0e0e0', border: '1px solid #aaa', opacity: l.color ? 1 : 0.4 }}
+                          title={l.label}
+                          onClick={() => patch('lipstick', l.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="ac-row">
+                    <span className="ac-row-label">Blush</span>
+                    <div className="ac-swatches ac-swatches--lg">
+                      {BLUSHES.map(b => (
+                        <button
+                          key={b.id}
+                          className={`ac-swatch${config.blush === b.id ? ' active' : ''}`}
+                          style={{ background: b.color || '#e0e0e0', border: '1px solid #aaa', opacity: b.color ? 1 : 0.4 }}
+                          title={b.label}
+                          onClick={() => patch('blush', b.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <OptRow
+                    label="Ciglia"
+                    items={EYELASHES_OPTS}
+                    value={config.eyelashes}
+                    onChange={v => patch('eyelashes', v)}
+                  />
+                  <div className="ac-row">
+                    <span className="ac-row-label">Smalto</span>
+                    <div className="ac-swatches ac-swatches--lg">
+                      {NAIL_COLORS.map(n => (
+                        <button
+                          key={n.id}
+                          className={`ac-swatch${config.nailColor === n.id ? ' active' : ''}`}
+                          style={{ background: n.color, border: '1px solid #aaa' }}
+                          title={n.label}
+                          onClick={() => patch('nailColor', n.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
               <OptRow
                 label="Orecchini"
                 items={EARRINGS}
                 value={config.earring}
                 onChange={v => patch('earring', v)}
               />
-              <div className="ac-row">
-                <span className="ac-row-label">Smalto</span>
-                <div className="ac-swatches ac-swatches--lg">
-                  {NAIL_COLORS.map(n => (
-                    <button
-                      key={n.id}
-                      className={`ac-swatch${config.nailColor === n.id ? ' active' : ''}`}
-                      style={{ background: n.color, border: '1px solid #aaa' }}
-                      title={n.label}
-                      onClick={() => patch('nailColor', n.id)}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
           )}
         </div>
