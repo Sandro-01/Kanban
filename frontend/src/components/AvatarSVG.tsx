@@ -392,7 +392,7 @@ export function AvatarPreview({
     const eyeCenters = [cx - s * 0.07, cx + s * 0.07];
     eyeCenters.forEach((ex, ei) => {
       for (let i = 0; i < count; i++) {
-        const t = count === 1 ? 0.5 : i / (count - 1);
+        const t = count <= 1 ? 0.5 : i / (count - 1);
         const angle = (-160 + t * 100) * Math.PI / 180;
         const r = s * 0.035;
         const bx = ex + Math.cos(angle) * r;
