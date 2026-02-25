@@ -107,7 +107,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           onClick={handleClick}
           title={editable ? 'Clicca per modificare avatar' : undefined}
         >
-          <AvatarPreview config={svgConfig} color={bgColor} responsive />
+          <AvatarPreview config={svgConfig} color={bgColor} responsive seed={nameForColor} />
           {fileInput}
         </div>
       );
@@ -121,7 +121,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         onClick={handleClick}
         title={editable ? 'Clicca per modificare avatar' : undefined}
       >
-        <AvatarPreview config={{ ...DEFAULT_CONFIG, ...config }} color={user.avatarColor || '#DB2777'} responsive />
+        <AvatarPreview config={{ ...DEFAULT_CONFIG, ...config }} color={user.avatarColor || '#DB2777'} responsive seed={nameForColor} />
         {fileInput}
       </div>
     );
