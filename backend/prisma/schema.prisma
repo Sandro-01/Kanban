@@ -358,3 +358,22 @@ enum EmailStatus {
   SENT
   FAILED
 }
+
+// ============ APP SETTINGS ============
+
+model AppSettings {
+  id           String   @id @default("singleton")
+  companyName  String?
+  logoUrl      String?
+  smtpHost     String?
+  smtpPort     String?  @default("587")
+  smtpSecure   String?  @default("false")
+  smtpFrom     String?
+  smtpUser     String?
+  smtpPassword String?
+  imapHost     String?
+  imapPort     String?  @default("993")
+  imapUser     String?
+  imapPassword String?
+  updatedAt    DateTime @updatedAt
+}

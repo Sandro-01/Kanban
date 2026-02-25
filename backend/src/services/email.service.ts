@@ -64,6 +64,28 @@ export async function sendEmail(
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+ * Email address helpers
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Extracts the plain email address from strings like "Name Surname <email@domain.com>".
+ * Falls back to trimming the raw string if no angle-bracket format is found.
+ */
+function extractEmailAddress(raw: string): string {
+  const match = raw.match(/<([^>]+)>/);
+  return match ? match[1].trim().toLowerCase() : raw.trim().toLowerCase();
+}
+
+/**
+ * Extracts a display name from "Name <email>" format; falls back to the local part.
+ */
+function extractDisplayName(raw: string): string {
+  const match = raw.match(/^(.+?)\s*</);
+  if (match) return match[1].trim();
+  return raw.split('@')[0];
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
  * Email quote stripping
  * Removes quoted original message from a reply email body (HTML or plain text).
  * ────────────────────────────────────────────────────────────────────────── */
@@ -243,7 +265,8 @@ export async function processInboundEmail(
 /**
  * Adds an inbound email reply as a comment on an existing ticket.
  */
-async function addInboundComment(ticketId: string, fromEmail: string, body: string) {
+async function addInboundComment(ticketId: string, fromRaw: string, body: string) {
+  const fromEmail = extractEmailAddress(fromRaw);
   // Find or create the sender as a user
   let user = await prisma.user.findUnique({ where: { email: fromEmail } });
   if (!user) {
@@ -251,7 +274,7 @@ async function addInboundComment(ticketId: string, fromEmail: string, body: stri
       data: {
         email: fromEmail,
         password: '',
-        firstName: fromEmail.split('@')[0],
+        firstName: extractDisplayName(fromRaw),
         lastName: 'External',
         role: 'USER'
       }
@@ -278,11 +301,13 @@ async function addInboundComment(ticketId: string, fromEmail: string, body: stri
  * Crea ticket da email (nuova richiesta in arrivo)
  */
 export async function createTicketFromEmail(
-  from: string,
+  fromRaw: string,
   subject: string,
   body: string,
   attachments: any[]
 ) {
+  const from = extractEmailAddress(fromRaw);
+
   // Trova o crea utente
   let user = await prisma.user.findUnique({ where: { email: from } });
 
@@ -291,7 +316,7 @@ export async function createTicketFromEmail(
       data: {
         email: from,
         password: '',
-        firstName: from.split('@')[0],
+        firstName: extractDisplayName(fromRaw),
         lastName: 'Email User',
         role: 'USER'
       }
@@ -390,23 +415,27 @@ export async function createTicketFromEmail(
     }
   }
 
-  // Invia conferma
-  await sendEmail(
-    from,
-    `Re: ${subject} - Ticket #${ticket.id.substring(0, 8)} creato`,
-    `
-      <h2>Ticket creato con successo</h2>
-      <p>Il tuo ticket è stato registrato nel sistema.</p>
-      <ul>
-        <li><strong>ID:</strong> ${ticket.id}</li>
-        <li><strong>Priorità:</strong> ${priority}</li>
-        <li><strong>SLA:</strong> ${slaHours} ore</li>
-        <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
-      </ul>
-      <p>Riceverai aggiornamenti via email.</p>
-    `,
-    ticket.id
-  );
+  // Invia conferma (non-blocking: il ticket è già creato)
+  try {
+    await sendEmail(
+      fromRaw,
+      `Re: ${subject} - Ticket #${ticket.id.substring(0, 8)} creato`,
+      `
+        <h2>Ticket creato con successo</h2>
+        <p>Il tuo ticket è stato registrato nel sistema.</p>
+        <ul>
+          <li><strong>ID:</strong> ${ticket.id}</li>
+          <li><strong>Priorità:</strong> ${priority}</li>
+          <li><strong>SLA:</strong> ${slaHours} ore</li>
+          <li><strong>Scadenza:</strong> ${ticket.dueDate.toLocaleString('it-IT')}</li>
+        </ul>
+        <p>Riceverai aggiornamenti via email.</p>
+      `,
+      ticket.id
+    );
+  } catch (mailErr) {
+    console.error('Errore invio conferma email:', mailErr);
+  }
 
   return ticket;
 }
