@@ -69,16 +69,18 @@ export async function sendEmail(
 function stripHtmlQuotes(html: string): string {
   let result = html;
 
+  // Outlook OWA reply/forward wrapper
+  result = result.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
   // Gmail quote div
-  result = result.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*?(<\/div>)/gi, '');
+  result = result.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
   // Yahoo quoted
-  result = result.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*?(<\/div>)/gi, '');
+  result = result.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
   // Outlook blockquote (with border-left style)
   result = result.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
-  // Outlook HR separator + everything after
-  result = result.replace(/(<hr[^>]*\/?>\s*(?:<p[^>]*>|<div[^>]*>)\s*(?:Da|From|De|Von):[\s\S]*)/gi, '');
-  // Generic HR separator lines
-  result = result.replace(/<hr[^>]*\/?>[\s\S]*$/gi, '');
+  // Outlook desktop separator div (border-top style, contains Da:/From: headers)
+  result = result.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
+  // HR separator + everything after (handles <hr>, <hr/>, <hr tabindex="-1"> etc.)
+  result = result.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
 
   // Strip remaining HTML tags
   result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
@@ -95,6 +97,9 @@ function stripHtmlQuotes(html: string): string {
   // Normalise whitespace
   result = result.replace(/[ \t]+/g, ' ');
   result = result.replace(/\n{3,}/g, '\n\n');
+
+  // Second pass: apply plain-text stripping to catch any remaining quoted lines (Da:, From:, > ...)
+  result = stripPlainTextQuotes(result);
 
   return result.trim();
 }

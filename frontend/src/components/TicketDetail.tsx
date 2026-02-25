@@ -335,6 +335,13 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
     let cleaned = content;
 
     if (/^\s*<(html|div|p|table|span|img|h[1-6]|ul|ol|li|br)/i.test(cleaned)) {
+      // Strip quoted/forwarded sections before rendering
+      cleaned = cleaned.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
+      cleaned = cleaned.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
+      cleaned = cleaned.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
+      cleaned = cleaned.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
+      cleaned = cleaned.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
+      cleaned = cleaned.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
       return cleaned
         .replace(/<script[\s\S]*?<\/script>/gi, '')
         .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
