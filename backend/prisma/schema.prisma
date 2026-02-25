@@ -22,6 +22,18 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Profile fields
+  avatarUrl     String?
+  avatarConfig  String?   // JSON: SVG avatar config
+  avatarColor   String?
+  department    String?
+  jobTitle      String?
+  phone         String?
+  location      String?
+  bio           String?
+  theme         String?   @default("dark")
+  language      String?   @default("it")
+
   // Relations
   assignedTickets Ticket[] @relation("AssignedTickets")
   createdTickets  Ticket[] @relation("CreatedTickets")

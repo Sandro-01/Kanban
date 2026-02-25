@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import ReactNiceAvatar from 'react-nice-avatar';
 import { UPLOADS_URL } from '../services/api';
 import { AvatarPreview, DEFAULT_CONFIG } from './AvatarSVG';
 
@@ -114,15 +113,15 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       );
     }
 
-    // Legacy react-nice-avatar config
+    // Legacy config without skinTone: render with SVG defaults
     return (
       <div
         className={className}
         style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
         onClick={handleClick}
-        title={editable ? 'Clicca per cambiare foto' : undefined}
+        title={editable ? 'Clicca per modificare avatar' : undefined}
       >
-        <ReactNiceAvatar style={{ width: '100%', height: '100%' }} shape="circle" {...config} />
+        <AvatarPreview config={{ ...DEFAULT_CONFIG, ...config }} color={user.avatarColor || '#DB2777'} responsive />
         {fileInput}
       </div>
     );

@@ -11,6 +11,7 @@ import offboardingRoutes from './routes/offboarding.routes';
 import slaRoutes from './routes/sla.routes';
 import auditRoutes from './routes/audit.routes';
 import emailRoutes from './routes/email.routes';
+import userRoutes from './routes/user.routes';
 
 // Services
 import { startEmailListener } from './services/email.service';
@@ -36,6 +37,7 @@ app.use('/api/offboarding', offboardingRoutes);
 app.use('/api/sla', slaRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
