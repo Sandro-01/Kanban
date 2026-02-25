@@ -1057,18 +1057,6 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                 ? `${item.user.firstName || ''} ${item.user.lastName || ''}`.trim()
                 : '';
 
-              const getFileTypeInfo = (file: any) => {
-                const mime: string = file?.mimeType || '';
-                const name: string = file?.fileName || '';
-                if (mime.startsWith('image/'))                              return { label: 'IMG', bg: '#0ea5e9' };
-                if (mime.includes('pdf')  || /\.pdf$/i.test(name))          return { label: 'PDF', bg: '#ef4444' };
-                if (mime.includes('word') || /\.(doc|docx)$/i.test(name))   return { label: 'DOC', bg: '#2b579a' };
-                if (mime.includes('excel') || mime.includes('spreadsheet') || /\.(xls|xlsx)$/i.test(name))
-                                                                             return { label: 'XLS', bg: '#217346' };
-                if (mime.includes('presentation') || /\.(ppt|pptx)$/i.test(name)) return { label: 'PPT', bg: '#c43e1c' };
-                const ext = name.split('.').pop()?.toUpperCase()?.slice(0, 3) || 'FILE';
-                return { label: ext, bg: '#8b5cf6' };
-              };
 
               const fileAuthor = cardType === 'files'
                 ? (authorName || item.file?.uploadedBy?.email || item.fromEmail || 'Sistema')
