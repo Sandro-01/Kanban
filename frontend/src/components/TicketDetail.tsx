@@ -334,24 +334,28 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
   const cleanEmailReplyContent = (content: string, fromEmail?: string): string => {
     let cleaned = content;
 
-    if (/^\s*<(html|div|p|table|span|img|h[1-6]|ul|ol|li|br)/i.test(cleaned)) {
-      // 1. Strip quoted/forwarded sections
+    // Detect HTML emails — also handles DOCTYPE-prefixed Outlook emails (<!DOCTYPE html>...)
+    const isHtmlEmail = /^\s*(?:<!|<(?:html|div|p|table|span|img|h[1-6]|ul|ol|li|br))/i.test(cleaned)
+      || /<(?:html|body)\b[^>]*>/i.test(cleaned.slice(0, 500));
+
+    if (isHtmlEmail) {
+      // 1. Strip <head> section (CSS/meta noise)
+      cleaned = cleaned.replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '');
+      // 2. Strip quoted/forwarded sections
       cleaned = cleaned.replace(/<div[^>]*id="divRplyFwdMsg"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<div[^>]*id="[^"]*yahoo_quoted[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, '');
       cleaned = cleaned.replace(/<div[^>]*style="[^"]*border-top[^"]*"[^>]*>[\s\S]*/gi, '');
       cleaned = cleaned.replace(/<hr[^>]*\/?>[\s\S]*/gi, '');
-      // 2. Strip email signature: tables and images (Outlook signatures are always HTML tables with a logo)
+      // 3. Strip email signature (Outlook signatures are HTML tables with a logo image)
       cleaned = cleaned.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
       cleaned = cleaned.replace(/<img[^>]*\/?>/gi, '');
-      // 3. Strip security-sensitive attributes
+      // 4. Strip scripts and style blocks
       cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, '');
-      cleaned = cleaned.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
-      cleaned = cleaned.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
-      // 4. Convert to plain text so the plain-text signature stripper (name/job title) can run
+      cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      // 5. Convert remaining HTML to plain text
       cleaned = cleaned
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/(?:p|div|li|tr|h[1-6])>/gi, '\n')
         .replace(/<[^>]+>/g, '')
@@ -360,7 +364,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
         .replace(/[ \t]+/g, ' ')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-      // 5. Fall through to the plain-text path below for signature name/job title stripping
+      // Fall through to the plain-text cleanup below (strips trailing name/job-title lines)
     }
 
     if (isNdrContent(cleaned)) {
