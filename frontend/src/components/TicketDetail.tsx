@@ -1252,7 +1252,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
               placeholder="Write a comment... (@nome per colleghi, @email@ext.com per esterni)"
               minHeight={80}
               borderless
-              onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
+              onPasteFiles={(pastedFiles: File[]) => setFiles(prev => [...prev, ...pastedFiles])}
               onMentionQuery={setMentionQuery}
             />
             <div className="composer-bottom-bar">
