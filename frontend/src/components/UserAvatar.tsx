@@ -127,15 +127,17 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     );
   }
 
-  // ── Priority 3: coloured initials ─────────────────────────────────────
+  // ── Priority 3: auto-generated DiceBear adventurer avatar ───────────────
+  // Every user gets a unique illustrated character derived from their name,
+  // even before they customise anything (WhatsApp-style default avatar).
   return (
     <div
       className={className}
-      style={{ background: bg, ...style, cursor: editable ? 'pointer' : undefined }}
+      style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
       onClick={handleClick}
-      title={editable ? 'Clicca per aggiungere foto' : undefined}
+      title={editable ? 'Clicca per personalizzare avatar' : undefined}
     >
-      {initials}
+      <AvatarPreview config={DEFAULT_CONFIG} color={bg} responsive seed={nameForColor} />
       {fileInput}
     </div>
   );

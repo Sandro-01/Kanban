@@ -273,57 +273,109 @@ export const MALE_DEFAULT_CONFIG: AvatarConfig = {
   beard: 'none',
 };
 
-/* ── DiceBear Micah URL builder ──────────────────────────────────────────── */
+/* ── DiceBear Adventurer URL builder ─────────────────────────────────────── */
+/*
+ * Uses DiceBear "adventurer" (v9) — full cartoon character (head + shoulders
+ * + outfit), closest free equivalent to WhatsApp-style illustrated avatars.
+ * API reference: https://www.dicebear.com/styles/adventurer/
+ */
 
 const SKIN_HEX: Record<string, string> = {
   light: 'f9c9b6', medium: 'd08b5b', tan: 'ae5d29', dark: '614335', deep: '77311d',
 };
 
-const HAIR_MICAH: Record<string, string> = {
-  short: 'pixie', pixie: 'pixie', buzz: 'pixie',
-  medium: 'full', long: 'full', bangs: 'full',
-  waves: 'dannyPhantom', sidepart: 'dannyPhantom',
-  curly: 'fonze', pompadour: 'fonze', undercut: 'fonze',
-  braids: 'dougFunny', twintails: 'dougFunny',
-  bun: 'mrT', ponytail: 'mrT',
+/* Hair → adventurer variant (short01–short19 / long01–long26) */
+const HAIR_ADV: Record<string, string> = {
+  // female
+  short:     'short01', pixie:     'short03', bangs:     'short06',
+  medium:    'short07', bun:       'long05',  ponytail:  'long09',
+  long:      'long01',  waves:     'long14',  curly:     'long18',
+  braids:    'long19',  twintails: 'long21',  bald:      'short11',
+  // male
+  sidepart:  'short05', buzz:      'short11', pompadour: 'short09',
+  undercut:  'short13',
 };
 
-const MOUTH_MICAH: Record<string, string> = {
-  happy: 'smile', cute: 'smirk', wink: 'smile', kiss: 'nervous',
-  excited: 'laughing', cool: 'smile', smirk: 'smirk',
-  neutral: 'nervous', focused: 'nervous', silly: 'laughing',
-  tired: 'sad', serious: 'frown',
+/* Expression → mouth variant (variant01–variant30) */
+const MOUTH_ADV: Record<string, string> = {
+  happy:   'variant04', cute:    'variant07', wink:    'variant09',
+  kiss:    'variant13', excited: 'variant02', cool:    'variant05',
+  smirk:   'variant19', neutral: 'variant20', focused: 'variant22',
+  silly:   'variant25', tired:   'variant28', serious: 'variant01',
 };
 
-const EYES_MICAH: Record<string, string> = {
-  happy: 'smiling', cute: 'smiling', wink: 'smilingShadow',
-  kiss: 'round', excited: 'eyes', cool: 'eyesShadow',
-  smirk: 'eyes', neutral: 'eyes', focused: 'eyesShadow',
-  silly: 'eyes', tired: 'eyesShadow', serious: 'eyes',
+/* Expression → eyes variant (variant01–variant26) */
+const EYES_ADV: Record<string, string> = {
+  happy:   'variant12', cute:    'variant06', wink:    'variant15',
+  kiss:    'variant08', excited: 'variant03', cool:    'variant18',
+  smirk:   'variant21', neutral: 'variant01', focused: 'variant05',
+  silly:   'variant09', tired:   'variant26', serious: 'variant04',
+};
+
+/* Eyebrows matched to expression (variant01–variant15) */
+const EYEBROW_ADV: Record<string, string> = {
+  happy:   'variant05', cute:    'variant03', wink:    'variant07',
+  kiss:    'variant04', excited: 'variant01', cool:    'variant10',
+  smirk:   'variant12', neutral: 'variant01', focused: 'variant14',
+  silly:   'variant06', tired:   'variant15', serious: 'variant13',
+};
+
+/* Outfit → clothing variant (variant01–variant15) */
+const OUTFIT_ADV: Record<string, string> = {
+  casual:    'variant01', dress:     'variant04', floral:    'variant07',
+  elegant:   'variant02', princess:  'variant05', sport:     'variant06',
+  formal:    'variant03', creative:  'variant08', tech:      'variant09',
+  ninja:     'variant10', astronaut: 'variant11', chef:      'variant12',
 };
 
 function buildAvatarUrl(config: AvatarConfig, bgColor: string, seed: string): string {
   const p: string[] = [];
+
+  // Skin tone
   const skin = SKIN_HEX[config.skinTone];
-  if (skin) p.push(`baseColor=${skin}`);
-  const hair = HAIR_MICAH[config.hairStyle];
+  if (skin) p.push(`skinColor=${skin}`);
+
+  // Hair
+  const hair = HAIR_ADV[config.hairStyle];
   if (hair) p.push(`hair=${encodeURIComponent(hair)}`);
   const hairHex = config.hairColor.replace(/^#/, '');
   if (hairHex) p.push(`hairColor=${hairHex}`);
-  const mouth = MOUTH_MICAH[config.expression];
-  if (mouth) p.push(`mouth=${encodeURIComponent(mouth)}`);
-  const eyes = EYES_MICAH[config.expression];
-  if (eyes) p.push(`eyes=${encodeURIComponent(eyes)}`);
+
+  // Face
+  const mouth = MOUTH_ADV[config.expression] ?? 'variant04';
+  p.push(`mouth=${encodeURIComponent(mouth)}`);
+
+  const eyes = EYES_ADV[config.expression] ?? 'variant01';
+  p.push(`eyes=${encodeURIComponent(eyes)}`);
+
+  const eyebrow = EYEBROW_ADV[config.expression] ?? 'variant01';
+  p.push(`eyebrows=${encodeURIComponent(eyebrow)}`);
+
+  // Outfit / clothing
+  const outfit = OUTFIT_ADV[config.outfit] ?? 'variant01';
+  p.push(`clothing=${encodeURIComponent(outfit)}`);
+
+  // Beard (male)
   if (config.beard && config.beard !== 'none') {
-    p.push(`facialHair=${config.beard === 'stubble' ? 'scruff' : 'beard'}`);
-    p.push(`facialHairColor=${hairHex}`);
+    const beardVariant = config.beard === 'stubble' ? 'variant01'
+                       : config.beard === 'goatee'  ? 'variant02'
+                       : config.beard === 'short'   ? 'variant03'
+                       : 'variant04'; // full
+    p.push(`beard=${encodeURIComponent(beardVariant)}`);
   }
-  if (config.accessory === 'glasses') p.push('glasses=round');
-  else if (config.accessory === 'sunglasses') p.push('glasses=square');
+
+  // Glasses
+  if (config.accessory === 'glasses') p.push('glasses=variant01');
+  else if (config.accessory === 'sunglasses') p.push('glasses=variant04');
+
+  // Background
   const bg = bgColor.replace(/^#/, '');
   if (bg) p.push(`backgroundColor=${bg}`);
+
+  // Seed ensures the avatar is stable for the same config+user combo
   p.push(`seed=${encodeURIComponent(seed)}`);
-  return `https://api.dicebear.com/9.x/micah/svg?${p.join('&')}`;
+
+  return `https://api.dicebear.com/9.x/adventurer/svg?${p.join('&')}`;
 }
 
 /* ── AvatarPreview component ─────────────────────────────────────────────── */

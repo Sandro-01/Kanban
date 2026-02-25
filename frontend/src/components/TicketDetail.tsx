@@ -1126,15 +1126,13 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
 
               return (
                 <div key={`${item.type}-${item.id}`} className={`conv-msg conv-msg--${cardType}`}>
-                  {item.user?.avatarUrl ? (
-                    <div className="conv-msg-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                      <img src={`${UPLOADS_URL}/${item.user.avatarUrl}`} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    </div>
-                  ) : (
-                    <div className="conv-msg-avatar" style={{ background: avatarBg }}>
-                      {initials}
-                    </div>
-                  )}
+                  <UserAvatar
+                    user={item.user || {
+                      firstName: item.fromEmail ? item.fromEmail.split('@')[0] : '?',
+                      email: item.fromEmail || undefined,
+                    }}
+                    className="conv-msg-avatar"
+                  />
                   <div className="conv-msg-card">
                     <div className="conv-msg-head">
                       <div className="conv-msg-sender-col">
