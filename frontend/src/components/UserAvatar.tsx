@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import ReactNiceAvatar from 'react-nice-avatar';
 import { UPLOADS_URL } from '../services/api';
+import { AvatarPreview, DEFAULT_CONFIG } from './AvatarSVG';
 
 // Palette identica al backend — stesso hash → stesso colore
 const AVATAR_PALETTE = [
@@ -91,34 +92,26 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     );
   }
 
-  // ── Priority 2: avatar config (RPM 3D or react-nice-avatar) ──────────
+  // ── Priority 2: avatar config (SVG custom or legacy react-nice-avatar) ───
   if (user.avatarConfig) {
     let config: any = {};
     try { config = JSON.parse(user.avatarConfig); } catch { /* ignore */ }
 
-    // Ready Player Me 3D avatar — render PNG from RPM API
-    if (config.rpm_url) {
-      const match = (config.rpm_url as string).match(/models\.readyplayer\.me\/([^/?#]+)\.glb/);
-      const rpmPng = match
-        ? `https://models.readyplayer.me/${match[1]}.png?scene=fullbody-portrait-v1-transparent&camera=portrait`
-        : null;
-      if (rpmPng) {
-        return (
-          <div
-            className={className}
-            style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
-            onClick={handleClick}
-            title={editable ? 'Clicca per cambiare foto' : undefined}
-          >
-            <img
-              src={rpmPng}
-              alt={initials}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-            {fileInput}
-          </div>
-        );
-      }
+    // New SVG-based avatar (has skinTone field)
+    if (config.skinTone) {
+      const bgColor = config.avatarColor || user.avatarColor || '#DB2777';
+      const svgConfig = { ...DEFAULT_CONFIG, ...config };
+      return (
+        <div
+          className={className}
+          style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
+          onClick={handleClick}
+          title={editable ? 'Clicca per modificare avatar' : undefined}
+        >
+          <AvatarPreview config={svgConfig} color={bgColor} responsive />
+          {fileInput}
+        </div>
+      );
     }
 
     // Legacy react-nice-avatar config
