@@ -195,10 +195,6 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
     }
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase();
-  };
-
   const [assignTab, setAssignTab] = useState<'users' | 'departments'>('users');
 
   const handleDepartmentSelection = (department: string) => {

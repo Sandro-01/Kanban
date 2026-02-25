@@ -132,7 +132,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
   const [activeSection, setActiveSection] = useState<string>('viso');
 
   const upd = <K extends keyof AvatarFullConfig>(key: K, val: AvatarFullConfig[K]) =>
-    setConfig(prev => ({ ...prev, [key]: val }));
+    setConfig((prev: AvatarFullConfig) => ({ ...prev, [key]: val }));
 
   const randomize = () => setConfig(genConfig());
 

@@ -547,10 +547,6 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     }
   };
 
-  // Helper: get initials for avatar
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase();
-  };
 
   // Assignment panel tab state
   const [assignTab, setAssignTab] = useState<'users' | 'departments'>('users');
