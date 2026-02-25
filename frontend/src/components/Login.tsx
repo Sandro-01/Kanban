@@ -21,7 +21,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const response = await auth.login(email, password);
       onLogin(response.data.token, response.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante il login');
+      if (err.response) {
+        // Server ha risposto con un errore
+        setError(err.response.data?.error || 'Errore durante il login');
+      } else if (err.request) {
+        // Nessuna risposta dal server
+        setError('Impossibile contattare il server. Verifica che il backend sia in esecuzione.');
+      } else {
+        setError('Errore durante il login');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +54,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="user@europoligrafico.it"
+              placeholder="utente@azienda.it"
             />
           </div>
 
@@ -72,15 +80,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
 
         <div className="login-footer">
-          <div className="demo-credentials">
-            <h3>Credenziali di demo:</h3>
-            <ul>
-              <li><strong>Admin:</strong> admin@europoligrafico.it / admin123</li>
-              <li><strong>Manager:</strong> manager@europoligrafico.it / manager123</li>
-              <li><strong>User:</strong> user@europoligrafico.it / user123</li>
-              <li><strong>Auditor:</strong> auditor@europoligrafico.it / auditor123</li>
-            </ul>
-          </div>
+          <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
+            Contattare l'amministratore per le credenziali di accesso.
+          </p>
         </div>
 
         <div className="iso-badges">
