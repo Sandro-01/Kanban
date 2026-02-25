@@ -392,7 +392,7 @@ function AvatarPreview({ config, color, size = 120 }: { config: AvatarConfig; co
     const eyeCenters = [cx - s * 0.07, cx + s * 0.07];
     eyeCenters.forEach((ex, ei) => {
       for (let i = 0; i < count; i++) {
-        const t = count === 1 ? 0.5 : i / (count - 1);
+        const t = (count as number) === 1 ? 0.5 : i / ((count as number) - 1);
         const angle = (-160 + t * 100) * Math.PI / 180; // top arc
         const r = s * 0.035;
         const bx = ex + Math.cos(angle) * r;
