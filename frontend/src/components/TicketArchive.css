@@ -441,6 +441,21 @@
   display: block;
 }
 
+.detail-comment-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #0A0A0A;
+  margin: 0;
+  word-break: break-word;
+}
+.detail-comment-body .mention {
+  background: rgba(108, 99, 255, 0.15);
+  color: #6c63ff;
+  border-radius: 3px;
+  padding: 0 3px;
+  font-weight: 600;
+}
+
 .detail-assignees {
   display: flex;
   flex-wrap: wrap;

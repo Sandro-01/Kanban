@@ -269,6 +269,18 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
     }
   };
 
+  const extractMentionedUserIds = (html: string): string[] => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      return [...new Set(
+        Array.from(doc.querySelectorAll('[data-user-id]'))
+          .map(el => el.getAttribute('data-user-id'))
+          .filter(Boolean) as string[]
+      )];
+    } catch { return []; }
+  };
+
   const handleSubmit = async () => {
     const hasComment = comment.replace(/<[^>]*>/g, '').trim();
     const hasFiles = files.length > 0;
@@ -282,6 +294,18 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
       if (hasComment) {
         const res = await ticketsApi.addComment(ticket.id, comment, hasFiles);
         createdCommentId = res.data.id;
+
+        // Auto-assign and notify mentioned users
+        const mentionedIds = extractMentionedUserIds(comment);
+        if (mentionedIds.length > 0) {
+          const currentIds = (ticket.assignments || []).map((a: any) => a.userId);
+          const newIds = mentionedIds.filter((uid: string) => !currentIds.includes(uid));
+          if (newIds.length > 0) {
+            try { await ticketsApi.assignUsers(ticket.id, [...currentIds, ...newIds]); } catch {}
+          }
+          const mentionedByName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Someone';
+          try { await ticketsApi.notifyMention(ticket.id, mentionedIds, mentionedByName, comment); } catch {}
+        }
       }
       if (hasFiles) {
         for (let i = 0; i < files.length; i++) {

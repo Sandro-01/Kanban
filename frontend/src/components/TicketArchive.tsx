@@ -405,7 +405,10 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
                             <strong>{c.user?.firstName} {c.user?.lastName}</strong>
                             <span>{formatDateTime(c.createdAt)}</span>
                           </div>
-                          <p>{c.content}</p>
+                          <div
+                            className="detail-comment-body"
+                            dangerouslySetInnerHTML={{ __html: c.content.replace(/<script[\s\S]*?<\/script>/gi, '') }}
+                          />
                           {commentAttachments.length > 0 && (
                             <div className="comment-attachments">
                               {commentAttachments.map((a: any) => (

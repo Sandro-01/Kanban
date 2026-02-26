@@ -460,6 +460,19 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   // Get unique departments from users
   const allDepartments = Array.from(new Set(allUsers.map((u: any) => u.department).filter(Boolean)));
 
+  // Parse @mentioned user IDs from comment HTML
+  const extractMentionedUserIds = (html: string): string[] => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      return [...new Set(
+        Array.from(doc.querySelectorAll('[data-user-id]'))
+          .map(el => el.getAttribute('data-user-id'))
+          .filter(Boolean) as string[]
+      )];
+    } catch { return []; }
+  };
+
   // Unified handler for comment, file, and assignments
   const handleSubmit = async () => {
     // Check if there's anything to submit (strip HTML tags to detect empty editor)
@@ -481,6 +494,18 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
         const commentResponse = await ticketsApi.addComment(ticket.id, comment, hasFiles);
         createdCommentId = commentResponse.data.id;
         console.log('✅ Comment created:', createdCommentId);
+
+        // Auto-assign and notify mentioned users
+        const mentionedIds = extractMentionedUserIds(comment);
+        if (mentionedIds.length > 0) {
+          const currentIds = (ticket.assignments || []).map((a: any) => a.userId);
+          const newIds = mentionedIds.filter((uid: string) => !currentIds.includes(uid));
+          if (newIds.length > 0) {
+            try { await ticketsApi.assignUsers(ticket.id, [...currentIds, ...newIds]); } catch {}
+          }
+          const mentionedByName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Someone';
+          try { await ticketsApi.notifyMention(ticket.id, mentionedIds, mentionedByName, comment); } catch {}
+        }
       }
 
       // Upload files, linking them to the comment if both were provided

@@ -8,7 +8,7 @@ import { auditLog } from '../middleware/audit.middleware';
 import { getSLAHours } from '../services/sla.service';
 import { notifyTicketUpdate, cleanEmailBodyForDescription } from '../services/email.service';
 import { sendTicketEmail } from '../services/emailIntegration.service';
-import { notifyComment, notifyAssignment, notifyStatusChange } from '../services/notification.service';
+import { notifyComment, notifyAssignment, notifyStatusChange, createNotification } from '../services/notification.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -979,6 +979,32 @@ router.post('/migrate/clean-email-descriptions', authenticate, authorize('ADMIN'
     });
   } catch (error: any) {
     console.error('❌ Errore migrazione descrizioni email:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/tickets/:id/notify-mention — in-app notification for mentioned users
+router.post('/:id/notify-mention', authenticate, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { userIds, mentionedByName, commentPreview } = req.body;
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({ error: 'userIds required' });
+  }
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id }, select: { title: true } });
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    const preview = (commentPreview || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 80);
+    for (const userId of userIds as string[]) {
+      await createNotification(
+        userId,
+        'COMMENT',
+        `Mentioned in "${ticket.title}"`,
+        `${mentionedByName || 'Someone'} mentioned you: ${preview}`,
+        id
+      );
+    }
+    res.json({ ok: true });
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });

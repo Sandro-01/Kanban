@@ -89,13 +89,13 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onUserUpdate }) => {
     }
   };
 
-  const handleAvatarSaveConfig = async (config: object) => {
+  const handleAvatarSaveConfig = async (url: string) => {
     try {
-      const res = await usersApi.saveAvatarConfig(user.id, config);
-      onUserUpdate?.({ ...user, avatarConfig: res.data.avatarConfig, avatarUrl: null });
+      await usersApi.update(user.id, { avatarUrl: url });
+      onUserUpdate?.({ ...user, avatarUrl: url, avatarConfig: null });
       setShowAvatarCreator(false);
     } catch (err) {
-      console.error('Avatar config save failed:', err);
+      console.error('Avatar save failed:', err);
     }
   };
 

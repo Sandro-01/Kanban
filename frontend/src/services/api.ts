@@ -73,6 +73,8 @@ export const tickets = {
     api.delete(`/tickets/${id}/assign-users/${userId}`),
   assignDepartments: (id: string, departments: string[]) =>
     api.post(`/tickets/${id}/assign-departments`, { departments }),
+  notifyMention: (id: string, userIds: string[], mentionedByName: string, commentPreview: string) =>
+    api.post(`/tickets/${id}/notify-mention`, { userIds, mentionedByName, commentPreview }),
   // Email integration
   addExternalContacts: (id: string, emails: string[]) =>
     api.post(`/tickets/${id}/external-contacts`, { emails }),

@@ -72,8 +72,12 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     />
   ) : null;
 
-  // ── Priority 1: real photo ─────────────────────────────────────────────
+  // ── Priority 1: real photo or external avatar (e.g. Ready Player Me) ───
   if (user.avatarUrl) {
+    // External absolute URL (RPM, etc.) vs. local upload path
+    const src = user.avatarUrl.startsWith('http')
+      ? user.avatarUrl
+      : `${UPLOADS_URL}/${user.avatarUrl}`;
     return (
       <div
         className={className}
@@ -82,7 +86,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         title={editable ? 'Click to change photo' : undefined}
       >
         <img
-          src={`${UPLOADS_URL}/${user.avatarUrl}`}
+          src={src}
           alt={initials}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
