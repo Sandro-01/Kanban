@@ -8,8 +8,11 @@ interface AvatarCreatorProps {
   onClose: () => void;
 }
 
-// Ready Player Me demo iframe URL — works without registration
-const RPM_IFRAME_URL = 'https://demo.readyplayer.me/avatar?frameApi&clearCache';
+// Ready Player Me demo iframe URL.
+// NOTE: do NOT add &clearCache — it causes "Non sei autorizzato ad aprire
+// questo avatar" when the user tries to re-edit an existing RPM avatar,
+// because clearing the cache also removes the session that owns the avatar.
+const RPM_IFRAME_URL = 'https://demo.readyplayer.me/avatar?frameApi';
 
 const AvatarCreator: React.FC<AvatarCreatorProps> = ({ onSave, onRemove, onClose }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);

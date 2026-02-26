@@ -117,11 +117,49 @@ export function infoTable(rows: { label: string; value: string; highlight?: bool
 
 /* ───── Message / comment block ───── */
 
+/**
+ * Returns the initials (up to 2 chars) from a full name string.
+ */
+function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** Same palette as the frontend getAvatarColor — keeps email & UI in sync. */
+const AVATAR_PALETTE = [
+  '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
+  '#10b981', '#06b6d4', '#eab308', '#84cc16', '#f43f5e',
+];
+
+function avatarBgFromName(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
 export function messageBlock(html: string, opts?: { author?: string; accentColor?: string }): string {
+  const authorHtml = opts?.author
+    ? (() => {
+        const name = opts.author;
+        const initials = nameInitials(name);
+        const bg = avatarBgFromName(name);
+        return `
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
+          <tr>
+            <td style="vertical-align:middle;padding-right:12px;">
+              <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#ffffff;line-height:1;text-align:center;"><!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" style="width:40px;height:40px;" arcsize="50%" fillcolor="${bg}" strokecolor="${bg}"><v:textbox inset="0,0,0,0" style="mso-fit-shape-to-text:false"><center style="font-size:15px;font-weight:800;color:#ffffff;">${escapeHtml(initials)}</center></v:textbox></v:roundrect><![endif]--><!--[if !mso]><!--><span style="display:block;width:40px;height:40px;line-height:40px;border-radius:50%;background:${bg};font-size:15px;font-weight:800;color:#ffffff;text-align:center;">${escapeHtml(initials)}</span><!--<![endif]--></div>
+            </td>
+            <td style="vertical-align:middle;">
+              <span style="font-size:13px;font-weight:800;color:#000000;">${escapeHtml(name)}</span>
+            </td>
+          </tr>
+        </table>`;
+      })()
+    : '';
   return `<div style="background:#F5F5F0;padding:18px 20px;border-left:4px solid #000000;margin-bottom:20px;">
-    ${opts?.author
-      ? `<p style="margin:0 0 10px;font-size:9px;font-weight:800;color:#000000;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #D8D8D0;padding-bottom:8px;">${escapeHtml(opts.author)}</p>`
-      : ''}
+    ${authorHtml}
     <div style="margin:0;font-size:14px;color:#000000;line-height:1.75;word-wrap:break-word;">${html}</div>
   </div>`;
 }

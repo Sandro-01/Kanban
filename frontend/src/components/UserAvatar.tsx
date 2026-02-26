@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { UPLOADS_URL } from '../services/api';
-import { AvatarPreview, DEFAULT_CONFIG } from './AvatarSVG';
+import { AvatarPreview, DEFAULT_CONFIG, MALE_DEFAULT_CONFIG } from './AvatarSVG';
 
 // Palette identica al backend — stesso hash → stesso colore
 const AVATAR_PALETTE = [
@@ -75,9 +75,14 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   // ── Priority 1: real photo or external avatar (e.g. Ready Player Me) ───
   if (user.avatarUrl) {
     // External absolute URL (RPM, etc.) vs. local upload path
-    const src = user.avatarUrl.startsWith('http')
+    let src = user.avatarUrl.startsWith('http')
       ? user.avatarUrl
       : `${UPLOADS_URL}/${user.avatarUrl}`;
+    // ReadyPlayerMe: use halfbody portrait for a clean 2-D headshot instead
+    // of the default full-body 3-D render.
+    if (src.includes('readyplayer.me') && !src.includes('scene=')) {
+      src = `${src}?scene=halfbody-portrait-v1-transparent&background=transparent`;
+    }
     return (
       <div
         className={className}
@@ -132,8 +137,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   }
 
   // ── Priority 3: auto-generated DiceBear adventurer avatar ───────────────
-  // Every user gets a unique illustrated character derived from their name,
-  // even before they customise anything (WhatsApp-style default avatar).
+  // Pick male vs female config based on a hash of the user's name so every
+  // user gets a consistent character that doesn't look mismatched.
+  let nameHash = 0;
+  for (let i = 0; i < nameForColor.length; i++)
+    nameHash = nameForColor.charCodeAt(i) + ((nameHash << 5) - nameHash);
+  const autoConfig = Math.abs(nameHash) % 2 === 0 ? MALE_DEFAULT_CONFIG : DEFAULT_CONFIG;
+
   return (
     <div
       className={className}
@@ -141,7 +151,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       onClick={handleClick}
       title={editable ? 'Click to customize avatar' : undefined}
     >
-      <AvatarPreview config={DEFAULT_CONFIG} color={bg} responsive seed={nameForColor} />
+      <AvatarPreview config={autoConfig} color={bg} responsive seed={nameForColor} />
       {fileInput}
     </div>
   );
