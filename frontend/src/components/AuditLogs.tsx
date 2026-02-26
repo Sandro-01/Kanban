@@ -31,7 +31,7 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
       setLogs(logsRes.data);
       setReport(reportRes.data);
     } catch (error) {
-      console.error('Errore caricamento audit:', error);
+      console.error('Error loading audit:', error);
     } finally {
       setLoading(false);
     }
@@ -53,27 +53,27 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
       link.click();
       link.remove();
     } catch (error) {
-      console.error('Errore export:', error);
+      console.error('Export error:', error);
     }
   };
 
   if (loading) {
-    return <div className="loading">Caricamento audit logs...</div>;
+    return <div className="loading">Loading audit logs...</div>;
   }
 
   return (
     <div className="page audit-page">
       <div className="page-header">
         <h1>Audit Logs</h1>
-        <p>Tracciamento completo delle attività per conformità ISO 9001/27001</p>
+        <p>Complete activity tracking for ISO 9001/27001 compliance</p>
       </div>
 
       <div className="iso-compliance-banner">
         <div className="banner-content">
-          <h2>🔒 Sistema Conforme ISO 9001/27001</h2>
+          <h2>🔒 ISO 9001/27001 Compliant System</h2>
           <p>
-            Tutti i log di audit sono IMMUTABILI e tracciati per garantire la conformità agli
-            standard ISO. Nessun record può essere modificato o eliminato.
+            All audit logs are IMMUTABLE and tracked to ensure compliance with ISO standards.
+            No record can be modified or deleted.
           </p>
         </div>
         <div className="iso-badges-audit">
@@ -85,13 +85,13 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
       {/* Report Statistics */}
       {report && (
         <div className="card audit-stats">
-          <h2>Statistiche Audit</h2>
+          <h2>Audit Statistics</h2>
           <div className="stats-grid-audit">
             <div className="stat-card-audit">
               <div className="stat-icon">📊</div>
               <div className="stat-info">
                 <div className="stat-number">{report.statistics.total}</div>
-                <div className="stat-label">Eventi Totali</div>
+                <div className="stat-label">Total Events</div>
               </div>
             </div>
 
@@ -115,13 +115,13 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
               <div className="stat-icon">🚨</div>
               <div className="stat-info">
                 <div className="stat-number">{report.statistics.bySeverity.CRITICAL}</div>
-                <div className="stat-label">Eventi Critici</div>
+                <div className="stat-label">Critical Events</div>
               </div>
             </div>
           </div>
 
           <div className="severity-breakdown">
-            <h3>Per Severità</h3>
+            <h3>By Severity</h3>
             <div className="severity-grid">
               <div className="severity-item">
                 <span className="severity-badge info">INFO</span>
@@ -142,33 +142,33 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
 
       {/* Filters */}
       <div className="card filters-card">
-        <h3>Filtri</h3>
+        <h3>Filters</h3>
         <div className="filters-grid">
           <div className="filter-group">
-            <label className="label">Entità</label>
+            <label className="label">Entity</label>
             <select
               className="input"
               value={filters.entity}
               onChange={(e) => setFilters({ ...filters, entity: e.target.value })}
             >
-              <option value="">Tutte</option>
-              <option value="User">Utente</option>
+              <option value="">All</option>
+              <option value="User">User</option>
               <option value="Ticket">Ticket</option>
-              <option value="Comment">Commento</option>
-              <option value="Attachment">Allegato</option>
+              <option value="Comment">Comment</option>
+              <option value="Attachment">Attachment</option>
               <option value="Onboarding">Onboarding</option>
               <option value="Offboarding">Offboarding</option>
             </select>
           </div>
 
           <div className="filter-group">
-            <label className="label">Severità</label>
+            <label className="label">Severity</label>
             <select
               className="input"
               value={filters.severity}
               onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
             >
-              <option value="">Tutte</option>
+              <option value="">All</option>
               <option value="INFO">Info</option>
               <option value="WARNING">Warning</option>
               <option value="CRITICAL">Critical</option>
@@ -176,7 +176,7 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
           </div>
 
           <div className="filter-group">
-            <label className="label">Data Inizio</label>
+            <label className="label">Start Date</label>
             <input
               type="date"
               className="input"
@@ -186,7 +186,7 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
           </div>
 
           <div className="filter-group">
-            <label className="label">Data Fine</label>
+            <label className="label">End Date</label>
             <input
               type="date"
               className="input"
@@ -198,26 +198,26 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
 
         <div className="filter-actions">
           <button className="btn btn-primary" onClick={handleFilter}>
-            Applica Filtri
+            Apply Filters
           </button>
           <button className="btn btn-secondary" onClick={handleExport}>
-            📥 Esporta CSV
+            📥 Export CSV
           </button>
         </div>
       </div>
 
       {/* Logs Table */}
       <div className="card logs-card">
-        <h2>Log Eventi ({logs.length})</h2>
+        <h2>Event Log ({logs.length})</h2>
         <div className="logs-table-container">
           <table className="logs-table">
             <thead>
               <tr>
                 <th>Timestamp</th>
-                <th>Utente</th>
-                <th>Azione</th>
-                <th>Entità</th>
-                <th>Severità</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>Severity</th>
                 <th>ISO</th>
                 <th>IP</th>
               </tr>
@@ -226,7 +226,7 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
               {logs.map((log) => (
                 <tr key={log.id}>
                   <td className="timestamp">
-                    {new Date(log.timestamp).toLocaleString('it-IT')}
+                    {new Date(log.timestamp).toLocaleString('en-GB')}
                   </td>
                   <td>
                     {log.user.firstName} {log.user.lastName}
@@ -263,8 +263,8 @@ const AuditLogs: React.FC<AuditLogsProps> = ({ user }) => {
 
           {logs.length === 0 && (
             <div className="empty-state">
-              <h3>Nessun log trovato</h3>
-              <p>Prova a modificare i filtri</p>
+              <h3>No logs found</h3>
+              <p>Try adjusting the filters</p>
             </div>
           )}
         </div>

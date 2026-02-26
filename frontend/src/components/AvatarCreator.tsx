@@ -36,7 +36,7 @@ interface AvatarCreatorProps {
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-type Tab = 'aspetto' | 'stile' | 'makeup';
+type Tab = 'look' | 'style' | 'extras';
 
 function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -108,7 +108,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
   onRemove,
   onClose,
 }) => {
-  const [tab, setTab] = useState<Tab>('aspetto');
+  const [tab, setTab] = useState<Tab>('look');
   const [saving, setSaving] = useState(false);
   const [avatarColor, setAvatarColor] = useState<string>(() => {
     if (initialConfig) {
@@ -169,7 +169,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
 
         {/* Header */}
         <div className="ac-header">
-          <span className="ac-title">Crea il tuo avatar</span>
+          <span className="ac-title">Create your avatar</span>
           <button className="ac-close" onClick={onClose}>×</button>
         </div>
 
@@ -209,16 +209,16 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
             />
           </div>
           <button className="ac-random-btn" onClick={() => setConfig(randomConfig(config.gender))}>
-            Casuale
+            Random
           </button>
         </div>
 
         {/* Tabs */}
         <div className="ac-tabs">
           {([
-            { id: 'aspetto', label: 'Aspetto' },
-            { id: 'stile',   label: 'Stile' },
-            { id: 'makeup',  label: isMale ? 'Extra' : 'Makeup' },
+            { id: 'look',   label: 'Look' },
+            { id: 'style',  label: 'Style' },
+            { id: 'extras', label: isMale ? 'Extras' : 'Makeup' },
           ] as { id: Tab; label: string }[]).map(t => (
             <button
               key={t.id}
@@ -232,22 +232,22 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
 
         {/* Scrollable content */}
         <div className="ac-section-body">
-          {tab === 'aspetto' && (
+          {tab === 'look' && (
             <div className="ac-section">
               <OptRow
-                label="Carnagione"
+                label="Skin tone"
                 items={SKIN_TONES.map(s => ({ ...s, emoji: undefined }))}
                 value={config.skinTone}
                 onChange={v => patch('skinTone', v)}
               />
               <OptRow
-                label="Acconciatura"
+                label="Hair style"
                 items={hairStyles}
                 value={config.hairStyle}
                 onChange={v => patch('hairStyle', v)}
               />
               <div className="ac-row">
-                <span className="ac-row-label">Colore capelli</span>
+                <span className="ac-row-label">Hair color</span>
                 <div className="ac-swatches ac-swatches--lg">
                   {HAIR_COLORS.map(c => (
                     <button
@@ -261,7 +261,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
                 </div>
               </div>
               <OptRow
-                label="Colore occhi"
+                label="Eye color"
                 items={EYE_COLORS.map(e => ({ ...e, emoji: undefined }))}
                 value={config.eyeColor}
                 onChange={v => patch('eyeColor', v)}
@@ -269,28 +269,28 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
             </div>
           )}
 
-          {tab === 'stile' && (
+          {tab === 'style' && (
             <div className="ac-section">
               <OptRow
-                label="Abbigliamento"
+                label="Outfit"
                 items={OUTFITS}
                 value={config.outfit}
                 onChange={v => patch('outfit', v)}
               />
               <OptRow
-                label="Accessorio"
+                label="Accessory"
                 items={ACCESSORIES}
                 value={config.accessory}
                 onChange={v => patch('accessory', v)}
               />
               <OptRow
-                label="Espressione"
+                label="Expression"
                 items={EXPRESSIONS}
                 value={config.expression}
                 onChange={v => patch('expression', v)}
               />
               <OptRow
-                label="Stato d'animo"
+                label="Mood"
                 items={MOODS.map(m => ({ ...m, color: undefined, emoji: m.emoji + ' ' }))}
                 value={config.mood}
                 onChange={v => patch('mood', v)}
@@ -304,7 +304,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
               {/* Beard — male only */}
               {isMale && (
                 <OptRow
-                  label="Barba"
+                  label="Beard"
                   items={BEARD_STYLES}
                   value={config.beard}
                   onChange={v => patch('beard', v)}
@@ -313,12 +313,12 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
             </div>
           )}
 
-          {tab === 'makeup' && (
+          {tab === 'extras' && (
             <div className="ac-section">
               {!isMale && (
                 <>
                   <div className="ac-row">
-                    <span className="ac-row-label">Rossetto</span>
+                    <span className="ac-row-label">Lipstick</span>
                     <div className="ac-swatches ac-swatches--lg">
                       {LIPSTICKS.map(l => (
                         <button
@@ -346,13 +346,13 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
                     </div>
                   </div>
                   <OptRow
-                    label="Ciglia"
+                    label="Eyelashes"
                     items={EYELASHES_OPTS}
                     value={config.eyelashes}
                     onChange={v => patch('eyelashes', v)}
                   />
                   <div className="ac-row">
-                    <span className="ac-row-label">Smalto</span>
+                    <span className="ac-row-label">Nail color</span>
                     <div className="ac-swatches ac-swatches--lg">
                       {NAIL_COLORS.map(n => (
                         <button
@@ -368,7 +368,7 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
                 </>
               )}
               <OptRow
-                label="Orecchini"
+                label="Earrings"
                 items={EARRINGS}
                 value={config.earring}
                 onChange={v => patch('earring', v)}
@@ -380,16 +380,16 @@ const AvatarCreator: React.FC<AvatarCreatorProps> = ({
         {/* Footer */}
         <div className="ac-footer">
           <button className="ac-remove-btn" onClick={onRemove}>
-            Rimuovi avatar
+            Remove avatar
           </button>
           <div className="ac-footer-right">
-            <button className="ac-cancel-btn" onClick={onClose}>Annulla</button>
+            <button className="ac-cancel-btn" onClick={onClose}>Cancel</button>
             <button
               className="ac-save-btn"
               onClick={handleSave}
               disabled={saving}
             >
-              {saving ? 'Salvataggio...' : 'Salva avatar'}
+              {saving ? 'Saving...' : 'Save avatar'}
             </button>
           </div>
         </div>

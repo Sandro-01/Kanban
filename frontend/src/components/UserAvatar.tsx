@@ -79,7 +79,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         className={className}
         style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
         onClick={handleClick}
-        title={editable ? 'Clicca per cambiare foto' : undefined}
+        title={editable ? 'Click to change photo' : undefined}
       >
         <img
           src={`${UPLOADS_URL}/${user.avatarUrl}`}
@@ -105,7 +105,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           className={className}
           style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
           onClick={handleClick}
-          title={editable ? 'Clicca per modificare avatar' : undefined}
+          title={editable ? 'Click to edit avatar' : undefined}
         >
           <AvatarPreview config={svgConfig} color={bgColor} responsive seed={nameForColor} />
           {fileInput}
@@ -119,7 +119,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         className={className}
         style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
         onClick={handleClick}
-        title={editable ? 'Clicca per modificare avatar' : undefined}
+        title={editable ? 'Click to edit avatar' : undefined}
       >
         <AvatarPreview config={{ ...DEFAULT_CONFIG, ...config }} color={user.avatarColor || '#DB2777'} responsive seed={nameForColor} />
         {fileInput}
@@ -135,7 +135,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       className={className}
       style={{ ...style, overflow: 'hidden', padding: 0, cursor: editable ? 'pointer' : undefined }}
       onClick={handleClick}
-      title={editable ? 'Clicca per personalizzare avatar' : undefined}
+      title={editable ? 'Click to customize avatar' : undefined}
     >
       <AvatarPreview config={DEFAULT_CONFIG} color={bg} responsive seed={nameForColor} />
       {fileInput}

@@ -30,7 +30,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
       const response = await ticketsApi.getAll();
       setTickets(response.data);
     } catch (error) {
-      console.error('Errore caricamento ticket:', error);
+      console.error('Error loading tickets:', error);
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
       await ticketsApi.update(ticketId, { status: newStatus });
       loadTickets();
     } catch (error) {
-      console.error('Errore spostamento ticket:', error);
+      console.error('Error moving ticket:', error);
     }
   };
 
@@ -90,7 +90,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
   };
 
   if (loading) {
-    return <div className="loading">Caricamento...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   return (
@@ -102,14 +102,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
             className="btn btn-primary"
             onClick={() => setShowNewTicket(true)}
           >
-            + Nuovo Ticket
+            + New Ticket
           </button>
           <button
             className="btn btn-primary"
             onClick={() => setShowSendEmail(true)}
             style={{ background: '#6366f1' }}
           >
-            ✉️ Invia Email
+            ✉️ Send Email
           </button>
         </div>
       </div>
@@ -117,10 +117,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
       <div className="alert alert-info" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ fontSize: '24px' }}>🖱️</span>
         <div>
-          <strong>Drag & Drop Attivo!</strong>
+          <strong>Drag & Drop Active!</strong>
           <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>
-            Trascina i ticket tra le colonne per aggiornare il loro stato.
-            Passa il mouse su un ticket per vedere l'indicatore di trascinamento.
+            Drag tickets between columns to update their status.
+            Hover over a ticket to see the drag handle.
           </p>
         </div>
       </div>
@@ -189,11 +189,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                                   </span>
                                 )}
                                 <span className="due-date">
-                                  ⏱️ {new Date(ticket.dueDate).toLocaleDateString('it-IT')}
+                                  ⏱️ {new Date(ticket.dueDate).toLocaleDateString('en-GB')}
                                 </span>
                               </div>
                               {ticket.slaViolated && (
-                                <span className="sla-badge sla-violated">SLA Violato</span>
+                                <span className="sla-badge sla-violated">SLA Violated</span>
                               )}
                             </div>
 
@@ -209,7 +209,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
                     {provided.placeholder}
 
                     {getTicketsForColumn(column.status).length === 0 && (
-                      <div className="empty-column">Nessun ticket</div>
+                      <div className="empty-column">No tickets</div>
                     )}
                   </div>
                 )}
@@ -277,7 +277,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const renderDescriptionMarkdown = (text: string): string => {
     return text
       // Images: ![alt](url) → <img>
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" style="max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;display:block;margin:4px 0" /></a>')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" style="max-width:100%;max-height:180px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;display:block;margin:4px 0" /></a>')
       // Links: [text](url) → <a>
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" download style="color:#4f6ef7">$1</a>')
       // Bold: **text** → <strong>
@@ -361,12 +361,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
     if (!onboardingId) return;
     try {
       await onboardingApi.updateEquipment(onboardingId, equipmentData);
-      alert('Dotazioni salvate con successo! Il ticket IT è stato creato automaticamente.');
+      alert('Equipment saved successfully! The IT ticket has been created automatically.');
       onUpdate();
       onClose();
     } catch (error: any) {
-      console.error('Errore salvataggio dotazioni:', error);
-      alert(error.response?.data?.error || 'Errore durante il salvataggio delle dotazioni');
+      console.error('Error saving equipment:', error);
+      alert(error.response?.data?.error || 'Error saving equipment');
     }
   };
 
@@ -509,14 +509,14 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       // Also update the main ticket list
       onUpdate();
     } catch (error) {
-      console.error('Errore invio:', error);
-      alert('Errore durante l\'invio. Riprova.');
+      console.error('Send error:', error);
+      alert('Send failed. Please try again.');
     }
   };
 
   // Delete comment (admin only)
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo commento? Questa azione è irreversibile.')) {
+    if (!window.confirm('Are you sure you want to delete this comment? This action is irreversible.')) {
       return;
     }
     try {
@@ -525,13 +525,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       onUpdate();
     } catch (error) {
       console.error('Error deleting comment:', error);
-      alert('Errore durante l\'eliminazione del commento');
+      alert('Error deleting comment');
     }
   };
 
   // Delete attachment (admin only)
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo file? Questa azione è irreversibile.')) {
+    if (!window.confirm('Are you sure you want to delete this file? This action is irreversible.')) {
       return;
     }
     try {
@@ -540,23 +540,23 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       onUpdate();
     } catch (error) {
       console.error('Error deleting attachment:', error);
-      alert('Errore durante l\'eliminazione del file');
+      alert('Error deleting file');
     }
   };
 
   // Delete ticket (admin only)
   const handleDeleteTicket = async () => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo ticket? Questa azione è irreversibile e eliminerà anche tutti i commenti e file associati.')) {
+    if (!window.confirm('Are you sure you want to delete this ticket? This action is irreversible and will also delete all associated comments and files.')) {
       return;
     }
     try {
       await ticketsApi.delete(ticket.id);
-      alert('Ticket eliminato con successo');
+      alert('Ticket deleted successfully');
       onUpdate();
       onClose();
     } catch (error) {
       console.error('Error deleting ticket:', error);
-      alert('Errore durante l\'eliminazione del ticket');
+      alert('Error deleting ticket');
     }
   };
 
@@ -684,7 +684,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   setTicket({ ...ticket, priority: newPriority });
                   onUpdate();
                 } catch (err) {
-                  console.error('Errore aggiornamento priorità:', err);
+                  console.error('Error updating priority:', err);
                 }
               }}
               style={{
@@ -714,9 +714,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   fontSize: '12px',
                   padding: '5px 10px'
                 }}
-                title="Elimina ticket (solo ADMIN)"
+                title="Delete ticket (ADMIN only)"
               >
-                🗑️ Elimina
+                🗑️ Delete
               </button>
             )}
             <button className="close-btn" onClick={onClose}>
@@ -736,9 +736,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </svg>
                   </div>
                   <div className="email-description-meta">
-                    <span className="email-description-label">Ricevuto via email</span>
+                    <span className="email-description-label">Received via email</span>
                     {emailSender && (
-                      <span className="email-description-sender">Da: {emailSender}</span>
+                      <span className="email-description-sender">From: {emailSender}</span>
                     )}
                   </div>
                 </div>
@@ -749,7 +749,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                       srcDoc={buildEmailSrcdoc(ticket.description || '')}
                       sandbox="allow-same-origin"
                       onLoad={handleIframeLoad}
-                      title="Contenuto email"
+                      title="Email content"
                     />
                   ) : (
                     <div
@@ -765,7 +765,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               </div>
             ) : (
               <>
-                <p><strong>Descrizione:</strong></p>
+                <p><strong>Description:</strong></p>
                 <div
                   className="ticket-description-body"
                   dangerouslySetInnerHTML={{
@@ -782,20 +782,20 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
             <div className="ticket-details">
               <div>
-                <strong>Creato da:</strong> {ticket.createdBy.firstName} {ticket.createdBy.lastName}
+                <strong>Created by:</strong> {ticket.createdBy.firstName} {ticket.createdBy.lastName}
               </div>
               <div>
-                <strong>Assegnato a:</strong>{' '}
+                <strong>Assigned to:</strong>{' '}
                 {ticket.assignedTo
                   ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                  : 'Non assegnato'}
+                  : 'Not assigned'}
               </div>
               <div>
-                <strong>Scadenza SLA:</strong>{' '}
-                {new Date(ticket.dueDate).toLocaleString('it-IT')}
+                <strong>SLA deadline:</strong>{' '}
+                {new Date(ticket.dueDate).toLocaleString('en-GB')}
               </div>
               <div>
-                <strong>SLA:</strong> {ticket.slaHours} ore
+                <strong>SLA:</strong> {ticket.slaHours} hours
               </div>
             </div>
           </div>
@@ -806,50 +806,50 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               {!showEquipmentForm ? (
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ marginBottom: '10px', fontWeight: '600' }}>
-                    Questo ticket richiede la compilazione delle dotazioni per il nuovo dipendente.
+                    This ticket requires filling in equipment details for the new employee.
                   </p>
                   <button
                     className="btn btn-primary"
                     onClick={() => setShowEquipmentForm(true)}
                     style={{ fontSize: '15px', padding: '10px 25px' }}
                   >
-                    Compila Dotazioni
+                    Fill Equipment Form
                   </button>
                 </div>
               ) : (
                 <div>
                   <h3 style={{ marginBottom: '15px', borderBottom: '2px solid #f59e0b', paddingBottom: '8px' }}>
-                    Dotazioni per il Nuovo Dipendente
+                    Equipment for New Employee
                   </h3>
 
                   {/* Hardware */}
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #10b981', paddingBottom: '4px' }}>
-                    Dotazioni Hardware
+                    Hardware Equipment
                   </h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
                     <div className="form-group">
                       <label className="label">Computer</label>
                       <select className="input" value={equipmentData.computerType} onChange={(e) => setEquipmentData({ ...equipmentData, computerType: e.target.value })}>
-                        <option value="">Seleziona...</option>
-                        <option value="Portatile">Portatile</option>
+                        <option value="">Select...</option>
+                        <option value="Portatile">Laptop</option>
                         <option value="Desktop">Desktop</option>
-                        <option value="Non necessario">Non necessario</option>
+                        <option value="Non necessario">Not needed</option>
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="label">Telefono Aziendale</label>
+                      <label className="label">Company Phone</label>
                       <select className="input" value={equipmentData.phoneType} onChange={(e) => setEquipmentData({ ...equipmentData, phoneType: e.target.value })}>
-                        <option value="">Seleziona...</option>
-                        <option value="Fisso">Telefono Fisso</option>
-                        <option value="Android">Smartphone Android</option>
-                        <option value="Non necessario">Non necessario</option>
+                        <option value="">Select...</option>
+                        <option value="Fisso">Desk Phone</option>
+                        <option value="Android">Android Smartphone</option>
+                        <option value="Non necessario">Not needed</option>
                       </select>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsHeadset ? '#dbeafe' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.needsHeadset} onChange={(e) => setEquipmentData({ ...equipmentData, needsHeadset: e.target.checked })} style={{ marginRight: '8px' }} />
-                      Cuffie
+                      Headset
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsWebcam ? '#dbeafe' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.needsWebcam} onChange={(e) => setEquipmentData({ ...equipmentData, needsWebcam: e.target.checked })} style={{ marginRight: '8px' }} />
@@ -857,37 +857,37 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.additionalMonitor ? '#dbeafe' : 'transparent' }}>
                       <input type="checkbox" checked={equipmentData.additionalMonitor} onChange={(e) => setEquipmentData({ ...equipmentData, additionalMonitor: e.target.checked })} style={{ marginRight: '8px' }} />
-                      Schermo aggiuntivo
+                      Additional monitor
                     </label>
                   </div>
 
-                  {/* Software e Accessi */}
+                  {/* Software & Access */}
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#1a202c', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
-                    Software e Accessi
+                    Software & Access
                   </h4>
                   <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: equipmentData.needsMicrosoft365 ? '#dbeafe' : 'transparent', marginBottom: '10px' }}>
                     <input type="checkbox" checked={equipmentData.needsMicrosoft365} onChange={(e) => setEquipmentData({ ...equipmentData, needsMicrosoft365: e.target.checked })} style={{ marginRight: '10px' }} />
-                    <span style={{ fontWeight: '500' }}>Pacchetto Microsoft 365</span>
+                    <span style={{ fontWeight: '500' }}>Microsoft 365 Package</span>
                   </label>
                   <div className="form-group">
-                    <label className="label">Software Specifici</label>
-                    <textarea className="input" placeholder="es. PackWay, HubSpot, ArtiosCAD..." value={equipmentData.softwareNeeded} onChange={(e) => setEquipmentData({ ...equipmentData, softwareNeeded: e.target.value })} rows={2} />
+                    <label className="label">Specific Software</label>
+                    <textarea className="input" placeholder="e.g. PackWay, HubSpot, ArtiosCAD..." value={equipmentData.softwareNeeded} onChange={(e) => setEquipmentData({ ...equipmentData, softwareNeeded: e.target.value })} rows={2} />
                   </div>
                   <div className="form-group">
-                    <label className="label">Accessi Sistemi</label>
-                    <textarea className="input" placeholder="es. VPN, cartelle condivise, ERP, CRM..." value={equipmentData.systemAccess} onChange={(e) => setEquipmentData({ ...equipmentData, systemAccess: e.target.value })} rows={2} />
+                    <label className="label">System Access</label>
+                    <textarea className="input" placeholder="e.g. VPN, shared folders, ERP, CRM..." value={equipmentData.systemAccess} onChange={(e) => setEquipmentData({ ...equipmentData, systemAccess: e.target.value })} rows={2} />
                   </div>
 
-                  {/* Note */}
+                  {/* Notes */}
                   <div className="form-group">
-                    <label className="label">Note Aggiuntive</label>
-                    <textarea className="input" placeholder="Altre richieste..." value={equipmentData.additionalNotes} onChange={(e) => setEquipmentData({ ...equipmentData, additionalNotes: e.target.value })} rows={2} />
+                    <label className="label">Additional Notes</label>
+                    <textarea className="input" placeholder="Other requests..." value={equipmentData.additionalNotes} onChange={(e) => setEquipmentData({ ...equipmentData, additionalNotes: e.target.value })} rows={2} />
                   </div>
 
                   <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <button className="btn btn-secondary" onClick={() => setShowEquipmentForm(false)}>Annulla</button>
+                    <button className="btn btn-secondary" onClick={() => setShowEquipmentForm(false)}>Cancel</button>
                     <button className="btn btn-primary" onClick={handleEquipmentSubmit}>
-                      Salva Dotazioni e Crea Ticket IT
+                      Save Equipment & Create IT Ticket
                     </button>
                   </div>
                 </div>
@@ -895,9 +895,9 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </div>
           )}
 
-          {/* Sposta ticket */}
+          {/* Move ticket */}
           <div className="move-section">
-            <strong>Sposta in:</strong>
+            <strong>Move to:</strong>
             <div className="move-buttons">
               {['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED'].map((status) => (
                 <button
@@ -915,18 +915,18 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </div>
           </div>
 
-          {/* Assegnazioni */}
+          {/* Assignments */}
           <div className="assignments-section">
             <div className="assignments-header">
               <div className="assignments-header-left">
                 <span className="icon">👥</span>
-                Assegnazioni
+                Assignments
               </div>
               <button
                 className="assignments-toggle"
                 onClick={() => setShowAssignments(!showAssignments)}
               >
-                {showAssignments ? '▲ Chiudi' : '⚙ Gestisci'}
+                {showAssignments ? '▲ Close' : '⚙ Manage'}
               </button>
             </div>
 
@@ -954,7 +954,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                       <span className="avatar dept-avatar">{dept[0]}</span>
                       <span className="chip-info">
                         <span className="chip-name">{dept}</span>
-                        <span className="chip-dept">Reparto</span>
+                        <span className="chip-dept">Department</span>
                       </span>
                     </div>
                   ))}
@@ -964,7 +964,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) && (
                 <div className="assignments-empty">
                   <span>⚠️</span>
-                  Nessuna assegnazione — Visibile a tutti
+                  No assignments — Visible to all
                 </div>
               )}
             </div>
@@ -974,7 +974,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
               <div className="assignment-panel">
                 <div className="assignment-panel-note">
                   <span>ℹ️</span>
-                  <span>Puoi assegnare a <strong>utenti</strong> o <strong>reparti</strong>, non entrambi. Le modifiche saranno salvate con "Invia".</span>
+                  <span>You can assign to <strong>users</strong> or <strong>departments</strong>, not both. Changes will be saved with "Send".</span>
                 </div>
 
                 {/* Tabs */}
@@ -983,13 +983,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     className={`assignment-tab ${assignTab === 'users' ? 'active' : ''} ${selectedDepartments.length > 0 ? 'disabled' : ''}`}
                     onClick={() => !selectedDepartments.length && setAssignTab('users')}
                   >
-                    👤 Utenti
+                    👤 Users
                   </button>
                   <button
                     className={`assignment-tab ${assignTab === 'departments' ? 'active' : ''} ${selectedUsers.length > 0 ? 'disabled' : ''}`}
                     onClick={() => !selectedUsers.length && setAssignTab('departments')}
                   >
-                    🏢 Reparti
+                    🏢 Departments
                   </button>
                 </div>
 
@@ -1001,7 +1001,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                       <input
                         type="text"
                         className="assignment-search"
-                        placeholder="Cerca utente..."
+                        placeholder="Search user..."
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
                         disabled={selectedDepartments.length > 0}
@@ -1038,8 +1038,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </div>
                     <div className="assignment-count">
                       {selectedDepartments.length > 0
-                        ? '⚠️ Deseleziona i reparti per assegnare a utenti'
-                        : `${selectedUsers.length} utente/i selezionato/i`}
+                        ? '⚠️ Deselect departments to assign to users'
+                        : `${selectedUsers.length} user(s) selected`}
                     </div>
                   </div>
                 )}
@@ -1052,7 +1052,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                       <input
                         type="text"
                         className="assignment-search"
-                        placeholder="Cerca reparto..."
+                        placeholder="Search department..."
                         value={deptSearchTerm}
                         onChange={(e) => setDeptSearchTerm(e.target.value)}
                         disabled={selectedUsers.length > 0}
@@ -1083,8 +1083,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                     </div>
                     <div className="assignment-count">
                       {selectedUsers.length > 0
-                        ? '⚠️ Deseleziona gli utenti per assegnare a reparti'
-                        : `${selectedDepartments.length} reparto/i selezionato/i`}
+                        ? '⚠️ Deselect users to assign to departments'
+                        : `${selectedDepartments.length} department(s) selected`}
                     </div>
                   </div>
                 )}
@@ -1094,7 +1094,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
 
           {/* Timeline unificata - Commenti e File */}
           <div className="timeline-section">
-            <strong>{isEmailTicket ? 'Conversazione:' : 'Storico attività:'}</strong>
+            <strong>{isEmailTicket ? 'Conversation:' : 'Activity log:'}</strong>
             <div className="timeline-list">
               {timeline.length > 0 ? (
                 timeline.map((item) => (
@@ -1109,7 +1109,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                             {item.isOutgoingEmail ? (
                               <>
                                 <strong>{item.user?.firstName} {item.user?.lastName}</strong>
-                                <span className="email-outgoing-badge">Email inviata</span>
+                                <span className="email-outgoing-badge">Email sent</span>
                                 <span style={{ fontSize: '12px', color: '#6b7280' }}>
                                   A: {item.toEmails?.join(', ')}
                                 </span>
@@ -1117,7 +1117,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                             ) : item.isEmailReply ? (
                               <>
                                 <strong>{item.fromEmail}</strong>
-                                <span className="email-reply-badge">Risposta email</span>
+                                <span className="email-reply-badge">Email reply</span>
                               </>
                             ) : (
                               <>
@@ -1130,7 +1130,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               </>
                             )}
                             <span className="timeline-date">
-                              {item.date.toLocaleString('it-IT')}
+                              {item.date.toLocaleString('en-GB')}
                             </span>
                             {user.role === 'ADMIN' && (
                               <button
@@ -1145,7 +1145,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                   cursor: 'pointer',
                                   fontSize: '11px'
                                 }}
-                                title="Elimina commento (solo ADMIN)"
+                                title="Delete comment (ADMIN only)"
                               >
                                 🗑️
                               </button>
@@ -1200,7 +1200,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                             cursor: 'pointer',
                                             fontSize: '11px'
                                           }}
-                                          title="Elimina file (solo ADMIN)"
+                                          title="Delete file (ADMIN only)"
                                         >
                                           🗑️
                                         </button>
@@ -1208,7 +1208,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                     </div>
                                   </div>
                                 ))}
-                              {/* Mostra altri allegati come link download */}
+                              {/* Show other attachments as download links */}
                               {item.attachments
                                 .filter((att: any) => !att.mimeType || !att.mimeType.startsWith('image/'))
                                 .map((att: any) => (
@@ -1238,7 +1238,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                           cursor: 'pointer',
                                           fontSize: '11px'
                                         }}
-                                        title="Elimina file (solo ADMIN)"
+                                        title="Delete file (ADMIN only)"
                                       >
                                         🗑️
                                       </button>
@@ -1254,12 +1254,12 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                         <div className="timeline-icon">📎</div>
                         <div className="timeline-content" style={{ position: 'relative', flex: 1 }}>
                           <div className="timeline-header">
-                            <strong>Allegati{isEmailTicket ? ' email' : ''}</strong>
+                            <strong>Attachments{isEmailTicket ? ' (email)' : ''}</strong>
                             <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>
                               ({item.files.length} file)
                             </span>
                             <span className="timeline-date">
-                              {item.date.toLocaleString('it-IT')}
+                              {item.date.toLocaleString('en-GB')}
                             </span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
@@ -1292,7 +1292,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                                   <button
                                     onClick={() => handleDeleteAttachment(f.id)}
                                     style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', flexShrink: 0 }}
-                                    title="Elimina file (solo ADMIN)"
+                                    title="Delete file (ADMIN only)"
                                   >
                                     🗑️
                                   </button>
@@ -1306,36 +1306,36 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   </div>
                 ))
               ) : (
-                <p className="no-activity">Nessuna attività</p>
+                <p className="no-activity">No activity</p>
               )}
             </div>
 
             {/* Form unificato per commento e file */}
             <div className="unified-form">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>Aggiungi Commento e/o File (non eliminabile dopo invio):</strong>
+                <strong>Add Comment and/or File:</strong>
                 <button
                   type="button"
                   onClick={async () => {
                     try {
                       const res = await aiApi.suggestResponse(ticket.id);
                       if (res.data.response) setComment(res.data.response);
-                      else alert('AI non disponibile o non configurata');
-                    } catch { alert('Errore AI'); }
+                      else alert('AI not available or not configured');
+                    } catch { alert('AI error'); }
                   }}
                   style={{
                     background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px',
                     padding: '4px 10px', fontSize: '12px', cursor: 'pointer', color: '#166534',
                   }}
-                  title="Genera risposta suggerita con AI"
+                  title="Generate AI-suggested reply"
                 >
-                  🤖 Suggerisci risposta
+                  🤖 Suggest reply
                 </button>
               </div>
               <RichTextEditor
                 value={comment}
                 onChange={setComment}
-                placeholder="Scrivi un commento (opzionale)... Puoi incollare screenshot con Ctrl+V"
+                placeholder="Write a comment (optional)... You can paste screenshots with Ctrl+V"
                 minHeight={80}
                 onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
               />
@@ -1352,8 +1352,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 />
                 <label htmlFor="file-upload" className="file-label">
                   {files.length > 0
-                    ? `📎 ${files.length} file selezionati`
-                    : '📎 Allega file (opzionale)'}
+                    ? `📎 ${files.length} file(s) selected`
+                    : '📎 Attach file (optional)'}
                 </label>
                 {files.length > 0 && (
                   <div className="selected-files-list">
@@ -1382,7 +1382,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   opacity: (!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0) ? 0.5 : 1
                 }}
               >
-                Invia {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(con assegnazione)'}
+                Send {(selectedUsers.length > 0 || selectedDepartments.length > 0) && '(with assignment)'}
               </button>
             </div>
           </div>
@@ -1503,8 +1503,8 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
       onCreate();
       onClose();
     } catch (error) {
-      console.error('Errore creazione ticket:', error);
-      alert('Errore durante la creazione del ticket');
+      console.error('Error creating ticket:', error);
+      alert('Error creating ticket');
     }
   };
 
@@ -1512,7 +1512,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Nuovo Ticket</h2>
+          <h2>New Ticket</h2>
           <button className="close-btn" onClick={onClose}>
             ×
           </button>
@@ -1520,7 +1520,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="label">Titolo</label>
+            <label className="label">Title</label>
             <input
               type="text"
               className="input"
@@ -1531,18 +1531,18 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           </div>
 
           <div className="form-group">
-            <label className="label">Descrizione</label>
+            <label className="label">Description</label>
             <RichTextEditor
               value={formData.description}
               onChange={(html) => setFormData({ ...formData, description: html })}
-              placeholder="Descrivi il problema o la richiesta... (puoi incollare screenshot)"
+              placeholder="Describe the problem or request... (you can paste screenshots)"
               minHeight={100}
               onPasteFiles={handlePasteFiles}
             />
           </div>
 
           <div className="form-group">
-            <label className="label">Allegati (opzionale)</label>
+            <label className="label">Attachments (optional)</label>
             <div className="file-input-wrapper">
               <input
                 type="file"
@@ -1569,8 +1569,8 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
                 boxSizing: 'border-box',
               }}>
                 {files.length > 0
-                  ? `📎 ${files.length} file selezionati — clicca per aggiungere`
-                  : '📎 Clicca per allegare file o incolla screenshot nell\'editor'}
+                  ? `📎 ${files.length} file(s) selected — click to add more`
+                  : '📎 Click to attach files or paste screenshots in the editor'}
               </label>
               {files.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
@@ -1596,28 +1596,28 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           </div>
 
           <div className="form-group">
-            <label className="label">Priorità</label>
+            <label className="label">Priority</label>
             <select
               className="input"
               value={formData.priority}
               onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
             >
-              <option value="LOW">Bassa</option>
-              <option value="MEDIUM">Media</option>
-              <option value="HIGH">Alta</option>
-              <option value="CRITICAL">Critica</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="label">Categoria</label>
+            <label className="label">Category</label>
             <select
               className="input"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
             >
-              <option value="">Seleziona una categoria...</option>
+              <option value="">Select a category...</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -1627,7 +1627,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           </div>
 
           <div className="form-group">
-            <label className="label">Assegna a Utente (opzionale)</label>
+            <label className="label">Assign to User (optional)</label>
             <select
               className="input"
               value={assignToUser}
@@ -1637,7 +1637,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
               }}
               disabled={!!assignToDepartment}
             >
-              <option value="">Nessun utente</option>
+              <option value="">No user</option>
               {allUsers.map((u: any) => (
                 <option key={u.id} value={u.id}>
                   {u.firstName} {u.lastName} {u.department && `(${u.department})`}
@@ -1646,13 +1646,13 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
             </select>
             {assignToDepartment && (
               <small style={{ color: '#f59e0b', display: 'block', marginTop: '5px' }}>
-                ⚠️ Deseleziona il reparto per assegnare a un utente
+                ⚠️ Deselect the department to assign to a user
               </small>
             )}
           </div>
 
           <div className="form-group">
-            <label className="label">Assegna a Reparto (opzionale)</label>
+            <label className="label">Assign to Department (optional)</label>
             <select
               className="input"
               value={assignToDepartment}
@@ -1662,7 +1662,7 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
               }}
               disabled={!!assignToUser}
             >
-              <option value="">Nessun reparto</option>
+              <option value="">No department</option>
               {allDepartments.map((dept: string) => (
                 <option key={dept} value={dept}>
                   {dept}
@@ -1671,39 +1671,39 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
             </select>
             {assignToUser && (
               <small style={{ color: '#f59e0b', display: 'block', marginTop: '5px' }}>
-                ⚠️ Deseleziona l'utente per assegnare a un reparto
+                ⚠️ Deselect the user to assign to a department
               </small>
             )}
           </div>
 
           <div style={{ padding: '10px', backgroundColor: '#f0f9ff', borderRadius: '5px', marginBottom: '15px', fontSize: '13px' }}>
-            ℹ️ <strong>Nota:</strong> Se non assegni il ticket, sarà visibile a tutti in "To Do"
+            ℹ️ <strong>Note:</strong> If you don't assign the ticket, it will be visible to all in "To Do"
           </div>
 
           {/* AI Suggestions */}
           {aiEnabled && (aiSuggestion || aiDuplicates.length > 0 || aiLoading) && (
             <div style={{ marginBottom: '15px', padding: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#166534' }}>
-                {aiLoading ? '⏳ AI sta analizzando...' : '🤖 Suggerimenti AI'}
+                {aiLoading ? '⏳ AI is analyzing...' : '🤖 AI Suggestions'}
               </div>
               {aiSuggestion && !aiLoading && (
                 <div style={{ fontSize: '13px', color: '#15803d', marginBottom: '6px' }}>
-                  <span>Categoria suggerita: <strong>{aiSuggestion.category}</strong></span>
+                  <span>Suggested category: <strong>{aiSuggestion.category}</strong></span>
                   {' | '}
-                  <span>Priorità: <strong>{aiSuggestion.priority}</strong></span>
+                  <span>Priority: <strong>{aiSuggestion.priority}</strong></span>
                   {' '}
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, category: aiSuggestion.category, priority: aiSuggestion.priority }))}
                     style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}
                   >
-                    Applica
+                    Apply
                   </button>
                 </div>
               )}
               {aiDuplicates.length > 0 && !aiLoading && (
                 <div style={{ fontSize: '12px', color: '#b45309', marginTop: '6px', padding: '8px', background: '#fefce8', borderRadius: '4px', border: '1px solid #fde68a' }}>
-                  <strong>⚠️ Possibili duplicati:</strong>
+                  <strong>⚠️ Possible duplicates:</strong>
                   {aiDuplicates.map((d: any) => (
                     <div key={d.id} style={{ marginTop: '4px' }}>
                       #{d.id.substring(0, 8)} — {d.title} <span style={{ color: '#92400e' }}>({d.similarity})</span>
@@ -1716,10 +1716,10 @@ const NewTicketModal: React.FC<any> = ({ user, onClose, onCreate }) => {
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annulla
+              Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Crea Ticket
+              Create Ticket
             </button>
           </div>
         </form>
@@ -1744,7 +1744,7 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toEmail.trim() || !subject.trim() || !body.trim()) {
-      alert('Compila tutti i campi');
+      alert('Please fill in all fields');
       return;
     }
 
@@ -1780,12 +1780,12 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
         attachmentIds: uploadedAttachmentIds.length > 0 ? uploadedAttachmentIds : undefined,
       });
 
-      alert('Email inviata e ticket creato con successo!');
+      alert('Email sent and ticket created successfully!');
       onCreate();
       onClose();
     } catch (error: any) {
-      console.error('Errore invio email:', error);
-      alert(error.response?.data?.error || 'Errore durante l\'invio');
+      console.error('Error sending email:', error);
+      alert(error.response?.data?.error || 'Error sending email');
     } finally {
       setLoading(false);
     }
@@ -1795,17 +1795,17 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
         <div className="modal-header">
-          <h2>Invia Email Esterna</h2>
+          <h2>Send External Email</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="label">Destinatario *</label>
+            <label className="label">Recipient *</label>
             <input
               type="email"
               className="input"
-              placeholder="es. fornitore@azienda.com"
+              placeholder="e.g. supplier@company.com"
               value={toEmail}
               onChange={(e) => setToEmail(e.target.value)}
               required
@@ -1813,26 +1813,26 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           </div>
 
           <div className="form-group">
-            <label className="label">Oggetto *</label>
+            <label className="label">Subject *</label>
             <input
               type="text"
               className="input"
-              placeholder="Oggetto della comunicazione"
+              placeholder="Subject of communication"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
             />
             <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-              Il riferimento ticket verrà aggiunto automaticamente nell'oggetto
+              The ticket reference will be automatically added to the subject
             </small>
           </div>
 
           <div className="form-group">
-            <label className="label">Messaggio *</label>
+            <label className="label">Message *</label>
             <RichTextEditor
               value={body}
               onChange={setBody}
-              placeholder="Scrivi il messaggio... (puoi incollare screenshot)"
+              placeholder="Write the message... (you can paste screenshots)"
               minHeight={150}
               onPasteFiles={handlePasteFiles}
             />
@@ -1866,8 +1866,8 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
                 boxSizing: 'border-box',
               }}>
                 {files.length > 0
-                  ? `📎 ${files.length} file selezionati — clicca per aggiungere`
-                  : '📎 Clicca per allegare file'}
+                  ? `📎 ${files.length} file(s) selected — click to add more`
+                  : '📎 Click to attach files'}
               </label>
               {files.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
@@ -1893,29 +1893,29 @@ const SendExternalEmailModal: React.FC<any> = ({ user, onClose, onCreate }) => {
           </div>
 
           <div className="form-group">
-            <label className="label">Priorità</label>
+            <label className="label">Priority</label>
             <select
               className="input"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
-              <option value="LOW">Bassa</option>
-              <option value="MEDIUM">Media</option>
-              <option value="HIGH">Alta</option>
-              <option value="CRITICAL">Critica</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
             </select>
           </div>
 
           <div style={{ padding: '10px', backgroundColor: '#eef2ff', borderRadius: '6px', marginBottom: '15px', fontSize: '13px', border: '1px solid #c7d2fe' }}>
-            ℹ️ Verrà creato un ticket con questa email. Le risposte del destinatario verranno automaticamente collegate al ticket.
+            ℹ️ A ticket will be created with this email. Recipient replies will be automatically linked to the ticket.
           </div>
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-              Annulla
+              Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Invio in corso...' : '📤 Invia Email'}
+              {loading ? 'Sending...' : '📤 Send Email'}
             </button>
           </div>
         </form>

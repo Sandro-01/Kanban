@@ -48,9 +48,9 @@ router.post('/suggest-response', authenticate, async (req: AuthRequest, res) => 
 
     const comments: any[] = await prisma.$queryRawUnsafe(
       `SELECT c."content", c."isEmailReply", c."fromEmail",
-              u."firstName" || ' ' || u."lastName" as "authorName"
+              COALESCE(u."firstName" || ' ' || u."lastName", c."fromEmail", 'Unknown') as "authorName"
        FROM "Comment" c
-       JOIN "User" u ON c."userId" = u."id"
+       LEFT JOIN "User" u ON c."userId" = u."id"
        WHERE c."ticketId" = $1 AND c."isDeleted" = false
        ORDER BY c."createdAt" DESC LIMIT 10`,
       ticketId

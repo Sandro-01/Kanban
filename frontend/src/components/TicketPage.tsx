@@ -31,7 +31,7 @@ const ConvFileChip: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDe
         <span>{att.fileName || ''}{sizeKB ? ` · ${sizeKB} KB` : ''}</span>
       </a>
       {onDelete && (
-        <button onClick={onDelete} className="conv-file-chip-del" title="Elimina">✕</button>
+        <button onClick={onDelete} className="conv-file-chip-del" title="Delete">✕</button>
       )}
     </div>
   );
@@ -119,13 +119,13 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   const fmtDate = (d: Date) =>
-    d.toLocaleString('it-IT', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
   const isHtmlDescription = (desc: string) => /<[a-z][\s\S]*>/i.test(desc);
 
   const renderDescriptionMarkdown = (text: string): string =>
     text
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" style="max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;display:block;margin:4px 0" /></a>')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" style="max-width:100%;max-height:180px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;display:block;margin:4px 0" /></a>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" download style="color:#4f6ef7">$1</a>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0" />')
@@ -146,7 +146,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
       if (doc) {
         const resize = () => {
           const height = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-          iframe.style.height = Math.min(height + 20, 600) + 'px';
+          iframe.style.height = Math.min(height + 20, 400) + 'px';
         };
         resize();
         const images = doc.querySelectorAll('img');
@@ -244,7 +244,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
       await ticketsApi.update(ticket.id, { status });
       setTicket((t: any) => ({ ...t, status }));
     } catch (err) {
-      console.error('Errore spostamento:', err);
+      console.error('Move error:', err);
     }
   };
 
@@ -253,10 +253,10 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
     if (!onboardingId) return;
     try {
       await onboardingApi.updateEquipment(onboardingId, equipmentData);
-      alert('Dotazioni salvate con successo! Il ticket IT è stato creato automaticamente.');
+      alert('Equipment saved successfully! The IT ticket has been created automatically.');
       await refreshTicket();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Errore durante il salvataggio delle dotazioni');
+      alert(error.response?.data?.error || 'Error saving equipment');
     }
   };
 
@@ -291,33 +291,33 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
       setFiles([]);
       await refreshTicket();
     } catch {
-      alert('Errore durante l\'invio. Riprova.');
+      alert('Send failed. Please try again.');
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Eliminare questo commento?')) return;
+    if (!window.confirm('Delete this comment?')) return;
     try {
       await ticketsApi.deleteComment(ticket.id, commentId);
       await refreshTicket();
-    } catch { alert('Errore durante l\'eliminazione del commento'); }
+    } catch { alert('Error deleting comment'); }
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!window.confirm('Eliminare questo file?')) return;
+    if (!window.confirm('Delete this file?')) return;
     try {
       await ticketsApi.deleteAttachment(ticket.id, attachmentId);
       await refreshTicket();
-    } catch { alert('Errore durante l\'eliminazione del file'); }
+    } catch { alert('Error deleting file'); }
   };
 
   const handleDeleteTicket = async () => {
-    if (!window.confirm('Eliminare questo ticket? L\'operazione è irreversibile.')) return;
+    if (!window.confirm('Delete this ticket? This action is irreversible.')) return;
     try {
       await ticketsApi.delete(ticket.id);
-      alert('Ticket eliminato con successo');
+      alert('Ticket deleted successfully');
       navigate('/board');
-    } catch { alert('Errore durante l\'eliminazione del ticket'); }
+    } catch { alert('Error deleting ticket'); }
   };
 
   // ── Timeline ──────────────────────────────────────────────────────────────
@@ -362,7 +362,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
     <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <div style={{ textAlign: 'center', color: '#94a3b8' }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-        <p>Caricamento ticket...</p>
+        <p>Loading ticket...</p>
       </div>
     </div>
   );
@@ -371,9 +371,9 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
     <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <div style={{ textAlign: 'center', color: '#94a3b8' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-        <p>Ticket non trovato.</p>
+        <p>Ticket not found.</p>
         <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => navigate('/board')}>
-          ← Torna alla Board
+          ← Back to Board
         </button>
       </div>
     </div>
@@ -387,7 +387,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
   const timeline = getTimeline();
 
   const statusLabels: Record<string, string> = {
-    OPEN: 'Aperto', IN_PROGRESS: 'In lavorazione', WAITING: 'In attesa', RESOLVED: 'Risolto',
+    OPEN: 'Open', IN_PROGRESS: 'In Progress', WAITING: 'Waiting', RESOLVED: 'Resolved',
   };
 
   return (
@@ -411,7 +411,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                   await ticketsApi.update(ticket.id, { priority: newPriority });
                   setTicket((t: any) => ({ ...t, priority: newPriority }));
                 } catch (err) {
-                  console.error('Errore aggiornamento priorità:', err);
+                  console.error('Error updating priority:', err);
                 }
               }}
               style={{ cursor: 'pointer', border: '1px solid transparent', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', fontWeight: '600', appearance: 'auto' as any }}
@@ -432,24 +432,24 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
               }}
               style={{ cursor: 'pointer', border: '2px solid #FFE600', borderRadius: '0', padding: '4px 10px', fontSize: '11px', fontWeight: '700', background: '#1a1a1a', color: '#FFE600', textTransform: 'uppercase', letterSpacing: '0.06em', appearance: 'auto' as any }}
             >
-              <option value="OPEN">Aperto</option>
-              <option value="IN_PROGRESS">In lavorazione</option>
-              <option value="WAITING">In attesa</option>
-              <option value="RESOLVED">Risolto</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="WAITING">Waiting</option>
+              <option value="RESOLVED">Resolved</option>
             </select>
           </div>
         </div>
 
         <span className="ticket-page-id">#{ticket.id.slice(-8).toUpperCase()}</span>
-        {refreshing && <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>Aggiornamento...</span>}
+        {refreshing && <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>Updating...</span>}
 
         {user.role === 'ADMIN' && (
           <button
             onClick={handleDeleteTicket}
             style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}
-            title="Elimina ticket (solo ADMIN)"
+            title="Delete ticket (ADMIN only)"
           >
-            🗑 Elimina
+            🗑 Delete
           </button>
         )}
       </div>
@@ -471,8 +471,8 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                     </svg>
                   </div>
                   <div className="email-description-meta">
-                    <span className="email-description-label">Ricevuto via email</span>
-                    {emailSender && <span className="email-description-sender">Da: {emailSender}</span>}
+                    <span className="email-description-label">Received via email</span>
+                    {emailSender && <span className="email-description-sender">From: {emailSender}</span>}
                   </div>
                 </div>
                 {hasSubstantialDescription(ticket.description || '') && (
@@ -482,7 +482,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                       srcDoc={buildEmailSrcdoc(ticket.description || '')}
                       sandbox="allow-same-origin"
                       onLoad={handleIframeLoad}
-                      title="Contenuto email"
+                      title="Email content"
                     />
                   ) : (
                     <div
@@ -494,7 +494,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888', marginBottom: 6 }}>Descrizione</p>
+                <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888', marginBottom: 6 }}>Description</p>
                 <div
                   className="ticket-description-body"
                   dangerouslySetInnerHTML={{ __html: renderDescriptionMarkdown((ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '').trim()) }}
@@ -505,30 +505,30 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
             {/* Metadata table */}
             <div className="ticket-details">
               <div className="ticket-detail-item">
-                <span className="ticket-detail-label">Stato</span>
+                <span className="ticket-detail-label">Status</span>
                 <span className="ticket-detail-value">{statusLabels[ticket.status] || ticket.status}</span>
               </div>
               {ticket.category && (
                 <div className="ticket-detail-item">
-                  <span className="ticket-detail-label">Categoria</span>
+                  <span className="ticket-detail-label">Category</span>
                   <span className="ticket-detail-value">{ticket.category}</span>
                 </div>
               )}
               <div className="ticket-detail-item">
-                <span className="ticket-detail-label">Creato da</span>
+                <span className="ticket-detail-label">Created by</span>
                 <span className="ticket-detail-value">{ticket.createdBy.firstName} {ticket.createdBy.lastName}</span>
               </div>
               <div className="ticket-detail-item">
-                <span className="ticket-detail-label">Assegnato a</span>
+                <span className="ticket-detail-label">Assigned to</span>
                 <span className="ticket-detail-value">
                   {ticket.assignedTo
                     ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                    : <em style={{ color: '#999', fontStyle: 'normal' }}>Non assegnato</em>}
+                    : <em style={{ color: '#999', fontStyle: 'normal' }}>Not assigned</em>}
                 </span>
               </div>
               <div className="ticket-detail-item">
-                <span className="ticket-detail-label">Scadenza SLA</span>
-                <span className="ticket-detail-value">{new Date(ticket.dueDate).toLocaleString('it-IT')}</span>
+                <span className="ticket-detail-label">SLA deadline</span>
+                <span className="ticket-detail-value">{new Date(ticket.dueDate).toLocaleString('en-GB')}</span>
               </div>
               <div className="ticket-detail-item">
                 <span className="ticket-detail-label">SLA</span>
@@ -542,55 +542,55 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
             <div style={{ margin: '14px 0', padding: '14px', backgroundColor: '#FFE600', border: '2px solid #000000' }}>
               {!showEquipmentForm ? (
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ marginBottom: '10px', fontWeight: '600', fontSize: 13 }}>Questo ticket richiede la compilazione delle dotazioni per il nuovo dipendente.</p>
-                  <button className="btn btn-primary" onClick={() => setShowEquipmentForm(true)}>Compila Dotazioni</button>
+                  <p style={{ marginBottom: '10px', fontWeight: '600', fontSize: 13 }}>This ticket requires filling in equipment details for the new employee.</p>
+                  <button className="btn btn-primary" onClick={() => setShowEquipmentForm(true)}>Fill Equipment Form</button>
                 </div>
               ) : (
                 <div>
-                  <h3 style={{ marginBottom: '12px', borderBottom: '2px solid #000', paddingBottom: '6px', fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dotazioni per il Nuovo Dipendente</h3>
+                  <h3 style={{ marginBottom: '12px', borderBottom: '2px solid #000', paddingBottom: '6px', fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Equipment for New Employee</h3>
                   <h4 style={{ fontSize: '11px', fontWeight: '900', marginBottom: '8px', color: '#000', borderBottom: '2px solid #000', paddingBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Hardware</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
                     <div className="form-group">
                       <label className="label">Computer</label>
                       <select className="input" value={equipmentData.computerType} onChange={(e) => setEquipmentData({ ...equipmentData, computerType: e.target.value })}>
-                        <option value="">Seleziona...</option><option value="Portatile">Portatile</option><option value="Desktop">Desktop</option><option value="Non necessario">Non necessario</option>
+                        <option value="">Select...</option><option value="Portatile">Laptop</option><option value="Desktop">Desktop</option><option value="Non necessario">Not needed</option>
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="label">Telefono Aziendale</label>
+                      <label className="label">Company Phone</label>
                       <select className="input" value={equipmentData.phoneType} onChange={(e) => setEquipmentData({ ...equipmentData, phoneType: e.target.value })}>
-                        <option value="">Seleziona...</option><option value="Fisso">Fisso</option><option value="Android">Smartphone Android</option><option value="Non necessario">Non necessario</option>
+                        <option value="">Select...</option><option value="Fisso">Desk Phone</option><option value="Android">Android Smartphone</option><option value="Non necessario">Not needed</option>
                       </select>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    {[['needsHeadset', 'Cuffie'], ['needsWebcam', 'Webcam'], ['additionalMonitor', 'Monitor extra']].map(([key, label]) => (
+                    {[['needsHeadset', 'Headset'], ['needsWebcam', 'Webcam'], ['additionalMonitor', 'Extra monitor']].map(([key, label]) => (
                       <label key={key} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '6px 10px', border: '2px solid #000', background: (equipmentData as any)[key] ? '#fff' : 'transparent', fontSize: 12 }}>
                         <input type="checkbox" checked={(equipmentData as any)[key]} onChange={(e) => setEquipmentData({ ...equipmentData, [key]: e.target.checked })} style={{ marginRight: '6px' }} />
                         {label}
                       </label>
                     ))}
                   </div>
-                  <h4 style={{ fontSize: '11px', fontWeight: '900', marginBottom: '8px', color: '#000', borderBottom: '2px solid #000', paddingBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Software e Accessi</h4>
+                  <h4 style={{ fontSize: '11px', fontWeight: '900', marginBottom: '8px', color: '#000', borderBottom: '2px solid #000', paddingBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Software & Access</h4>
                   <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px', border: '2px solid #000', background: equipmentData.needsMicrosoft365 ? '#fff' : 'transparent', marginBottom: '8px', fontSize: 12 }}>
                     <input type="checkbox" checked={equipmentData.needsMicrosoft365} onChange={(e) => setEquipmentData({ ...equipmentData, needsMicrosoft365: e.target.checked })} style={{ marginRight: '8px' }} />
-                    <span style={{ fontWeight: '600' }}>Pacchetto Microsoft 365</span>
+                    <span style={{ fontWeight: '600' }}>Microsoft 365 Package</span>
                   </label>
                   <div className="form-group">
-                    <label className="label">Software Specifici</label>
-                    <textarea className="input" placeholder="es. PackWay, HubSpot..." value={equipmentData.softwareNeeded} onChange={(e) => setEquipmentData({ ...equipmentData, softwareNeeded: e.target.value })} rows={2} />
+                    <label className="label">Specific Software</label>
+                    <textarea className="input" placeholder="e.g. PackWay, HubSpot..." value={equipmentData.softwareNeeded} onChange={(e) => setEquipmentData({ ...equipmentData, softwareNeeded: e.target.value })} rows={2} />
                   </div>
                   <div className="form-group">
-                    <label className="label">Accessi Sistemi</label>
-                    <textarea className="input" placeholder="es. VPN, cartelle condivise..." value={equipmentData.systemAccess} onChange={(e) => setEquipmentData({ ...equipmentData, systemAccess: e.target.value })} rows={2} />
+                    <label className="label">System Access</label>
+                    <textarea className="input" placeholder="e.g. VPN, shared folders..." value={equipmentData.systemAccess} onChange={(e) => setEquipmentData({ ...equipmentData, systemAccess: e.target.value })} rows={2} />
                   </div>
                   <div className="form-group">
-                    <label className="label">Note Aggiuntive</label>
+                    <label className="label">Additional Notes</label>
                     <textarea className="input" value={equipmentData.additionalNotes} onChange={(e) => setEquipmentData({ ...equipmentData, additionalNotes: e.target.value })} rows={2} />
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button className="btn btn-secondary" onClick={() => setShowEquipmentForm(false)}>Annulla</button>
-                    <button className="btn btn-primary" onClick={handleEquipmentSubmit}>Salva e Crea Ticket IT</button>
+                    <button className="btn btn-secondary" onClick={() => setShowEquipmentForm(false)}>Cancel</button>
+                    <button className="btn btn-primary" onClick={handleEquipmentSubmit}>Save & Create IT Ticket</button>
                   </div>
                 </div>
               )}
@@ -600,9 +600,9 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
           {/* Assignments */}
           <div className="assignments-section">
             <div className="assignments-header">
-              <div className="assignments-header-left">👥 Assegnazioni</div>
+              <div className="assignments-header-left">👥 Assignments</div>
               <button className="assignments-toggle" onClick={() => setShowAssignments(!showAssignments)}>
-                {showAssignments ? '▲ Chiudi' : '⚙ Gestisci'}
+                {showAssignments ? '▲ Close' : '⚙ Manage'}
               </button>
             </div>
 
@@ -625,30 +625,30 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                   {ticket.assignedDepartments.map((dept: string) => (
                     <div className="assignment-chip" key={dept}>
                       <span className="avatar dept-avatar">{dept[0]}</span>
-                      <span className="chip-info"><span className="chip-name">{dept}</span><span className="chip-dept">Reparto</span></span>
+                      <span className="chip-info"><span className="chip-name">{dept}</span><span className="chip-dept">Department</span></span>
                     </div>
                   ))}
                 </div>
               )}
               {(!ticket.assignments || ticket.assignments.length === 0) && (!ticket.assignedDepartments || ticket.assignedDepartments.length === 0) && (
-                <div className="assignments-empty"><span>⚠️</span> Nessuna assegnazione — Visibile a tutti</div>
+                <div className="assignments-empty"><span>⚠️</span> No assignments — Visible to all</div>
               )}
 
               {showAssignments && (
                 <div className="assignment-panel">
                   <div className="assignment-panel-note">
                     <span>ℹ️</span>
-                    <span>Puoi assegnare a <strong>utenti</strong> o <strong>reparti</strong>, non entrambi. Le modifiche saranno salvate con "Invia".</span>
+                    <span>You can assign to <strong>users</strong> or <strong>departments</strong>, not both. Changes will be saved with "Send".</span>
                   </div>
                   <div className="assignment-panel-tabs">
-                    <button className={`assignment-tab ${assignTab === 'users' ? 'active' : ''} ${selectedDepartments.length > 0 ? 'disabled' : ''}`} onClick={() => !selectedDepartments.length && setAssignTab('users')}>👤 Utenti</button>
-                    <button className={`assignment-tab ${assignTab === 'departments' ? 'active' : ''} ${selectedUsers.length > 0 ? 'disabled' : ''}`} onClick={() => !selectedUsers.length && setAssignTab('departments')}>🏢 Reparti</button>
+                    <button className={`assignment-tab ${assignTab === 'users' ? 'active' : ''} ${selectedDepartments.length > 0 ? 'disabled' : ''}`} onClick={() => !selectedDepartments.length && setAssignTab('users')}>👤 Users</button>
+                    <button className={`assignment-tab ${assignTab === 'departments' ? 'active' : ''} ${selectedUsers.length > 0 ? 'disabled' : ''}`} onClick={() => !selectedUsers.length && setAssignTab('departments')}>🏢 Departments</button>
                   </div>
                   {assignTab === 'users' && (
                     <div>
                       <div className="assignment-search-wrapper">
                         <span className="assignment-search-icon">○</span>
-                        <input type="text" className="assignment-search" placeholder="Cerca utente..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} disabled={selectedDepartments.length > 0} />
+                        <input type="text" className="assignment-search" placeholder="Search user..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} disabled={selectedDepartments.length > 0} />
                       </div>
                       <div className="assignment-list">
                         {allUsers.filter((u: any) => {
@@ -666,14 +666,14 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                           );
                         })}
                       </div>
-                      <div className="assignment-count">{selectedDepartments.length > 0 ? '⚠️ Deseleziona i reparti per assegnare a utenti' : `${selectedUsers.length} utente/i selezionato/i`}</div>
+                      <div className="assignment-count">{selectedDepartments.length > 0 ? '⚠️ Deselect departments to assign to users' : `${selectedUsers.length} user(s) selected`}</div>
                     </div>
                   )}
                   {assignTab === 'departments' && (
                     <div>
                       <div className="assignment-search-wrapper">
                         <span className="assignment-search-icon">○</span>
-                        <input type="text" className="assignment-search" placeholder="Cerca reparto..." value={deptSearchTerm} onChange={(e) => setDeptSearchTerm(e.target.value)} disabled={selectedUsers.length > 0} />
+                        <input type="text" className="assignment-search" placeholder="Search department..." value={deptSearchTerm} onChange={(e) => setDeptSearchTerm(e.target.value)} disabled={selectedUsers.length > 0} />
                       </div>
                       <div className="assignment-list">
                         {allDepartments.filter((dept: string) => dept.toLowerCase().includes(deptSearchTerm.toLowerCase())).map((dept: string) => {
@@ -688,7 +688,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                           );
                         })}
                       </div>
-                      <div className="assignment-count">{selectedUsers.length > 0 ? '⚠️ Deseleziona gli utenti per assegnare a reparti' : `${selectedDepartments.length} reparto/i selezionato/i`}</div>
+                      <div className="assignment-count">{selectedUsers.length > 0 ? '⚠️ Deselect users to assign to departments' : `${selectedDepartments.length} department(s) selected`}</div>
                     </div>
                   )}
                 </div>
@@ -704,8 +704,8 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
 
             {/* Conversation header */}
             <div className="conv-header">
-              <span className="conv-header-title">{isEmailTicket ? 'Conversazione' : 'Storico attività'}</span>
-              <span className="conv-header-count">{timeline.length} {timeline.length === 1 ? 'voce' : 'voci'}</span>
+              <span className="conv-header-title">{isEmailTicket ? 'Conversation' : 'Activity log'}</span>
+              <span className="conv-header-count">{timeline.length} {timeline.length === 1 ? 'entry' : 'entries'}</span>
             </div>
 
             {/* Message list */}
@@ -758,12 +758,12 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                           {subLabel && <span className="conv-msg-sub">{subLabel}</span>}
                         </div>
                         <div className="conv-msg-right-col">
-                          {cardType === 'email-in'  && <span className="conv-dir conv-dir--in">↓ Ricevuto</span>}
-                          {cardType === 'email-out' && <span className="conv-dir conv-dir--out">↑ Inviato</span>}
-                          {cardType === 'internal'  && <span className="conv-dir conv-dir--note">Nota interna</span>}
-                          <span className="conv-msg-time" title={item.date.toLocaleString('it-IT')}>{fmtDate(item.date)}</span>
+                          {cardType === 'email-in'  && <span className="conv-dir conv-dir--in">↓ Received</span>}
+                          {cardType === 'email-out' && <span className="conv-dir conv-dir--out">↑ Sent</span>}
+                          {cardType === 'internal'  && <span className="conv-dir conv-dir--note">Internal note</span>}
+                          <span className="conv-msg-time" title={item.date.toLocaleString('en-GB')}>{fmtDate(item.date)}</span>
                           {user.role === 'ADMIN' && item.type === 'comment' && (
-                            <button className="conv-msg-del" onClick={() => handleDeleteComment(item.id)} title="Elimina">✕</button>
+                            <button className="conv-msg-del" onClick={() => handleDeleteComment(item.id)} title="Delete">✕</button>
                           )}
                         </div>
                       </div>
@@ -785,7 +785,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                                 <img src={`${UPLOADS_URL}/${item.file.filePath}`} alt={item.file.fileName} className="conv-img-thumb" />
                               </a>
                               {user.role === 'ADMIN' && (
-                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(item.file.id)} title="Elimina">✕</button>
+                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(item.file.id)} title="Delete">✕</button>
                               )}
                             </div>
                           </div>
@@ -805,7 +805,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                                 <img src={`${UPLOADS_URL}/${a.filePath}`} alt={a.fileName} className="conv-img-thumb" />
                               </a>
                               {user.role === 'ADMIN' && (
-                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Elimina">✕</button>
+                                <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Delete">✕</button>
                               )}
                             </div>
                           ))}
@@ -818,17 +818,17 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                   </div>
                 );
               }) : (
-                <div className="conv-no-activity">Nessuna attività</div>
+                <div className="conv-no-activity">No activity</div>
               )}
             </div>
 
             {/* Composer */}
             <div className="unified-form">
-              <span className="unified-form-label">Aggiungi commento e/o file</span>
+              <span className="unified-form-label">Add comment and/or file</span>
               <RichTextEditor
                 value={comment}
                 onChange={setComment}
-                placeholder="Scrivi un commento... Puoi incollare screenshot con Ctrl+V"
+                placeholder="Write a comment... You can paste screenshots with Ctrl+V"
                 minHeight={80}
                 borderless
                 onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
@@ -846,7 +846,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                       e.target.value = '';
                     }}
                   />
-                  <label htmlFor="file-upload-page" className="composer-icon-btn" title="Allega file">📎</label>
+                  <label htmlFor="file-upload-page" className="composer-icon-btn" title="Attach file">📎</label>
                   {files.length > 0 && (
                     <div className="selected-files-list">
                       {files.map((f, i) => (
@@ -866,19 +866,19 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                       try {
                         const res = await aiApi.suggestResponse(ticket.id);
                         if (res.data.response) setComment(res.data.response);
-                        else alert('AI non disponibile o non configurata');
-                      } catch { alert('Errore AI'); }
+                        else alert('AI not available or not configured');
+                      } catch { alert('AI error'); }
                     }}
-                    title="Genera risposta suggerita con AI"
+                    title="Generate AI-suggested reply"
                   >
-                    🤖 AI Suggerisci
+                    🤖 AI Suggest
                   </button>
                   <button
                     className="composer-send-btn"
                     onClick={handleSubmit}
                     disabled={!comment.replace(/<[^>]*>/g, '').trim() && files.length === 0 && selectedUsers.length === 0 && selectedDepartments.length === 0}
                   >
-                    {(selectedUsers.length > 0 || selectedDepartments.length > 0) ? 'Invia ↗ (con assegnazione)' : 'Invia ↗'}
+                    {(selectedUsers.length > 0 || selectedDepartments.length > 0) ? 'Send ↗ (with assignment)' : 'Send ↗'}
                   </button>
                 </div>
               </div>

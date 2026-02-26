@@ -51,7 +51,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
       setAvatarUrl(newUrl);
       onUserUpdate?.({ ...user, avatarUrl: newUrl });
     } catch (e) {
-      alert('Errore caricamento foto');
+      alert('Photo upload error');
     } finally {
       setUploading(false);
     }
@@ -63,7 +63,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
       setAvatarUrl(null);
       onUserUpdate?.({ ...user, avatarUrl: null });
     } catch {
-      alert('Errore rimozione foto');
+      alert('Photo removal error');
     }
   };
 
@@ -76,7 +76,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {
-      alert('Errore salvataggio profilo');
+      alert('Profile save error');
     } finally {
       setSaving(false);
     }
@@ -93,7 +93,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
               className="up-avatar-circle"
               style={{ background: avatarUrl ? undefined : avatarColor }}
               onClick={() => fileInputRef.current?.click()}
-              title="Clicca per cambiare foto"
+              title="Click to change photo"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="avatar" className="up-avatar-img" />
@@ -106,7 +106,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
             </div>
 
             {avatarUrl && (
-              <button className="up-remove-photo" onClick={handleRemovePhoto} title="Rimuovi foto">✕</button>
+              <button className="up-remove-photo" onClick={handleRemovePhoto} title="Remove photo">✕</button>
             )}
           </div>
 
@@ -118,12 +118,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
             onChange={e => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0]); e.target.value = ''; }}
           />
 
-          <p className="up-avatar-hint">Clicca sull'immagine per cambiare la foto</p>
+          <p className="up-avatar-hint">Click the image to change your photo</p>
 
           {/* Color picker — shown only when no photo */}
           {!avatarUrl && (
             <div className="up-color-picker">
-              <p className="up-color-label">Colore sfondo</p>
+              <p className="up-color-label">Background color</p>
               <div className="up-color-swatches">
                 {AVATAR_COLORS.map(c => (
                   <button
@@ -149,46 +149,46 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUserUpdate }) => {
           <div className="up-fields">
             <div className="up-row">
               <div className="up-field">
-                <label>Nome</label>
+                <label>First name</label>
                 <input className="input" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)} />
               </div>
               <div className="up-field">
-                <label>Cognome</label>
+                <label>Last name</label>
                 <input className="input" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)} />
               </div>
             </div>
 
             <div className="up-row">
               <div className="up-field">
-                <label>Ruolo / Titolo</label>
-                <input className="input" placeholder="es. IT Specialist" value={form.jobTitle} onChange={e => handleChange('jobTitle', e.target.value)} />
+                <label>Role / Title</label>
+                <input className="input" placeholder="e.g. IT Specialist" value={form.jobTitle} onChange={e => handleChange('jobTitle', e.target.value)} />
               </div>
               <div className="up-field">
-                <label>Reparto</label>
-                <input className="input" placeholder="es. IT" value={form.department} onChange={e => handleChange('department', e.target.value)} disabled={user.role !== 'ADMIN'} />
+                <label>Department</label>
+                <input className="input" placeholder="e.g. IT" value={form.department} onChange={e => handleChange('department', e.target.value)} disabled={user.role !== 'ADMIN'} />
               </div>
             </div>
 
             <div className="up-row">
               <div className="up-field">
-                <label>Telefono</label>
-                <input className="input" placeholder="+39 000 000 0000" value={form.phone} onChange={e => handleChange('phone', e.target.value)} />
+                <label>Phone</label>
+                <input className="input" placeholder="+1 000 000 0000" value={form.phone} onChange={e => handleChange('phone', e.target.value)} />
               </div>
               <div className="up-field">
-                <label>Sede / Posizione</label>
-                <input className="input" placeholder="es. Milano" value={form.location} onChange={e => handleChange('location', e.target.value)} />
+                <label>Location / Office</label>
+                <input className="input" placeholder="e.g. London" value={form.location} onChange={e => handleChange('location', e.target.value)} />
               </div>
             </div>
 
             <div className="up-field up-field--full">
               <label>Bio</label>
-              <textarea className="input" rows={3} placeholder="Scrivi qualcosa su di te..." value={form.bio} onChange={e => handleChange('bio', e.target.value)} />
+              <textarea className="input" rows={3} placeholder="Write something about yourself..." value={form.bio} onChange={e => handleChange('bio', e.target.value)} />
             </div>
           </div>
 
           <div className="up-actions">
             <button className="btn btn-primary up-save-btn" onClick={handleSave} disabled={saving}>
-              {saving ? 'Salvataggio...' : saved ? '✓ Salvato' : 'Salva modifiche'}
+              {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save changes'}
             </button>
           </div>
         </div>
