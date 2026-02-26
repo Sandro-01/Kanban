@@ -272,7 +272,7 @@ async function processGraphEmail(message: any): Promise<void> {
         ? `${shortDescription}\n\n📎 Email originale completa in allegato (PDF)`
         : `Email ricevuta da ${from}\n\n📎 Email originale completa in allegato (PDF)`;
 
-      const ticket = await createTicketFromEmail(from, cleanSubject, description, emailAttachments, messageId);
+      const ticket = await createTicketFromEmail(from, cleanSubject, description, null, emailAttachments, messageId);
 
       // Genera PDF con email completa e allegalo al ticket
       try {
