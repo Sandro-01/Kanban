@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UPLOADS_URL } from '../services/api';
 import { AvatarPreview, DEFAULT_CONFIG, MALE_DEFAULT_CONFIG } from './AvatarSVG';
 
@@ -45,6 +45,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   onUpload,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  // imgError: 0 = not tried, 1 = scene URL failed (try plain), 2 = all failed (show DiceBear)
+  const [imgError, setImgError] = useState(0);
+  // Reset error counter whenever the avatar URL changes (new upload, etc.)
+  useEffect(() => { setImgError(0); }, [user.avatarUrl]);
 
   const initials =
     `${(user.firstName || '')[0] || ''}${(user.lastName || '')[0] || ''}`.toUpperCase() ||
@@ -73,16 +77,20 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   ) : null;
 
   // ── Priority 1: real photo or external avatar (e.g. Ready Player Me) ───
-  if (user.avatarUrl) {
-    // External absolute URL (RPM, etc.) vs. local upload path
-    let src = user.avatarUrl.startsWith('http')
+  if (user.avatarUrl && imgError < 2) {
+    // Base URL: external absolute or local upload path
+    const plainSrc = user.avatarUrl.startsWith('http')
       ? user.avatarUrl
       : `${UPLOADS_URL}/${user.avatarUrl}`;
-    // ReadyPlayerMe: use halfbody portrait for a clean 2-D headshot instead
-    // of the default full-body 3-D render.
-    if (src.includes('readyplayer.me') && !src.includes('scene=')) {
-      src = `${src}?scene=halfbody-portrait-v1-transparent&background=transparent`;
-    }
+
+    // For ReadyPlayerMe, try halfbody portrait first (imgError===0),
+    // fall back to plain URL on first failure (imgError===1).
+    const isRpm = plainSrc.includes('readyplayer.me');
+    const src =
+      isRpm && imgError === 0 && !plainSrc.includes('scene=')
+        ? `${plainSrc}?scene=halfbody-portrait-v1&background=f5f0eb`
+        : plainSrc;
+
     return (
       <div
         className={className}
@@ -94,6 +102,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           src={src}
           alt={initials}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={() => setImgError(prev => prev + 1)}
         />
         {fileInput}
       </div>
