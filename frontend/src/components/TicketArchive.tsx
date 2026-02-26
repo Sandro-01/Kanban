@@ -36,6 +36,21 @@ const PRIORITY_COLORS: Record<string, string> = {
   LOW: '#D0C8BF',
 };
 
+const isHtmlDescription = (desc: string) => /<[a-z][\s\S]*>/i.test(desc);
+
+const buildEmailSrcdoc = (html: string): string => {
+  let content = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  if (/<html/i.test(content)) {
+    const baseStyle = `<style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; font-size: 14px; line-height: 1.6; color: #1f2937; }</style>`;
+    content = content.replace(/<head([^>]*)>/i, `<head$1>${baseStyle}`);
+    return content;
+  }
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 8px; font-size: 14px; line-height: 1.6; color: #1f2937; }
+    img { max-width: 100%; height: auto; } table { border-collapse: collapse; } a { color: #4f6ef7; }
+  </style></head><body>${content}</body></html>`;
+};
+
 const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
   const [allTickets, setAllTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,7 +352,28 @@ const TicketArchive: React.FC<TicketArchiveProps> = ({ user }) => {
               {/* Description */}
               <div className="detail-section">
                 <label>Description</label>
-                <p className="detail-description">{selectedTicket.description}</p>
+                {selectedTicket.description ? (
+                  isHtmlDescription(selectedTicket.description) ? (
+                    <iframe
+                      className="detail-description-iframe"
+                      srcDoc={buildEmailSrcdoc(selectedTicket.description)}
+                      sandbox="allow-same-origin"
+                      onLoad={(e) => {
+                        const iframe = e.currentTarget;
+                        try {
+                          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                          if (doc) {
+                            const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+                            iframe.style.height = Math.min(h + 20, 400) + 'px';
+                          }
+                        } catch {}
+                      }}
+                      title="Description"
+                    />
+                  ) : (
+                    <p className="detail-description">{selectedTicket.description}</p>
+                  )
+                ) : null}
               </div>
 
               {/* Assignees */}

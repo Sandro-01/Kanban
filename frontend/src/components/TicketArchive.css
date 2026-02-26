@@ -432,6 +432,15 @@
   border: 2px solid #000000;
 }
 
+.detail-description-iframe {
+  width: 100%;
+  min-height: 80px;
+  max-height: 400px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  display: block;
+}
+
 .detail-assignees {
   display: flex;
   flex-wrap: wrap;
