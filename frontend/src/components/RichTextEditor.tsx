@@ -39,13 +39,16 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     /** Tracks the last HTML we set ourselves, so we can skip no-op external updates */
     const lastHtmlRef = useRef('');
 
-    /* ── Sync external reset (e.g. setComment('') after submit) ── */
+    /* ── Sync external value changes (reset on empty, inject on non-empty e.g. AI suggestion) ── */
     useEffect(() => {
       const el = divRef.current;
       if (!el) return;
       if (value === '' && lastHtmlRef.current !== '') {
         el.innerHTML = '';
         lastHtmlRef.current = '';
+      } else if (value !== '' && value !== lastHtmlRef.current) {
+        el.innerHTML = value;
+        lastHtmlRef.current = value;
       }
     }, [value]);
 

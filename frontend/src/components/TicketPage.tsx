@@ -495,10 +495,20 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
             ) : (
               <>
                 <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888', marginBottom: 6 }}>Description</p>
-                <div
-                  className="ticket-description-body"
-                  dangerouslySetInnerHTML={{ __html: renderDescriptionMarkdown((ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '').trim()) }}
-                />
+                {isHtmlDescription((ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').trim()) ? (
+                  <iframe
+                    className="email-description-iframe"
+                    srcDoc={buildEmailSrcdoc((ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '').trim())}
+                    sandbox="allow-same-origin"
+                    onLoad={handleIframeLoad}
+                    title="Description"
+                  />
+                ) : (
+                  <div
+                    className="ticket-description-body"
+                    dangerouslySetInnerHTML={{ __html: renderDescriptionMarkdown((ticket.description || '').replace(/\[ONBOARDING_ID:[^\]]+\]/g, '').replace(/🔗\s*\*\*Link Onboarding:\*\*\s*#[a-f0-9-]+/gi, '').trim()) }}
+                  />
+                )}
               </>
             )}
 
