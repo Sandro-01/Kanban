@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { useNavigate } from 'react-router-dom';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
 import RichTextEditor, { type RichTextEditorHandle } from './RichTextEditor';
+import UserAvatar from './UserAvatar';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -183,11 +184,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 
                             <div className="ticket-footer">
                               <div className="ticket-meta">
-                                {ticket.assignedTo && (
-                                  <span className="assignee">
-                                    👤 {ticket.assignedTo.firstName}
-                                  </span>
-                                )}
+                                {ticket.assignments && ticket.assignments.length > 0 ? (
+                                  <div className="ticket-assignees">
+                                    {ticket.assignments.slice(0, 3).map((a: any) => (
+                                      <UserAvatar key={a.id} user={a.user} className="ticket-assignee-avatar" />
+                                    ))}
+                                    {ticket.assignments.length > 3 && (
+                                      <span className="assignee-more">+{ticket.assignments.length - 3}</span>
+                                    )}
+                                  </div>
+                                ) : ticket.assignedTo ? (
+                                  <div className="ticket-assignees">
+                                    <UserAvatar user={ticket.assignedTo} className="ticket-assignee-avatar" />
+                                    <span className="assignee-name">{ticket.assignedTo.firstName}</span>
+                                  </div>
+                                ) : null}
                                 <span className="due-date">
                                   ⏱️ {new Date(ticket.dueDate).toLocaleDateString('en-GB')}
                                 </span>
@@ -971,9 +982,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                 <div className="assignments-chips">
                   {ticket.assignments.map((assignment: any) => (
                     <div className="assignment-chip" key={assignment.id}>
-                      <span className="avatar user-avatar">
-                        {getInitials(assignment.user.firstName, assignment.user.lastName)}
-                      </span>
+                      <UserAvatar user={assignment.user} className="avatar user-avatar" />
                       <span className="chip-info">
                         <span className="chip-name">{assignment.user.firstName} {assignment.user.lastName}</span>
                         {assignment.user.department && <span className="chip-dept">{assignment.user.department}</span>}
@@ -1059,9 +1068,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                               className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
                               onClick={() => !isDisabled && handleUserSelection(u.id)}
                             >
-                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#cbd5e1' }}>
-                                {getInitials(u.firstName, u.lastName)}
-                              </div>
+                              <UserAvatar user={u} className="avatar-sm" />
                               <div className="item-info">
                                 <div className="item-name">{u.firstName} {u.lastName}</div>
                                 {u.department && <div className="item-dept">{u.department}</div>}

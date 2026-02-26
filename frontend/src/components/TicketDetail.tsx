@@ -1227,9 +1227,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                         setMentionQuery(null);
                       }}
                     >
-                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#ede9fe', color: '#6d28d9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                        {(u.firstName[0] || '') + (u.lastName[0] || '')}
-                      </div>
+                      <UserAvatar user={u} style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0 }} />
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{u.firstName} {u.lastName}</div>
                         {u.department && <div style={{ fontSize: 11, color: '#6b7280' }}>{u.department}</div>}

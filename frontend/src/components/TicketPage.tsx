@@ -702,7 +702,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                           const isDisabled = selectedDepartments.length > 0;
                           return (
                             <div key={u.id} className={`assignment-list-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`} onClick={() => !isDisabled && handleUserSelection(u.id)}>
-                              <div className="avatar-sm" style={{ background: isSelected ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#cbd5e1' }}>{getInitials(u.firstName, u.lastName)}</div>
+                              <UserAvatar user={u} className="avatar-sm" />
                               <div className="item-info"><div className="item-name">{u.firstName} {u.lastName}</div>{u.department && <div className="item-dept">{u.department}</div>}</div>
                               <div className="check-icon">{isSelected ? '✓' : ''}</div>
                             </div>
@@ -901,9 +901,7 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
                           setMentionQuery(null);
                         }}
                       >
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#ede9fe', color: '#6d28d9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                          {(u.firstName[0] || '') + (u.lastName[0] || '')}
-                        </div>
+                        <UserAvatar user={u} style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0 }} />
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 13 }}>{u.firstName} {u.lastName}</div>
                           {u.department && <div style={{ fontSize: 11, color: '#6b7280' }}>{u.department}</div>}
