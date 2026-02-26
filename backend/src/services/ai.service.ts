@@ -137,7 +137,7 @@ Available priorities: LOW, MEDIUM, HIGH, CRITICAL
 Reply ONLY in JSON format (no other text):
 {"category": "...", "priority": "...", "confidence": 0.0-1.0, "reasoning": "brief explanation"}`;
 
-  const result = await callAI(systemPrompt, `Titolo: ${title}\nDescrizione: ${description}`, 256);
+  const result = await callAI(systemPrompt, `Title: ${title}\nDescription: ${description}`, 256);
   if (!result) return null;
 
   try {
@@ -163,11 +163,11 @@ export async function suggestResponse(
 ): Promise<string | null> {
   const commentsText = recentComments
     .slice(-5)
-    .map(c => `[${c.isEmail ? 'EMAIL' : 'COMMENTO'} da ${c.author}]: ${c.content}`)
+    .map(c => `[${c.isEmail ? 'EMAIL' : 'COMMENT'} from ${c.author}]: ${c.content}`)
     .join('\n');
 
   const kbContext = kbArticles && kbArticles.length > 0
-    ? `\n\nArticoli Knowledge Base pertinenti:\n${kbArticles.map(a => `- ${a.title}: ${a.content.substring(0, 300)}`).join('\n')}`
+    ? `\n\nRelevant Knowledge Base articles:\n${kbArticles.map(a => `- ${a.title}: ${a.content.substring(0, 300)}`).join('\n')}`
     : '';
 
   const systemPrompt = `You are an IT support operator for a packaging company.
