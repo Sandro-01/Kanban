@@ -14,7 +14,7 @@ const GROQ_MODEL   = 'llama-3.3-70b-versatile';  // modello gratuito più capace
 
 // ── Anthropic ────────────────────────────────────────────────────────────────
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL   = 'claude-sonnet-4-5-20250929';
+const CLAUDE_MODEL   = 'claude-sonnet-4-6';
 
 // ── Helpers per leggere le chiavi (env → DB) ──────────────────────────────────
 async function getKeyFromDB(key: string): Promise<string | null> {
@@ -128,14 +128,14 @@ export async function suggestCategoryAndPriority(
     'Risorse Umane', 'Commerciale', 'R&D/Sviluppo Prodotto', 'Altro',
   ];
 
-  const systemPrompt = `Sei un assistente IT per un'azienda italiana di packaging (cartotecnica).
-Analizza la richiesta e suggerisci la categoria più appropriata e la priorità.
+  const systemPrompt = `You are an IT support assistant for a packaging company.
+Analyze the request and suggest the most appropriate category and priority.
 
-Categorie disponibili: ${categories.join(', ')}
-Priorità disponibili: LOW, MEDIUM, HIGH, CRITICAL
+Available categories: ${categories.join(', ')}
+Available priorities: LOW, MEDIUM, HIGH, CRITICAL
 
-Rispondi SOLO in formato JSON (nessun altro testo):
-{"category": "...", "priority": "...", "confidence": 0.0-1.0, "reasoning": "breve spiegazione in italiano"}`;
+Reply ONLY in JSON format (no other text):
+{"category": "...", "priority": "...", "confidence": 0.0-1.0, "reasoning": "brief explanation"}`;
 
   const result = await callAI(systemPrompt, `Titolo: ${title}\nDescrizione: ${description}`, 256);
   if (!result) return null;
@@ -170,17 +170,17 @@ export async function suggestResponse(
     ? `\n\nArticoli Knowledge Base pertinenti:\n${kbArticles.map(a => `- ${a.title}: ${a.content.substring(0, 300)}`).join('\n')}`
     : '';
 
-  const systemPrompt = `Sei un operatore IT di supporto per un'azienda italiana di packaging.
-Scrivi una risposta professionale e concisa in italiano per questo ticket.
-Se ci sono articoli KB pertinenti, usali come riferimento.
-NON inventare soluzioni tecniche specifiche se non hai informazioni sufficienti.
-Scrivi solo il testo della risposta, senza virgolette o prefissi.`;
+  const systemPrompt = `You are an IT support operator for a packaging company.
+Write a professional and concise response in English for this ticket.
+If there are relevant KB articles, use them as reference.
+Do NOT invent specific technical solutions if you don't have enough information.
+Write only the response text, without quotes or prefixes.`;
 
   const userMsg = `Ticket: ${ticketTitle}
-Descrizione: ${ticketDescription}
-${commentsText ? `\nConversazione:\n${commentsText}` : ''}${kbContext}
+Description: ${ticketDescription}
+${commentsText ? `\nConversation:\n${commentsText}` : ''}${kbContext}
 
-Scrivi una risposta appropriata:`;
+Write an appropriate response:`;
 
   return callAI(systemPrompt, userMsg, 512);
 }
@@ -207,17 +207,17 @@ export async function findDuplicates(
     .map(t => `[${t.id.substring(0, 8)}] ${t.title} | ${(t.description || '').substring(0, 100)}`)
     .join('\n');
 
-  const systemPrompt = `Sei un assistente che rileva ticket duplicati o molto simili.
-Confronta il NUOVO ticket con la lista di ticket esistenti.
-Se trovi ticket simili (stesso problema, stessa richiesta), elencali.
+  const systemPrompt = `You are an assistant that detects duplicate or very similar tickets.
+Compare the NEW ticket with the list of existing tickets.
+If you find similar tickets (same issue, same request), list them.
 
-Rispondi SOLO in formato JSON array (nessun altro testo):
-[{"id": "id-parziale", "similarity": "breve spiegazione"}]
-Se non ci sono duplicati, rispondi: []`;
+Reply ONLY in JSON array format (no other text):
+[{"id": "partial-id", "similarity": "brief explanation"}]
+If there are no duplicates, reply: []`;
 
   const result = await callAI(
     systemPrompt,
-    `NUOVO TICKET:\nTitolo: ${title}\nDescrizione: ${description}\n\nTICKET ESISTENTI:\n${ticketList}`,
+    `NEW TICKET:\nTitle: ${title}\nDescription: ${description}\n\nEXISTING TICKETS:\n${ticketList}`,
     512
   );
   if (!result) return [];
@@ -258,17 +258,17 @@ export async function suggestKBArticles(
     .map(a => `[${a.id.substring(0, 8)}] [${a.category}] ${a.title} | ${(a.content || '').substring(0, 150)}`)
     .join('\n');
 
-  const systemPrompt = `Sei un assistente che suggerisce articoli della Knowledge Base pertinenti.
-Confronta il problema descritto con gli articoli disponibili.
-Suggerisci quelli più utili per risolvere il problema.
+  const systemPrompt = `You are an assistant that suggests relevant Knowledge Base articles.
+Compare the described problem with the available articles.
+Suggest the most useful ones for solving the problem.
 
-Rispondi SOLO in formato JSON array:
-[{"id": "id-parziale", "relevance": "breve spiegazione"}]
-Se nessun articolo è pertinente, rispondi: []`;
+Reply ONLY in JSON array format:
+[{"id": "partial-id", "relevance": "brief explanation"}]
+If no article is relevant, reply: []`;
 
   const result = await callAI(
     systemPrompt,
-    `PROBLEMA:\nTitolo: ${title}\nDescrizione: ${description}\n\nARTICOLI KB:\n${articleList}`,
+    `PROBLEM:\nTitle: ${title}\nDescription: ${description}\n\nKB ARTICLES:\n${articleList}`,
     512
   );
   if (!result) return [];

@@ -34,7 +34,7 @@ const ConvFileChip: React.FC<{ att: any; onDelete?: () => void }> = ({ att, onDe
         <span>{name}{sizeKB ? ` · ${sizeKB} KB` : ''}</span>
       </a>
       {onDelete && (
-        <button onClick={onDelete} className="conv-file-chip-del" title="Elimina">✕</button>
+        <button onClick={onDelete} className="conv-file-chip-del" title="Delete">✕</button>
       )}
     </div>
   );
@@ -375,11 +375,11 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
       const codeMatch = cleaned.match(/(5\d{2}\s+5\.\d+\.\d+)/);
       const code = codeMatch ? codeMatch[1] : '550 5.1.10';
       return [
-        `<strong style="font-size:13px;">&#9888;&ensp;Email non consegnata</strong>`,
+        `<strong style="font-size:13px;">&#9888;&ensp;Email not delivered</strong>`,
         recipient
-          ? `<span style="font-size:12px;color:#555;">Destinatario non trovato:&ensp;<strong>${recipient}</strong></span>`
+          ? `<span style="font-size:12px;color:#555;">Recipient not found:&ensp;<strong>${recipient}</strong></span>`
           : '',
-        `<span style="font-size:11px;color:#888;display:block;margin-top:4px;">Codice errore: ${code} — l'indirizzo potrebbe essere errato o inesistente.</span>`,
+        `<span style="font-size:11px;color:#888;display:block;margin-top:4px;">Error code: ${code} — the address may be incorrect or non-existent.</span>`,
       ].filter(Boolean).join('<br>');
     }
 
@@ -442,11 +442,11 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
 
     result = result.replace(
       /(<blockquote\b[^>]*>[\s\S]*?<\/blockquote>)/gi,
-      '<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>$1</details>'
+      '<details class="email-quote"><summary class="email-quote-sum">▶ Previous message</summary>$1</details>'
     );
     result = result.replace(
       /(<div\b[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*?<\/div>)/gi,
-      (m) => `<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>${m}</details>`
+      (m) => `<details class="email-quote"><summary class="email-quote-sum">▶ Previous message</summary>${m}</details>`
     );
     result = result.replace(
       /(<p[^>]*>(?:On|Il)\s.{10,200}?(?:wrote:|ha scritto:)\s*<\/p>\s*)(<details class="email-quote")/gi,
@@ -454,7 +454,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
     );
     result = result.replace(
       /((?:_{8,}|-{8,})\s*(?:<br\s*\/?>)?\s*(?:Da:|From:|De:).+)/i,
-      '<details class="email-quote"><summary class="email-quote-sum">▶ Messaggio precedente</summary>$1</details>'
+      '<details class="email-quote"><summary class="email-quote-sum">▶ Previous message</summary>$1</details>'
     );
 
     return result;
@@ -644,7 +644,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
           className="ticket-back-btn"
           onClick={() => navigate(-1)}
         >
-          ← Indietro
+          ← Back
         </button>
 
         <div className="ticket-detail-title-block">
@@ -721,7 +721,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                 <div className="email-description-meta">
                   <span className="email-description-label">Received via email</span>
                   {emailSender && (
-                    <span className="email-description-sender">Da: {emailSender}</span>
+                    <span className="email-description-sender">From: {emailSender}</span>
                   )}
                 </div>
               </div>
@@ -764,21 +764,35 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
           ) : null}
 
           <div className="ticket-details">
-            <div>
-              <strong>Created by:</strong> {ticket.createdBy.firstName} {ticket.createdBy.lastName}
+            <div className="ticket-detail-item">
+              <span className="ticket-detail-label">ID</span>
+              <span className="ticket-detail-value ticket-id-chip">#{ticket.id.substring(0, 8).toUpperCase()}</span>
             </div>
-            <div>
-              <strong>Assigned to:</strong>{' '}
-              {ticket.assignedTo
-                ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                : 'Unassigned'}
+            {ticket.category && (
+              <div className="ticket-detail-item">
+                <span className="ticket-detail-label">Category</span>
+                <span className="ticket-detail-value">{ticket.category}</span>
+              </div>
+            )}
+            <div className="ticket-detail-item">
+              <span className="ticket-detail-label">Created by</span>
+              <span className="ticket-detail-value">{ticket.createdBy.firstName} {ticket.createdBy.lastName}</span>
             </div>
-            <div>
-              <strong>SLA Deadline:</strong>{' '}
-              {new Date(ticket.dueDate).toLocaleString('en-GB')}
+            <div className="ticket-detail-item">
+              <span className="ticket-detail-label">Assigned to</span>
+              <span className="ticket-detail-value">
+                {ticket.assignedTo
+                  ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
+                  : <em style={{ color: '#999', fontStyle: 'normal' }}>Unassigned</em>}
+              </span>
             </div>
-            <div>
-              <strong>SLA:</strong> {ticket.slaHours} hours
+            <div className="ticket-detail-item">
+              <span className="ticket-detail-label">SLA Deadline</span>
+              <span className="ticket-detail-value">{new Date(ticket.dueDate).toLocaleString('en-GB')}</span>
+            </div>
+            <div className="ticket-detail-item">
+              <span className="ticket-detail-label">SLA</span>
+              <span className="ticket-detail-value">{ticket.slaHours}h</span>
             </div>
           </div>
         </div>
@@ -889,7 +903,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                       <span className="chip-name">{assignment.user.firstName} {assignment.user.lastName}</span>
                       {assignment.user.department && <span className="chip-dept">{assignment.user.department}</span>}
                     </span>
-                    <button className="chip-remove" title="Rimuovi" onClick={() => handleRemoveUser(assignment.userId)}>×</button>
+                    <button className="chip-remove" title="Remove" onClick={() => handleRemoveUser(assignment.userId)}>×</button>
                   </div>
                 ))}
               </div>
@@ -903,7 +917,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                       <span className="chip-name">{dept}</span>
                       <span className="chip-dept">Department</span>
                     </span>
-                    <button className="chip-remove" title="Rimuovi" onClick={() => handleRemoveDepartment(dept)}>×</button>
+                    <button className="chip-remove" title="Remove" onClick={() => handleRemoveDepartment(dept)}>×</button>
                   </div>
                 ))}
               </div>
@@ -915,9 +929,9 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                     <span className="avatar" style={{ background: '#dcfce7', color: '#15803d', fontSize: 14 }}>✉</span>
                     <span className="chip-info">
                       <span className="chip-name" style={{ fontSize: 12 }}>{email}</span>
-                      <span className="chip-dept">Esterno</span>
+                      <span className="chip-dept">External</span>
                     </span>
-                    <button className="chip-remove" title="Rimuovi" onClick={() => handleRemoveExternalContact(email)}>×</button>
+                    <button className="chip-remove" title="Remove" onClick={() => handleRemoveExternalContact(email)}>×</button>
                   </div>
                 ))}
               </div>
@@ -1090,7 +1104,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                 !a.mimeType?.startsWith('image/') && !(isEmailItem && a.isInline)
               );
 
-              const fmtDate = (d: Date) => d.toLocaleString('it-IT', {
+              const fmtDate = (d: Date) => d.toLocaleString('en-GB', {
                 day: '2-digit', month: 'short', year: '2-digit',
                 hour: '2-digit', minute: '2-digit',
               });
@@ -1115,15 +1129,15 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                         {subLabel && <span className="conv-msg-sub">{subLabel}</span>}
                       </div>
                       <div className="conv-msg-right-col">
-                        {cardType === 'email-in'  && <span className="conv-dir conv-dir--in">↓ Ricevuta</span>}
-                        {cardType === 'email-out' && <span className="conv-dir conv-dir--out">↑ Inviata</span>}
+                        {cardType === 'email-in'  && <span className="conv-dir conv-dir--in">↓ Received</span>}
+                        {cardType === 'email-out' && <span className="conv-dir conv-dir--out">↑ Sent</span>}
                         {cardType === 'email-ndr' && <span className="conv-dir conv-dir--ndr">⚠ Bounce</span>}
-                        {cardType === 'internal'  && <span className="conv-dir conv-dir--note">Nota interna</span>}
-                        <span className="conv-msg-time" title={item.date.toLocaleString('it-IT')}>
+                        {cardType === 'internal'  && <span className="conv-dir conv-dir--note">Internal note</span>}
+                        <span className="conv-msg-time" title={item.date.toLocaleString('en-GB')}>
                           {fmtDate(item.date)}
                         </span>
                         {user.role === 'ADMIN' && item.type === 'comment' && (
-                          <button className="conv-msg-del" onClick={() => handleDeleteComment(item.id)} title="Elimina">✕</button>
+                          <button className="conv-msg-del" onClick={() => handleDeleteComment(item.id)} title="Delete">✕</button>
                         )}
                       </div>
                     </div>
@@ -1140,7 +1154,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                               <img src={`${UPLOADS_URL}/${item.file.filePath}`} alt={item.file.fileName} className="conv-img-thumb" />
                             </a>
                             {user.role === 'ADMIN' && (
-                              <button className="conv-img-del" onClick={() => handleDeleteAttachment(item.file.id)} title="Elimina">✕</button>
+                              <button className="conv-img-del" onClick={() => handleDeleteAttachment(item.file.id)} title="Delete">✕</button>
                             )}
                           </div>
                         </div>
@@ -1159,7 +1173,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                               <img src={`${UPLOADS_URL}/${a.filePath}`} alt={a.fileName} className="conv-img-thumb" />
                             </a>
                             {user.role === 'ADMIN' && (
-                              <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Elimina">✕</button>
+                              <button className="conv-img-del" onClick={() => handleDeleteAttachment(a.id)} title="Delete">✕</button>
                             )}
                           </div>
                         ))}
@@ -1172,13 +1186,14 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                 </div>
               );
             }) : (
-              <div className="conv-no-activity">Nessuna attività</div>
+              <div className="conv-no-activity">No activity</div>
             )}
             <div ref={convEndRef} />
           </div>
 
           {/* Composer */}
           <div className="unified-form" style={{ position: 'relative' }}>
+            <span className="unified-form-label">Add comment &amp; files</span>
             {mentionQuery !== null && (() => {
               const q = mentionQuery.toLowerCase();
               const isEmailQ = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(mentionQuery);
@@ -1219,7 +1234,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{u.firstName} {u.lastName}</div>
                         {u.department && <div style={{ fontSize: 11, color: '#6b7280' }}>{u.department}</div>}
                       </div>
-                      <div style={{ marginLeft: 'auto', fontSize: 11, color: '#a78bfa', fontWeight: 500 }}>assegna</div>
+                      <div style={{ marginLeft: 'auto', fontSize: 11, color: '#a78bfa', fontWeight: 500 }}>assign</div>
                     </div>
                   ))}
                   {showEmail && (
@@ -1237,7 +1252,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
                       <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✉</div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{mentionQuery}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>Aggiungi contatto esterno · riceverà l'email</div>
+                        <div style={{ fontSize: 11, color: '#6b7280' }}>Add external contact · will receive email</div>
                       </div>
                     </div>
                   )}
@@ -1249,7 +1264,7 @@ const TicketDetail: React.FC<{ user: any }> = ({ user }) => {
               ref={editorRef}
               value={comment}
               onChange={setComment}
-              placeholder="Write a comment... (@nome per colleghi, @email@ext.com per esterni)"
+              placeholder="Write a comment... (@name for colleagues, @email@ext.com for external contacts)"
               minHeight={80}
               borderless
               onPasteFiles={(pastedFiles: File[]) => setFiles(prev => [...prev, ...pastedFiles])}

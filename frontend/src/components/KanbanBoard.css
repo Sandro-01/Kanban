@@ -14,14 +14,15 @@
 .ticket-detail-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 28px;
-  background: #000000;
-  border-bottom: 3px solid #000000;
+  gap: 14px;
+  padding: 12px 24px;
+  background: #0A0A0A;
+  border-bottom: 3px solid #FFE600;
   flex-wrap: wrap;
   position: sticky;
   top: 0;
   z-index: 10;
+  min-height: 56px;
 }
 
 .ticket-back-btn {
@@ -49,15 +50,15 @@
 }
 
 .ticket-detail-title {
-  font-size: 17px;
-  font-weight: 900;
+  font-size: 16px;
+  font-weight: 800;
   color: #FFFFFF;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin: 0 0 6px 0;
+  letter-spacing: 0.02em;
+  margin: 0 0 5px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .ticket-detail-badges {
@@ -78,13 +79,13 @@
 
 /* ── Left column: description, details, assignments ── */
 .ticket-col-left {
-  width: 400px;
+  width: 380px;
   min-width: 260px;
   flex-shrink: 0;
   overflow-y: auto;
-  padding: 24px 20px;
+  padding: 20px 18px;
   border-right: 3px solid #000000;
-  background: #F5F0EB;
+  background: #F8F5F1;
 }
 
 /* ── Right column: conversation + composer ── */
@@ -419,14 +420,15 @@
   border-radius: 0;
   overflow: hidden;
   background: #FFFFFF;
+  margin-bottom: 14px;
 }
 
 .email-description-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  background: #000000;
+  padding: 9px 13px;
+  background: #1a1a1a;
   border-bottom: 2px solid #000000;
 }
 
@@ -492,15 +494,55 @@
 }
 
 .ticket-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 15px;
-  padding: 15px;
-  background: #F5F0EB;
-  border-radius: 0;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 14px;
   border: 2px solid #000000;
+  background: #FFFFFF;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.ticket-detail-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #EAE6E0;
+}
+
+.ticket-detail-item:last-child {
+  border-bottom: none;
+}
+
+.ticket-detail-label {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888888;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.ticket-detail-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.ticket-id-chip {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background: #FFE600;
+  color: #000;
+  padding: 2px 7px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
 }
 
 
@@ -592,8 +634,8 @@
 
 /* Assignments Section */
 .assignments-section {
-  margin: 20px 0;
-  padding: 16px;
+  margin: 14px 0;
+  padding: 14px;
   border: 2px solid #000000;
   border-radius: 0;
   background: #FFFFFF;
@@ -967,35 +1009,38 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 14px;
-  background: #000;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  border-bottom: 2px solid #333;
 }
 
 .conv-header-title {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 0.12em;
   color: #FFE600;
 }
 
 .conv-header-count {
   font-size: 10px;
-  color: #666;
+  color: #888;
   margin-left: auto;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 0.06em;
+  background: #333;
+  padding: 2px 8px;
 }
 
 /* ── Scrollable list ─────────────────────────────────────────────────────── */
 .conv-list {
   max-height: 680px;  /* cap for modal context */
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: #f1f5f9;
+  background: #f4f6f9;
 }
 
 /* ── Message card ────────────────────────────────────────────────────────── */
@@ -1068,12 +1113,14 @@
   min-width: 0;
   overflow: hidden;           /* prevent any child from bleeding out */
   background: #fff;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #dde3ed;
   border-left: 3px solid #94a3b8;
-  transition: box-shadow 0.12s;
+  transition: box-shadow 0.12s, border-color 0.12s;
+  border-radius: 0 4px 4px 0;
 }
 .conv-msg-card:hover {
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.07);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+  border-color: #bbc5d5;
 }
 
 /* ── Type colours ── */
@@ -1462,9 +1509,20 @@
 
 /* Unified Form / Composer */
 .unified-form {
-  margin-top: 20px;
-  border: 3px solid #000000;
+  margin-top: 0;
+  border: none;
+  border-top: 3px solid #000000;
   background: #ffffff;
+}
+
+.unified-form-label {
+  display: block;
+  padding: 8px 14px 0;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #aaa;
 }
 
 .composer-bottom-bar {

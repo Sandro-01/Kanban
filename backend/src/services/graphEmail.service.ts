@@ -250,14 +250,22 @@ async function processGraphEmail(message: any): Promise<void> {
       let emailAttachments: any[] = [];
       try {
         const graphAttachments = await getEmailAttachments(message.id);
-        emailAttachments = graphAttachments.map((att: any) => ({
-          filename: att.name || `screenshot-${Date.now()}.${(att.contentType || 'image/png').split('/')[1] || 'png'}`,
-          content: Buffer.from(att.contentBytes, 'base64'),
-          contentType: att.contentType,
-          size: att.size,
-        }));
+        for (const att of graphAttachments) {
+          try {
+            if (!att.contentBytes) continue; // skip attachments without inline bytes
+            emailAttachments.push({
+              filename: att.name || `screenshot-${Date.now()}.${(att.contentType || 'image/png').split('/')[1] || 'png'}`,
+              content: Buffer.from(att.contentBytes, 'base64'),
+              contentType: att.contentType || 'application/octet-stream',
+              size: att.size || 0,
+              cid: att.contentId || null,  // preserve content-id for inline images
+            });
+          } catch (attErr: any) {
+            console.warn(`   ⚠️ Skipping attachment "${att.name}": ${attErr.message}`);
+          }
+        }
       } catch (e) {
-        // Nessun allegato
+        console.warn('   ⚠️ Could not fetch attachments for new ticket');
       }
 
       // Descrizione breve + pulita per il ticket
@@ -272,7 +280,9 @@ async function processGraphEmail(message: any): Promise<void> {
         ? `${shortDescription}\n\n📎 Email originale completa in allegato (PDF)`
         : `Email ricevuta da ${from}\n\n📎 Email originale completa in allegato (PDF)`;
 
-      const ticket = await createTicketFromEmail(from, cleanSubject, description, null, emailAttachments, messageId);
+      // Pass the full HTML body so cid: references for inline screenshots are resolved
+      const htmlBody = message.body?.contentType?.toLowerCase() === 'html' ? body : null;
+      const ticket = await createTicketFromEmail(from, cleanSubject, description, htmlBody, emailAttachments, messageId);
 
       // Genera PDF con email completa e allegalo al ticket
       try {
