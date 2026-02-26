@@ -148,16 +148,16 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       where,
       include: {
         createdBy: {
-          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
         },
         assignedTo: {
-          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
         },
         column: true,
         assignments: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         },
@@ -165,7 +165,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           where: { isDeleted: false },
           include: {
             uploadedBy: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         },
@@ -173,13 +173,13 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
           where: { isDeleted: false },
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             },
             attachments: {
               where: { isDeleted: false },
               include: {
                 uploadedBy: {
-                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
                 }
               }
             }
@@ -205,16 +205,16 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       where: { id },
       include: {
         createdBy: {
-          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
         },
         assignedTo: {
-          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
         },
         column: true,
         assignments: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         },
@@ -222,7 +222,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
           where: { isDeleted: false },
           include: {
             uploadedBy: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         },
@@ -230,13 +230,13 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
           where: { isDeleted: false },
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             },
             attachments: {
               where: { isDeleted: false },
               include: {
                 uploadedBy: {
-                  select: { id: true, email: true, firstName: true, lastName: true, department: true }
+                  select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
                 }
               }
             }
@@ -371,7 +371,7 @@ router.put('/:id', authenticate, auditLog('UPDATE_TICKET', 'Ticket'), async (req
         assignments: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         },
@@ -432,7 +432,7 @@ router.post('/:id/comments', authenticate, auditLog('ADD_COMMENT', 'Comment'), a
       },
       include: {
         user: {
-          select: { id: true, email: true, firstName: true, lastName: true, department: true }
+          select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
         }
       }
     });
@@ -671,7 +671,7 @@ router.post('/:id/assign-users', authenticate, auditLog('ASSIGN_USERS', 'Ticket'
           },
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, department: true }
+              select: { id: true, email: true, firstName: true, lastName: true, department: true, avatarUrl: true, avatarConfig: true, avatarColor: true }
             }
           }
         })
