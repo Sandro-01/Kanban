@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import { tickets as ticketsApi, users as usersApi, onboarding as onboardingApi, ai as aiApi, UPLOADS_URL } from '../services/api';
-import RichTextEditor from './RichTextEditor';
+import RichTextEditor, { type RichTextEditorHandle } from './RichTextEditor';
 import './KanbanBoard.css';
 
 interface KanbanBoardProps {
@@ -252,6 +252,8 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
   const [initialDepartments, setInitialDepartments] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [deptSearchTerm, setDeptSearchTerm] = useState('');
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const editorRef = useRef<RichTextEditorHandle>(null);
   // Onboarding equipment form state
   const [showEquipmentForm, setShowEquipmentForm] = useState(false);
   const [equipmentData, setEquipmentData] = useState({
@@ -382,6 +384,13 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
       }
     };
     loadUsers();
+  }, []);
+
+  // Close @mention dropdown on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setMentionQuery(null); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   // Initialize selected assignments from ticket
@@ -1311,7 +1320,7 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
             </div>
 
             {/* Form unificato per commento e file */}
-            <div className="unified-form">
+            <div className="unified-form" style={{ position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>Add Comment and/or File:</strong>
                 <button
@@ -1332,12 +1341,79 @@ const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUp
                   🤖 Suggest reply
                 </button>
               </div>
+              {mentionQuery !== null && (() => {
+                const q = mentionQuery.toLowerCase();
+                const isEmailQ = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(mentionQuery);
+                const matchedUsers = allUsers
+                  .filter(u => {
+                    const full = `${u.firstName}${u.lastName}`.toLowerCase();
+                    const spaced = `${u.firstName} ${u.lastName}`.toLowerCase();
+                    return full.includes(q) || spaced.includes(q) || (u.email || '').toLowerCase().includes(q);
+                  })
+                  .slice(0, 8);
+                const emailMatchesInternalUser = isEmailQ && allUsers.some(u => (u.email || '').toLowerCase() === q);
+                const showEmail = isEmailQ && !emailMatchesInternalUser;
+                if (!matchedUsers.length && !showEmail) return null;
+                return (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, right: 0, zIndex: 300,
+                    background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    boxShadow: '0 -4px 16px rgba(0,0,0,0.12)', marginBottom: '4px', overflow: 'hidden',
+                  }}>
+                    {matchedUsers.map(u => (
+                      <div
+                        key={u.id}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8f5ff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          const name = `${u.firstName} ${u.lastName}`;
+                          const html = `<span class="mention mention--user" data-user-id="${u.id}" contenteditable="false">@${name}</span>&nbsp;`;
+                          editorRef.current?.replaceMentionQuery(mentionQuery, html);
+                          setMentionQuery(null);
+                        }}
+                      >
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#ede9fe', color: '#6d28d9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                          {(u.firstName[0] || '') + (u.lastName[0] || '')}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{u.firstName} {u.lastName}</div>
+                          {u.department && <div style={{ fontSize: 11, color: '#6b7280' }}>{u.department}</div>}
+                        </div>
+                        <div style={{ marginLeft: 'auto', fontSize: 11, color: '#a78bfa', fontWeight: 500 }}>internal</div>
+                      </div>
+                    ))}
+                    {showEmail && (
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', cursor: 'pointer', borderTop: matchedUsers.length ? '1px solid #f0f0f0' : 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f0fdf4')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          const html = `<span class="mention mention--email" data-email="${mentionQuery}" contenteditable="false">@${mentionQuery}</span>&nbsp;`;
+                          editorRef.current?.replaceMentionQuery(mentionQuery, html);
+                          setMentionQuery(null);
+                        }}
+                      >
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✉</div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{mentionQuery}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280' }}>External contact · will receive email</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <RichTextEditor
+                ref={editorRef}
                 value={comment}
                 onChange={setComment}
-                placeholder="Write a comment (optional)... You can paste screenshots with Ctrl+V"
+                placeholder="Write a comment... (@name for colleagues, @email@ext.com for external)"
                 minHeight={80}
                 onPasteFiles={(pastedFiles) => setFiles(prev => [...prev, ...pastedFiles])}
+                onMentionQuery={setMentionQuery}
               />
               <div className="file-input-wrapper">
                 <input
