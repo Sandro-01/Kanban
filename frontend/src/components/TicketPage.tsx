@@ -273,11 +273,11 @@ const TicketPage: React.FC<TicketPageProps> = ({ user }) => {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      return [...new Set(
+      return Array.from(new Set(
         Array.from(doc.querySelectorAll('[data-user-id]'))
           .map(el => el.getAttribute('data-user-id'))
           .filter(Boolean) as string[]
-      )];
+      ));
     } catch { return []; }
   };
 
