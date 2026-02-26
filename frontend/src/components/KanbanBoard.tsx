@@ -239,11 +239,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ user }) => {
 };
 
 // Componente modale ticket
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TicketModal: React.FC<any> = ({ ticket: initialTicket, user, onClose, onUpdate, onMove }) => {
   const [comment, setComment] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [ticket, setTicket] = useState(initialTicket);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
